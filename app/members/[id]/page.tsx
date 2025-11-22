@@ -1,5 +1,5 @@
 // app/members/[id]/page.tsx
-import { supabase } from '@/app/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Member, TftMatchParticipant } from '@/types/supabase'
 
 type PageProps = {

@@ -1,5 +1,5 @@
 // page.tsx
-import { supabase } from '@/app/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 
 function tierOrder(tier: string | null): number {
