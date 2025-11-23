@@ -13,6 +13,7 @@ export type Member = {
   riot_tagline: string
   riot_puuid: string | null
   tft_summoner_id: string | null
+  tft_recent5: string | null
 
   // 솔로 TFT
   tft_tier: string | null
@@ -61,6 +62,7 @@ export type TftMatchParticipant = {
   augments: Json | null
   traits: Json | null
   units: Json | null
+  result: string | null
 }
 
 type Optional<T> = {

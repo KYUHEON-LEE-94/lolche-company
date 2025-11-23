@@ -1,0 +1,11 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/sync-all",
+      "schedule": "*/10 * * * *",
+      "headers": {
+        "x-admin-sync-token": "@admin-sync-token"
+      }
+    }
+  ]
+}

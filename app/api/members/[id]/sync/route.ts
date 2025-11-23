@@ -284,44 +284,64 @@ export async function POST(
         continue
       }
 
-      // 4) 해당 match의 participant 모두 저장
-      //    중복 삽입 피하려고 먼저 기존 row 삭제 후 새로 insert
+// ==== 4) 이 멤버의 participant만 저장 ====
+
+      const myPart = info.participants.find((p) => p.puuid === puuid)
+
+      if (!myPart) {
+        console.warn(
+            `[sync] match ${metadata.match_id} 에 내 puuid(${puuid})가 없음`
+        )
+        continue // 안전하게 스킵
+      }
+
+// 최근 5판 승/패 계산
+      const result: 'W' | 'L' = myPart.placement <= 4 ? 'W' : 'L'
+      recentResults.push(result)
+
+// 중복 방지 위해 기존 row 삭제
       await supabase
       .from('tft_match_participants')
       .delete()
       .eq('match_id', metadata.match_id)
+      .eq('member_id', memberId)
 
-      const participantRows = info.participants.map((p) => {
-        // 이 참가자가 현재 멤버인지 여부
-        const isThisMember = p.puuid === puuid
-
-        // // 최근 5판 승/패 계산용 (나중에 members.tft_recent5 같은 컬럼에 저장하고 싶으면 사용)
-        if (isThisMember) {
-          const result: 'W' | 'L' = p.placement <= 4 ? 'W' : 'L'
-          recentResults.push(result)
-         }
-
-        return {
-          match_id: metadata.match_id,
-          member_id: isThisMember ? memberId : null,
-          puuid: p.puuid,
-          placement: p.placement ?? null,
-          level: p.level ?? null,
-          time_eliminated: p.time_eliminated ?? null,
-          total_damage_to_players: p.total_damage_to_players ?? null,
-          augments: p.augments ?? null,
-          traits: p.traits ?? null,
-          units: p.units ?? null,
-        }
-      })
+// 내 participant 한 줄만 insert
+      const participantRow = {
+        match_id: metadata.match_id,
+        member_id: memberId,
+        puuid: puuid!,
+        placement: myPart.placement ?? null,
+        level: myPart.level ?? null,
+        time_eliminated: myPart.time_eliminated ?? null,
+        total_damage_to_players: myPart.total_damage_to_players ?? null,
+        augments: myPart.augments ?? null,
+        traits: myPart.traits ?? null,
+        units: myPart.units ?? null,
+        result
+      }
 
       const { error: partInsertError } = await supabase
       .from('tft_match_participants')
-      .insert(participantRows as any)
+      .insert([participantRow] as any)
 
       if (partInsertError) {
         console.error('tft_match_participants insert error', partInsertError)
-        // 얘도 에러만 로그 찍고 계속 진행
+      }
+
+
+    }
+
+    if (recentResults.length > 0) {
+      const recent5 = recentResults.slice(0, 5).join(',') // "W,L,W,W,L" 같은 문자열
+
+      const { error: recentUpdateError } = await supabase
+      .from('members')
+      .update({ tft_recent5: recent5 })
+      .eq('id', memberId)
+
+      if (recentUpdateError) {
+        console.error('members.tft_recent5 update error', recentUpdateError)
       }
     }
 
