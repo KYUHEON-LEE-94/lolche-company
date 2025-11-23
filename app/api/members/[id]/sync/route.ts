@@ -91,6 +91,7 @@ export async function POST(
   }
 
   const member = memberData as Database['public']['Tables']['members']['Row']
+  type MemberUpdate = Database['public']['Tables']['members']['Update']
 
   try {
     // ====== rate limit, last_synced 체크 (선택) ======
@@ -131,7 +132,7 @@ export async function POST(
 
     // 5) Supabase 업데이트
     const { error: updateError } = await supabase
-    .from('members') // 🔴 <Member> 절대 넣지 말기
+    .from('members')
     .update({
       riot_puuid: puuid ?? null,
       tft_tier: tftTier,
@@ -140,7 +141,7 @@ export async function POST(
       tft_wins: tftWins,
       tft_losses: tftLosses,
       last_synced_at: new Date().toISOString(),
-    } satisfies Database['public']['Tables']['members']['Update']) // ✅ 타입 맞추기
+    })
     .eq('id', memberId)
 
     if (updateError) {
@@ -163,11 +164,19 @@ export async function POST(
         losses: tftLosses,
       },
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e)
+
+    const message =
+        e instanceof Error
+            ? e.message
+            : typeof e === 'string'
+                ? e
+                : 'Unknown error'
+
     return NextResponse.json(
-        { error: e?.message ?? String(e) },
-        { status: 500 },
+        { error: message },
+        { status: 500 }
     )
   }
 }
