@@ -6,17 +6,16 @@ import type {Database} from '@/types/supabase'
 // env 가져오기 (서버 전용)
 const RIOT_API_KEY = process.env.RIOT_API_KEY
 const ACCOUNT_BASE_URL = process.env.RIOT_ACCOUNT_BASE_URL
-const TFT_SUMMONER_BASE_URL = process.env.RIOT_TFT_SUMMONER_BASE_URL
 const TFT_LEAGUE_BASE_URL = process.env.RIOT_TFT_LEAGUE_BASE_URL
 
 
-if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_SUMMONER_BASE_URL || !TFT_LEAGUE_BASE_URL) {
+if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BASE_URL) {
   throw new Error('Riot API env variables are not set')
 }
 
 // Riot ID → PUUID
 async function fetchPuuid(gameName: string, tagLine: string): Promise<string> {
-  const url = `${ACCOUNT_BASE_URL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
+  const url = `${ACCOUNT_BASE_URL}/${encodeURIComponent(
       gameName,
   )}/${encodeURIComponent(tagLine)}?api_key=${RIOT_API_KEY}`
   console.log("RIOT_url:", url)
@@ -46,7 +45,7 @@ type TftLeagueEntry = {
 async function fetchTftRankBySummonerId(
     summonerId: string,
 ): Promise<TftLeagueEntry | null> {
-  const url = `${TFT_LEAGUE_BASE_URL}/tft/league/v1/by-puuid/${encodeURIComponent(
+  const url = `${TFT_LEAGUE_BASE_URL}/${encodeURIComponent(
       summonerId,
   )}?api_key=${RIOT_API_KEY}`
 
