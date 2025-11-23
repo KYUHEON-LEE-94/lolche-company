@@ -187,9 +187,6 @@ export default function MemberRanking({ members }: { members: Member[] }) {
                   <div className="flex justify-end">
                     <div className={`${tierBadgeStyle} px-4 py-2 rounded-xl text-sm font-bold transition-all`}>
                       <div className="text-center">
-                        <div className="text-xs opacity-90 mb-0.5">
-                          {queueType === 'solo' ? 'SOLO' : 'DOUBLE UP'}
-                        </div>
                         <div className="text-base">
                           {tier ?? 'UNRANKED'} {rank ?? ''}
                         </div>
