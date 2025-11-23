@@ -9,4 +9,4 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ✅ 브라우저용 클라이언트 (클라이언트 컴포넌트에서 사용, 로그인/세션 관리용)
-export const supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseKey);
+export const supabaseClient = createBrowserClient(supabaseUrl, supabaseKey);

@@ -13,11 +13,21 @@ export type Member = {
   riot_tagline: string
   riot_puuid: string | null
   tft_summoner_id: string | null
+
+  // 솔로 TFT
   tft_tier: string | null
   tft_rank: string | null
   tft_league_points: number | null
   tft_wins: number | null
   tft_losses: number | null
+
+  // 🔥 DOUBLE UP 추가
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_league_points: number | null
+  tft_doubleup_wins: number | null
+  tft_doubleup_losses: number | null
+
   created_at: string
   last_synced_at: string | null
   memo: string | null

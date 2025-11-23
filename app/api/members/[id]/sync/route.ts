@@ -18,7 +18,7 @@ async function fetchPuuid(gameName: string, tagLine: string): Promise<string> {
   const url = `${ACCOUNT_BASE_URL}/${encodeURIComponent(
       gameName,
   )}/${encodeURIComponent(tagLine)}?api_key=${RIOT_API_KEY}`
-  console.log("RIOT_url:", url)
+
   const res = await fetch(url, { method: 'GET' })
 
   if (!res.ok) {
@@ -42,11 +42,11 @@ type TftLeagueEntry = {
   losses: number
 }
 
-async function fetchTftRankBySummonerId(
-    summonerId: string,
-): Promise<TftLeagueEntry | null> {
+async function fetchTftLeaguesByPuuid(
+    puuid: string,
+): Promise<TftLeagueEntry[]> {
   const url = `${TFT_LEAGUE_BASE_URL}/${encodeURIComponent(
-      summonerId,
+      puuid,
   )}?api_key=${RIOT_API_KEY}`
 
   const res = await fetch(url, { method: 'GET' })
@@ -57,14 +57,7 @@ async function fetchTftRankBySummonerId(
   }
 
   const data = (await res.json()) as TftLeagueEntry[]
-
-  if (!data || data.length === 0) {
-    return null
-  }
-
-  // 여러 큐 타입이 있을 수 있지만, 보통 RANKED_TFT 같은 큐 타입을 우선
-  const ranked = data.find((e) => e.queueType === 'RANKED_TFT') ?? data[0]
-  return ranked
+  return data ?? []
 }
 
 // POST /api/members/[id]/sync
@@ -114,20 +107,38 @@ export async function POST(
       puuid = await fetchPuuid(member.riot_game_name, member.riot_tagline)
     }
 
-    // 3) summonerId → TFT 리그(랭크) 정보
-    const rankEntry = await fetchTftRankBySummonerId(puuid!)
+    // 3) PUUID → TFT 리그(랭크) 정보 (두 큐 타입 모두)
+    const leagues = await fetchTftLeaguesByPuuid(puuid!)
+
+    const solo = leagues.find((e) => e.queueType === 'RANKED_TFT') ?? null
+    const doubleUp = leagues.find((e) => e.queueType === 'RANKED_TFT_DOUBLE_UP') ?? null
+
     let tftTier: string | null = null
     let tftRank: string | null = null
     let tftLeaguePoints: number | null = null
     let tftWins: number | null = null
     let tftLosses: number | null = null
 
-    if (rankEntry) {
-      tftTier = rankEntry.tier
-      tftRank = rankEntry.rank
-      tftLeaguePoints = rankEntry.leaguePoints
-      tftWins = rankEntry.wins
-      tftLosses = rankEntry.losses
+    let tftDoubleupTier: string | null = null
+    let tftDoubleupRank: string | null = null
+    let tftDoubleupLeaguePoints: number | null = null
+    let tftDoubleupWins: number | null = null
+    let tftDoubleupLosses: number | null = null
+
+    if (solo) {
+      tftTier = solo.tier
+      tftRank = solo.rank
+      tftLeaguePoints = solo.leaguePoints
+      tftWins = solo.wins
+      tftLosses = solo.losses
+    }
+
+    if (doubleUp) {
+      tftDoubleupTier = doubleUp.tier
+      tftDoubleupRank = doubleUp.rank
+      tftDoubleupLeaguePoints = doubleUp.leaguePoints
+      tftDoubleupWins = doubleUp.wins
+      tftDoubleupLosses = doubleUp.losses
     }
 
     // 5) Supabase 업데이트
@@ -140,6 +151,11 @@ export async function POST(
       tft_league_points: tftLeaguePoints,
       tft_wins: tftWins,
       tft_losses: tftLosses,
+      tft_doubleup_tier: tftDoubleupTier,
+      tft_doubleup_rank: tftDoubleupRank,
+      tft_doubleup_league_points: tftDoubleupLeaguePoints,
+      tft_doubleup_wins: tftDoubleupWins,
+      tft_doubleup_losses: tftDoubleupLosses,
       last_synced_at: new Date().toISOString(),
     })
     .eq('id', memberId)
@@ -157,11 +173,20 @@ export async function POST(
       memberId,
       puuid,
       rank: {
-        tier: tftTier,
-        rank: tftRank,
-        leaguePoints: tftLeaguePoints,
-        wins: tftWins,
-        losses: tftLosses,
+        solo: {
+          tier: tftTier,
+          rank: tftRank,
+          leaguePoints: tftLeaguePoints,
+          wins: tftWins,
+          losses: tftLosses,
+        },
+        doubleUp: {
+          tier: tftDoubleupTier,
+          rank: tftDoubleupRank,
+          leaguePoints: tftDoubleupLeaguePoints,
+          wins: tftDoubleupWins,
+          losses: tftDoubleupLosses,
+        },
       },
     })
   } catch (e: unknown) {
