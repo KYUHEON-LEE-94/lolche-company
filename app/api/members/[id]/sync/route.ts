@@ -7,7 +7,17 @@ import type {Database} from '@/types/supabase'
 const RIOT_API_KEY = process.env.RIOT_API_KEY
 const ACCOUNT_BASE_URL = process.env.RIOT_ACCOUNT_BASE_URL
 const TFT_LEAGUE_BASE_URL = process.env.RIOT_TFT_LEAGUE_BASE_URL
+const TFT_MATCH_BASE_URL = process.env.RIOT_TFT_MATCH_BASE_URL
 
+// API 호출 간 딜레이 (ms)
+const RIOT_MATCH_DETAIL_DELAY_MS = Number(
+    process.env.RIOT_MATCH_DETAIL_DELAY_MS ?? '1200', // 기본 1.2초
+)
+
+// sleep 함수
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BASE_URL) {
   throw new Error('Riot API env variables are not set')
@@ -42,6 +52,37 @@ type TftLeagueEntry = {
   losses: number
 }
 
+type RiotMatchMetadata = {
+  data_version: string
+  match_id: string
+  participants: string[]
+}
+
+type RiotMatchParticipant = {
+  puuid: string
+  placement: number
+  level: number
+  time_eliminated: number
+  total_damage_to_players: number
+  augments?: unknown[]
+  traits?: unknown[]
+  units?: unknown[]
+}
+
+type RiotMatchInfo = {
+  game_datetime: number   // ms timestamp
+  game_length: number     // seconds (float)
+  queue_id: number
+  tft_set_number?: number
+  participants: RiotMatchParticipant[]
+}
+
+type RiotMatchResponse = {
+  metadata: RiotMatchMetadata
+  info: RiotMatchInfo
+}
+
+
 async function fetchTftLeaguesByPuuid(
     puuid: string,
 ): Promise<TftLeagueEntry[]> {
@@ -58,6 +99,38 @@ async function fetchTftLeaguesByPuuid(
 
   const data = (await res.json()) as TftLeagueEntry[]
   return data ?? []
+}
+// PUUID → 최근 matchId들
+async function fetchMatchIdsByPuuid(puuid: string, count = 5): Promise<string[]> {
+  const url = `${TFT_MATCH_BASE_URL}/matches/by-puuid/${encodeURIComponent(
+      puuid,
+  )}/ids?start=0&count=${count}&api_key=${RIOT_API_KEY}`
+
+  const res = await fetch(url, { method: 'GET' })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`TFT Match IDs API error (${res.status}): ${text}`)
+  }
+
+  const data = (await res.json()) as string[]
+  return data ?? []
+}
+
+// matchId → 상세 매치 정보
+async function fetchMatchById(matchId: string): Promise<RiotMatchResponse> {
+  const url = `${TFT_MATCH_BASE_URL}/matches/${encodeURIComponent(
+      matchId,
+  )}?api_key=${RIOT_API_KEY}`
+
+  const res = await fetch(url, { method: 'GET' })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`TFT Match Detail API error (${res.status}): ${text}`)
+  }
+
+  return (await res.json()) as RiotMatchResponse
 }
 
 // POST /api/members/[id]/sync
@@ -166,6 +239,90 @@ export async function POST(
           { error: 'Failed to update member', details: updateError.message },
           { status: 500 },
       )
+    }
+
+    // ====== 6) 최근 5경기 매치 데이터 저장 ======
+    // 1) 최근 5개 matchId 가져오기
+    const matchIds = await fetchMatchIdsByPuuid(puuid!)
+
+    // (선택) 이 멤버의 최근 5판 승/패를 계산하고 싶으면 여기서 모아둘 수 있음
+    const recentResults: ('W' | 'L')[] = []
+
+    for (const matchId of matchIds) {
+
+      // ✅ rate limit 회피용 딜레이
+      if (RIOT_MATCH_DETAIL_DELAY_MS > 0) {
+        await sleep(RIOT_MATCH_DETAIL_DELAY_MS)
+      }
+
+      // 2) 매치 상세 조회
+      const match = await fetchMatchById(matchId)
+
+      const { metadata, info } = match
+
+      // 3) tft_matches upsert (이미 있으면 덮어쓰기)
+      const matchRow = {
+        match_id: metadata.match_id,
+        data_version: metadata.data_version ?? null,
+        game_datetime: info.game_datetime
+            ? new Date(info.game_datetime).toISOString()
+            : null,
+        queue_id: info.queue_id ?? null,
+        tft_set_number: info.tft_set_number ?? null,
+        game_length_seconds: info.game_length != null
+            ? Math.round(info.game_length) // ✅ 소수 → 정수 초 단위로
+            : null,
+      }
+
+      const { error: matchUpsertError } = await supabase
+      .from('tft_matches')
+      .upsert([matchRow] as any, { onConflict: 'match_id' })
+
+      if (matchUpsertError) {
+        console.error('tft_matches upsert error', matchUpsertError)
+        // 매치 한두 개 실패해도 전체 sync가 죽지 않게 continue
+        continue
+      }
+
+      // 4) 해당 match의 participant 모두 저장
+      //    중복 삽입 피하려고 먼저 기존 row 삭제 후 새로 insert
+      await supabase
+      .from('tft_match_participants')
+      .delete()
+      .eq('match_id', metadata.match_id)
+
+      const participantRows = info.participants.map((p) => {
+        // 이 참가자가 현재 멤버인지 여부
+        const isThisMember = p.puuid === puuid
+
+        // // 최근 5판 승/패 계산용 (나중에 members.tft_recent5 같은 컬럼에 저장하고 싶으면 사용)
+        if (isThisMember) {
+          const result: 'W' | 'L' = p.placement <= 4 ? 'W' : 'L'
+          recentResults.push(result)
+         }
+
+        return {
+          match_id: metadata.match_id,
+          member_id: isThisMember ? memberId : null,
+          puuid: p.puuid,
+          placement: p.placement ?? null,
+          level: p.level ?? null,
+          time_eliminated: p.time_eliminated ?? null,
+          total_damage_to_players: p.total_damage_to_players ?? null,
+          augments: p.augments ?? null,
+          traits: p.traits ?? null,
+          units: p.units ?? null,
+        }
+      })
+
+      const { error: partInsertError } = await supabase
+      .from('tft_match_participants')
+      .insert(participantRows as any)
+
+      if (partInsertError) {
+        console.error('tft_match_participants insert error', partInsertError)
+        // 얘도 에러만 로그 찍고 계속 진행
+      }
     }
 
     return NextResponse.json({

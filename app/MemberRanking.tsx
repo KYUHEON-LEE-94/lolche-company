@@ -264,19 +264,6 @@ export default function MemberRanking({ members }: { members: Member[] }) {
                         </div>
                     )}
                   </section>
-
-                  {/* 상세 페이지 링크 */}
-                  <footer className="mt-auto pt-3 border-t border-gray-200">
-                    <a
-                        href={`/members/${m.id}`}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 font-medium text-sm hover:from-blue-100 hover:to-blue-200 transition-all group-hover:shadow-md"
-                    >
-                      상세 보기
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </a>
-                  </footer>
                 </article>
             )
           })}
