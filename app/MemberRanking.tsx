@@ -1,23 +1,50 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import type { Member } from '@/types/supabase'
+import {useMemo, useState} from 'react'
+import type {Member} from '@/types/supabase'
 
 type QueueType = 'solo' | 'doubleup'
 
+function rankOrder(rank: string | null): number {
+  if (!rank) return 999
+  switch (rank) {
+    case 'I':
+      return 1
+    case 'II':
+      return 2
+    case 'III':
+      return 3
+    case 'IV':
+      return 4
+    default:
+      return 999
+  }
+}
+
 function tierOrder(tier: string | null): number {
   switch (tier) {
-    case 'CHALLENGER': return 1
-    case 'GRANDMASTER': return 2
-    case 'MASTER': return 3
-    case 'DIAMOND': return 4
-    case 'EMERALD': return 5
-    case 'PLATINUM': return 6
-    case 'GOLD': return 7
-    case 'SILVER': return 8
-    case 'BRONZE': return 9
-    case 'IRON': return 10
-    default: return 999
+    case 'CHALLENGER':
+      return 1
+    case 'GRANDMASTER':
+      return 2
+    case 'MASTER':
+      return 3
+    case 'DIAMOND':
+      return 4
+    case 'EMERALD':
+      return 5
+    case 'PLATINUM':
+      return 6
+    case 'GOLD':
+      return 7
+    case 'SILVER':
+      return 8
+    case 'BRONZE':
+      return 9
+    case 'IRON':
+      return 10
+    default:
+      return 999
   }
 }
 
@@ -60,18 +87,24 @@ const getRankBadge = (idx: number) => {
   return `#${idx + 1}`
 }
 
-function parseRecent5(raw: string | null | undefined): ('W' | 'L')[] {
+function parseRecent5(raw: string | null | undefined): number[] {
   if (!raw) return []
   return raw
   .split(',')
-  .map((s) => s.trim().toUpperCase())
-  .filter((s) => s === 'W' || s === 'L') as ('W' | 'L')[]
+  .map((s) => Number(s.trim()))
+  .filter((n) => Number.isFinite(n) && n >= 1 && n <= 8)
 }
 
-function recent5WinRate(recent: ('W' | 'L')[]): number {
-  if (recent.length === 0) return 0
-  const wins = recent.filter((r) => r === 'W').length
-  return Math.round((wins / recent.length) * 100)
+function recent5WinRate(placements: number[]): number {
+  if (placements.length === 0) return 0
+  const wins = placements.filter((p) => p >= 1 && p <= 4).length
+  return Math.round((wins / placements.length) * 100)
+}
+
+function getPlacementColor(p: number): string {
+  if (p === 1) return 'bg-yellow-400 text-white' // 1위 금색
+  if (p >= 2 && p <= 4) return 'bg-green-500 text-white' // 2~4위 초록
+  return 'bg-blue-500 text-white' // 5~8위 파랑
 }
 
 function getQueueTierAndLp(m: Member, queue: QueueType) {
@@ -89,11 +122,18 @@ function getQueueTierAndLp(m: Member, queue: QueueType) {
   }
 }
 
-export default function MemberRanking({ members }: { members: Member[] }) {
+export default function MemberRanking({members}: { members: Member[] }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
 
   const sorted = useMemo(() => {
-    const copy = [...members]
+    // 1) 현재 탭(솔로/더블업)에 랭크가 있는 멤버만 필터링
+    const candidates = members.filter((m) => {
+      const { tier } = getQueueTierAndLp(m, queueType)
+      return tier !== null // 해당 큐에 랭크 있는 사람만
+    })
+
+    // 2) 그 안에서 티어 → LP 순으로 정렬
+    const copy = [...candidates]
     copy.sort((a, b) => {
       const qa = getQueueTierAndLp(a, queueType)
       const qb = getQueueTierAndLp(b, queueType)
@@ -101,8 +141,14 @@ export default function MemberRanking({ members }: { members: Member[] }) {
       const tierDiff = tierOrder(qa.tier) - tierOrder(qb.tier)
       if (tierDiff !== 0) return tierDiff
 
+      // 2) 디비전(I > II > III > IV)
+      const rankDiff = rankOrder(qa.rank ?? null) - rankOrder(qb.rank ?? null)
+      if (rankDiff !== 0) return rankDiff
+
+      // 3) 마지막으로 LP 내림차순
       return (qb.lp ?? 0) - (qa.lp ?? 0)
     })
+
     return copy
   }, [members, queueType])
 
@@ -111,9 +157,11 @@ export default function MemberRanking({ members }: { members: Member[] }) {
         {/* 헤더 */}
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-200">
+            <div
+                className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-200">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                <path
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
             </div>
             <div>
@@ -125,7 +173,8 @@ export default function MemberRanking({ members }: { members: Member[] }) {
           </div>
 
           {/* 탭 네비게이션 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex gap-1">
+          <div
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex gap-1">
             <button
                 type="button"
                 onClick={() => setQueueType('solo')}
@@ -138,7 +187,8 @@ export default function MemberRanking({ members }: { members: Member[] }) {
             >
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"/>
                 </svg>
                 솔로 랭크
               </div>
@@ -155,7 +205,8 @@ export default function MemberRanking({ members }: { members: Member[] }) {
             >
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  <path
+                      d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
                 </svg>
                 더블업 랭크
               </div>
@@ -166,10 +217,10 @@ export default function MemberRanking({ members }: { members: Member[] }) {
         {/* 랭킹 카드 그리드 */}
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((m, idx) => {
-            const recent = parseRecent5((m as any).tft_recent5)
-            const winRate = recent5WinRate(recent)
+            const placements = parseRecent5((m as any).tft_recent5)
+            const winRate = recent5WinRate(placements)
 
-            const { tier, rank, lp } = getQueueTierAndLp(m, queueType)
+            const {tier, rank, lp} = getQueueTierAndLp(m, queueType)
             const tierColor = getTierColor(tier)
             const tierBadgeStyle = getTierBadgeStyle(tier)
 
@@ -179,13 +230,15 @@ export default function MemberRanking({ members }: { members: Member[] }) {
                     className="group relative flex flex-col gap-4 rounded-2xl border-2 border-gray-200 bg-white p-5 shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300 hover:-translate-y-1"
                 >
                   {/* 랭킹 배지 */}
-                  <div className="absolute -top-3 -left-3 w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-lg font-bold text-gray-700 shadow-md border-2 border-white">
+                  <div
+                      className="absolute -top-3 -left-3 w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-lg font-bold text-gray-700 shadow-md border-2 border-white">
                     {getRankBadge(idx)}
                   </div>
 
                   {/* 티어 배지 */}
                   <div className="flex justify-end">
-                    <div className={`${tierBadgeStyle} px-4 py-2 rounded-xl text-sm font-bold transition-all`}>
+                    <div
+                        className={`${tierBadgeStyle} px-4 py-2 rounded-xl text-sm font-bold transition-all`}>
                       <div className="text-center">
                         <div className="text-base">
                           {tier ?? 'UNRANKED'} {rank ?? ''}
@@ -199,10 +252,13 @@ export default function MemberRanking({ members }: { members: Member[] }) {
 
                   {/* 멤버 정보 */}
                   <section className="space-y-3 mt-2">
-                    <div className="bg-gradient-to-r from-gray-50 to-transparent rounded-lg p-3 border-l-4 border-blue-500">
+                    <div
+                        className="bg-gradient-to-r from-gray-50 to-transparent rounded-lg p-3 border-l-4 border-blue-500">
                       <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                          <path fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
+                                clipRule="evenodd"/>
                         </svg>
                         Riot ID
                       </div>
@@ -211,11 +267,14 @@ export default function MemberRanking({ members }: { members: Member[] }) {
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-r from-amber-50 to-transparent rounded-lg p-3 border-l-4 border-amber-500">
+                    <div
+                        className="bg-gradient-to-r from-amber-50 to-transparent rounded-lg p-3 border-l-4 border-amber-500">
                       <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-                          <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                          <path
+                              d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
+                          <path
+                              d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
                         </svg>
                         단톡방 ID
                       </div>
@@ -226,35 +285,43 @@ export default function MemberRanking({ members }: { members: Member[] }) {
                   </section>
 
                   {/* 최근 전적 */}
-                  <section className="mt-2 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 p-4 border border-gray-200">
+                  <section
+                      className="mt-2 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 p-4 border border-gray-200">
                     <div className="mb-3 flex items-center justify-between">
-                  <span className="font-semibold text-gray-700 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    최근 5판
-                  </span>
-                      <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${
-                          winRate >= 60 ? 'bg-green-100 text-green-700' :
-                              winRate >= 40 ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
-                      }`}>
-                    승률 {winRate}%
-                  </span>
+    <span className="font-semibold text-gray-700 flex items-center gap-2">
+      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
+      </svg>
+      최근 5판
+    </span>
+                      <span
+                          className={`text-sm font-bold px-2.5 py-1 rounded-lg ${
+                              winRate >= 60
+                                  ? 'bg-green-100 text-green-700'
+                                  : winRate >= 40
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-red-100 text-red-700'
+                          }`}
+                      >
+      승률 {winRate}%
+    </span>
                     </div>
 
-                    {recent.length > 0 ? (
+                    {placements.length > 0 ? (
                         <div className="flex gap-1.5 justify-center">
-                          {recent.map((result, i) => (
+                          {placements.map((p, i) => (
                               <div
                                   key={i}
-                                  className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm ${
-                                      result === 'W'
-                                          ? 'bg-gradient-to-br from-green-400 to-green-500 text-white'
-                                          : 'bg-gradient-to-br from-red-400 to-red-500 text-white'
-                                  }`}
+                                  className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm ${getPlacementColor(
+                                      p,
+                                  )}`}
                               >
-                                {result === 'W' ? '승' : '패'}
+                                {p}위
                               </div>
                           ))}
                         </div>

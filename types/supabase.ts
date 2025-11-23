@@ -62,7 +62,6 @@ export type TftMatchParticipant = {
   augments: Json | null
   traits: Json | null
   units: Json | null
-  result: string | null
 }
 
 type Optional<T> = {

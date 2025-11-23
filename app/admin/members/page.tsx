@@ -205,8 +205,8 @@ export default function AdminMemberListPage() {
                       최근 동기화
                     </th>
                     {/* 🔥 동기화 버튼 sticky 헤더 */}
-                    <th className="sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      동작
+                    <th className="sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      동기화
                     </th>
                   </tr>
                   </thead>

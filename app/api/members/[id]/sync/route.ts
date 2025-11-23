@@ -246,7 +246,7 @@ export async function POST(
     const matchIds = await fetchMatchIdsByPuuid(puuid!)
 
     // (선택) 이 멤버의 최근 5판 승/패를 계산하고 싶으면 여기서 모아둘 수 있음
-    const recentResults: ('W' | 'L')[] = []
+    const recentPlacements: number[] = []
 
     for (const matchId of matchIds) {
 
@@ -254,6 +254,7 @@ export async function POST(
       if (RIOT_MATCH_DETAIL_DELAY_MS > 0) {
         await sleep(RIOT_MATCH_DETAIL_DELAY_MS)
       }
+
 
       // 2) 매치 상세 조회
       const match = await fetchMatchById(matchId)
@@ -295,9 +296,9 @@ export async function POST(
         continue // 안전하게 스킵
       }
 
-// 최근 5판 승/패 계산
-      const result: 'W' | 'L' = myPart.placement <= 4 ? 'W' : 'L'
-      recentResults.push(result)
+    // 최근 5판 승/패 계산
+      const placement = myPart.placement ?? 8 // 혹시 null이면 8위 취급
+      recentPlacements.push(placement)
 
 // 중복 방지 위해 기존 row 삭제
       await supabase
@@ -318,7 +319,6 @@ export async function POST(
         augments: myPart.augments ?? null,
         traits: myPart.traits ?? null,
         units: myPart.units ?? null,
-        result
       }
 
       const { error: partInsertError } = await supabase
@@ -332,8 +332,8 @@ export async function POST(
 
     }
 
-    if (recentResults.length > 0) {
-      const recent5 = recentResults.slice(0, 5).join(',') // "W,L,W,W,L" 같은 문자열
+    if (recentPlacements.length > 0) {
+      const recent5 = recentPlacements.slice(0, 5).join(',') // "W,L,W,W,L" 같은 문자열
 
       const { error: recentUpdateError } = await supabase
       .from('members')
