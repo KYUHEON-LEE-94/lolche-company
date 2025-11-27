@@ -22,6 +22,7 @@ export default function AdminMemberListPage() {
   const [loading, setLoading] = useState(true)
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadMembers = async () => {
     setLoading(true)
@@ -52,9 +53,42 @@ export default function AdminMemberListPage() {
     }
   }
 
+
   useEffect(() => {
     loadMembers()
   }, [])
+
+  const handleDelete = async (id: string, name: string) => {
+    const ok = window.confirm(
+        `"${name}" 멤버를 삭제하면 전적 데이터도 함께 삭제됩니다.\n정말 삭제하시겠습니까?`
+    )
+    if (!ok) return
+
+    setDeletingId(id)
+    setError(null)
+
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: 'DELETE',
+      })
+      const body = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        console.error('delete error', body)
+        setError(body.error ?? `멤버 삭제 실패 (status: ${res.status})`)
+        return
+      }
+
+      // 성공 후 목록 다시 로드
+      await loadMembers()
+    } catch (e) {
+      console.error(e)
+      setError('멤버 삭제 중 오류가 발생했습니다.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
 
   const handleSync = async (id: string) => {
     setSyncingId(id)
@@ -155,7 +189,7 @@ export default function AdminMemberListPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                등록된 멤버들의 TFT 랭크 정보를 확인하고 동기화하세요
+                멤버들의 TFT 정보를 관리
               </p>
             </div>
 
@@ -288,7 +322,8 @@ export default function AdminMemberListPage() {
                           </span>
                               </div>
                           ) : (
-                              <span className="px-3 py-1 text-xs font-medium text-slate-400 bg-slate-100 rounded-lg italic">
+                              <span
+                                  className="px-3 py-1 text-xs font-medium text-slate-400 bg-slate-100 rounded-lg italic">
                           Unranked
                         </span>
                           )}
@@ -297,7 +332,8 @@ export default function AdminMemberListPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {m.tft_doubleup_tier ? (
                               <div className="flex items-center gap-2">
-                          <span className={`px-3 py-1 rounded-lg text-xs font-bold ${getTierBadgeStyle(m.tft_doubleup_tier)}`}>
+                          <span
+                              className={`px-3 py-1 rounded-lg text-xs font-bold ${getTierBadgeStyle(m.tft_doubleup_tier)}`}>
                             {m.tft_doubleup_tier} {m.tft_doubleup_rank ?? ''}
                           </span>
                                 <span className="px-2 py-1 text-xs font-semibold text-slate-600 bg-slate-100 rounded">
@@ -305,7 +341,8 @@ export default function AdminMemberListPage() {
                           </span>
                               </div>
                           ) : (
-                              <span className="px-3 py-1 text-xs font-medium text-slate-400 bg-slate-100 rounded-lg italic">
+                              <span
+                                  className="px-3 py-1 text-xs font-medium text-slate-400 bg-slate-100 rounded-lg italic">
                           Unranked
                         </span>
                           )}
@@ -314,8 +351,10 @@ export default function AdminMemberListPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {m.last_synced_at ? (
                               <div className="flex items-center gap-2 text-xs text-slate-600">
-                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <span className="font-medium">
                             {new Date(m.last_synced_at).toLocaleString('ko-KR', {
@@ -331,35 +370,107 @@ export default function AdminMemberListPage() {
                           )}
                         </td>
 
-                        <td className={`sticky right-0 px-6 py-4 whitespace-nowrap text-right shadow-[-2px_0_8px_rgba(0,0,0,0.05)] ${
-                            idx % 2 === 0 ? 'bg-white group-hover:bg-blue-50/50' : 'bg-slate-50/30 group-hover:bg-blue-50/50'
-                        }`}>
-                          <button
-                              onClick={() => handleSync(m.id)}
-                              disabled={syncingId === m.id}
-                              className="group/btn relative inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 overflow-hidden"
-                          >
-                        <span className="relative z-10 flex items-center gap-2">
-                          {syncingId === m.id ? (
-                              <>
-                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                동기화 중...
-                              </>
-                          ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                동기화
-                              </>
-                          )}
-                        </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 transform scale-x-0 group-hover/btn:scale-x-100 transition-transform origin-left"></div>
-                          </button>
+                        <td
+                            className={`sticky right-0 px-6 py-4 whitespace-nowrap text-right shadow-[-2px_0_8px_rgba(0,0,0,0.05)] ${
+                                idx % 2 === 0
+                                    ? 'bg-white group-hover:bg-blue-50/50'
+                                    : 'bg-slate-50/30 group-hover:bg-blue-50/50'
+                            }`}
+                        >
+                          <div className="flex items-center justify-end gap-2">
+                            {/* 동기화 버튼 */}
+                            <button
+                                onClick={() => handleSync(m.id)}
+                                disabled={syncingId === m.id || deletingId === m.id}
+                                className="group/btn relative inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 overflow-hidden"
+                            >
+      <span className="relative z-10 flex items-center gap-2">
+        {syncingId === m.id ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                />
+                <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              동기화 중...
+            </>
+        ) : (
+            <>
+              <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+              >
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              동기화
+            </>
+        )}
+      </span>
+                              <div
+                                  className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 transform scale-x-0 group-hover/btn:scale-x-100 transition-transform origin-left"/>
+                            </button>
+
+                            {/* 삭제 버튼 */}
+                            <button
+                                onClick={() => handleDelete(m.id, m.member_name)}
+                                disabled={deletingId === m.id || syncingId === m.id}
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                title="멤버 삭제"
+                            >
+                              {deletingId === m.id ? (
+                                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                  </svg>
+                              ) : (
+                                  <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0V5a2 2 0 012-2h2a2 2 0 012 2v2"
+                                    />
+                                  </svg>
+                              )}
+                            </button>
+                          </div>
                         </td>
+
                       </tr>
                   ))}
                   </tbody>
