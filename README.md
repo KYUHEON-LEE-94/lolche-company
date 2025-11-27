@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📌 TFT 커뮤니티 전적 & 랭킹 관리 서비스
+> 우리 커뮤니티(카카오톡 단톡방) 구성원을 위한 전용 TFT 전적 관리 및 랭킹 서비스입니다.
 
-## Getting Started
+## 🚀 프로젝트 소개
+이 프로젝트는 **커뮤니티 구성원들의 TFT 전적을 한곳에서 관리하고 랭킹을 확인할 수 있는 웹 서비스**입니다.  
+Riot Games API를 사용하여 소환사 정보, 티어, 최근 경기 기록 등을 주기적으로 수집하고,  
+데이터베이스에 저장한 뒤 웹 UI로 시각화합니다.
 
-First, run the development server:
+이 서비스는 **비상업적**이며, **커뮤니티 구성원만 접근 가능한 비공개 서비스**입니다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 주요 기능
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ✔ 멤버 관리
+- 소환사 이름(Riot ID) 등록
+- 멤버 정보 수정 및 삭제 기능
+- 개별 동기화 & 전체 동기화
+- 비활성 멤버 필터링
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### ✔ 커뮤니티 랭킹
+- 구성원 전용 TFT 티어 랭킹 보드 제공
+- 티어, LP, 승률 등 표시
+- Riot API 기반 최신 정보 자동 반영
 
-## Learn More
+### ✔ 전체 동기화 기능
+- 전체 멤버의 전적, 티어, 최근 경기 정보를 한 번에 동기화
+- Riot API의 **429 요청 제한(Too Many Requests)** 발생 시  
+  `Retry-After` 헤더를 활용하여 **자동 대기 후 재시도**
+- 안정적인 API 호출 구조로 설계
 
-To learn more about Next.js, take a look at the following resources:
+### ✔ 전적(매치) 조회 - 미구현
+- 최근 경기 요약 및 상세 정보 제공
+- 등수, 특성, 아이템, 유닛 정보 표시
+- Supabase(PostgreSQL)에 저장해 빠른 조회 가능
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠 기술 스택
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### **Frontend**
+- Next.js 14 (App Router)
+- React
+- Tailwind CSS
+- shadcn/ui
 
-## Deploy on Vercel
+### **Backend / Infra**
+- Supabase (PostgreSQL)
+- Riot Games API
+- Edge Functions (Optional)
+- Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 주요 동작 흐름
+
+1. 사용자가 소환사 이름(Riot ID)을 등록  
+2. 서버에서 Riot API를 통해 PUUID, 랭크, 경기 데이터를 수집  
+3. Supabase에 저장  
+4. 웹 UI에서 랭킹/전적 정보를 시각적으로 표시  
+5. 전체 동기화 기능을 통해 정기적으로 데이터 갱신  
+
+---
+
+## 🔒 서비스 안내
+- Riot API Key는 서버 사이드에서만 사용되며 외부에 노출되지 않습니다.  
+- 상업적 목적 없이 개인/커뮤니티 내부용으로만 운영합니다.
+
+---
