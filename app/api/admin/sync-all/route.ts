@@ -1,88 +1,66 @@
+// app/api/admin/sync-all/route.ts
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_SYNC_TOKEN = process.env.ADMIN_SYNC_TOKEN
-
-// 한번에 처리할 멤버 수
-const MAX_MEMBERS_PER_RUN = Number(process.env.SYNC_BATCH_SIZE ?? 2)
-
-// 멤버 간 API 호출 딜레이(ms)
-const MEMBER_SYNC_DELAY_MS = Number(process.env.MEMBER_SYNC_DELAY_MS ?? 1500)
+const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '1500') // 멤버 간 대기(ms)
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function GET(req: Request) {
-  // ----- 토큰 검사 -----
-  const headerToken = req.headers.get('x-admin-sync-token')
-  if (!ADMIN_SYNC_TOKEN || headerToken !== ADMIN_SYNC_TOKEN) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // ----- last_synced_at 오래된 순으로 멤버 가져오기 -----
+export async function POST(req: Request) {
+  // 1) 전체 멤버 조회 (필요하면 where 조건 추가 가능: last_synced_at 오래된 것만 등)
   const { data: members, error } = await supabase
-  .from('members')
-  .select('id, member_name, last_synced_at')
-  .order('last_synced_at', { ascending: true, nullsFirst: true })
-  .limit(MAX_MEMBERS_PER_RUN)
+      .from('members')
+      .select('id, member_name, last_synced_at')
+      .order('member_name', { ascending: true })
 
-  if (error) {
-    console.error(error)
+  if (error || !members) {
+    console.error('load members error', error)
     return NextResponse.json(
-        { error: 'Failed to load members' },
-        { status: 500 }
+        { error: '멤버 목록 조회 실패' },
+        { status: 500 },
     )
   }
 
-  if (!members || members.length === 0) {
-    return NextResponse.json({
-      message: 'No members to sync (all up to date)',
-    })
-  }
+  const origin = new URL(req.url).origin
+  const results: Array<{
+    memberId: string
+    status: number
+    ok: boolean
+    message?: string | null
+  }> = []
 
-  const results: any[] = []
-
-  // ----- 순차적 동기화 -----
+  // 2) 각 멤버별로 순차 동기화
   for (const m of members) {
-    try {
-      console.log(`[sync-all] Syncing member → ${m.id} (${m.member_name})`)
+    const res = await fetch(`${origin}/api/members/${m.id}/sync`, {
+      method: 'POST',
+    })
 
-      // sync route 호출
-      const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/members/${m.id}/sync`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-sync-token': ADMIN_SYNC_TOKEN, // 옵션: sync API도 보호하고 싶을 때
-            },
-          }
-      )
+    const body = await res.json().catch(() => ({}))
 
-      const body = await res.json().catch(() => ({}))
+    results.push({
+      memberId: m.id,
+      status: res.status,
+      ok: res.ok,
+      message: body.message ?? body.error ?? null,
+    })
 
-      results.push({
-        memberId: m.id,
-        httpStatus: res.status,
-        body,
-      })
+    // Riot API rate limit 429가 떨어지면 더 이상 진행하지 않고 종료
+    if (!res.ok && res.status === 429) {
+      console.warn('Riot API rate limit에 걸려 전체 동기화 중단')
+      break
+    }
 
-      // 멤버 사이에 짧은 딜레이 (레이트 리밋 보호)
-      await sleep(MEMBER_SYNC_DELAY_MS)
-    } catch (e) {
-      console.error(e)
-      results.push({
-        memberId: m.id,
-        httpStatus: 500,
-        error: 'sync failed',
-      })
+    // 다음 멤버로 넘어가기 전에 딜레이
+    if (MEMBER_DELAY_MS > 0) {
+      await sleep(MEMBER_DELAY_MS)
     }
   }
 
   return NextResponse.json({
-    message: 'sync-all finished',
+    totalMembers: members.length,
     processed: results.length,
-    members: results,
+    results,
   })
 }
