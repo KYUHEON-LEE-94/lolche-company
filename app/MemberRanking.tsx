@@ -147,7 +147,7 @@ export default function MemberRanking({members}: { members: Member[] }) {
                 <h1 className="text-4xl font-black bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 bg-clip-text text-transparent leading-tight">
                   롤체 컴퍼니
                 </h1>
-                <p className="text-base text-slate-600 mt-2 font-medium">팀원들의 TFT 실력을 한눈에 확인하세요</p>
+                <p className="text-base text-slate-600 mt-2 font-medium">우리 멤버들의 순위</p>
               </div>
             </div>
 
