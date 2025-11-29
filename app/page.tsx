@@ -17,7 +17,7 @@ export default async function HomePage() {
   const members = (data ?? []) as Member[]
 
   return (
-      <main className="max-w-5xl mx-auto p-4">
+      <main className="mx-auto">
         <MemberRanking members={members} />
       </main>
   )
