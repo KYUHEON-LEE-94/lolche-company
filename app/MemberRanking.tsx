@@ -65,9 +65,27 @@ const getTierBadgeStyle = (tier: string | null) => {
 }
 
 const getRankBadge = (idx: number) => {
-  if (idx === 0) return { emoji: '🥇', bg: 'from-yellow-400 to-amber-500', shadow: 'shadow-yellow-300' }
-  if (idx === 1) return { emoji: '🥈', bg: 'from-slate-300 to-slate-400', shadow: 'shadow-slate-300' }
-  if (idx === 2) return { emoji: '🥉', bg: 'from-orange-400 to-orange-600', shadow: 'shadow-orange-300' }
+  if (idx === 0) {
+    return {
+      image: '/images/rank/rank1.png',
+      bg: 'from-yellow-400 to-amber-500',
+      shadow: 'shadow-yellow-300'
+    }
+  }
+  if (idx === 1) {
+    return {
+      image: '/images/rank/rank2.png',
+      bg: 'from-slate-300 to-slate-400',
+      shadow: 'shadow-slate-300'
+    }
+  }
+  if (idx === 2) {
+    return {
+      image: '/images/rank/rank3.png',
+      bg: 'from-orange-400 to-orange-600',
+      shadow: 'shadow-orange-300'
+    }
+  }
   return { emoji: `#${idx + 1}`, bg: 'from-gray-200 to-gray-300', shadow: 'shadow-gray-200' }
 }
 
@@ -206,24 +224,33 @@ export default function MemberRanking({members}: { members: Member[] }) {
                   >
                     {/* 랭킹 배지 */}
                     <div className={`absolute -top-4 -left-4 w-14 h-14 bg-gradient-to-br ${rankBadge.bg} rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-4 ring-white transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
-                      {rankBadge.emoji}
+                      {rankBadge.image ? (
+                          <img
+                              src={rankBadge.image}
+                              alt={`rank-${idx}`}
+                              className="w-10 h-10 object-contain"
+                          />
+                      ) : (
+                          <span className="text-sm font-bold text-gray-700">{rankBadge.emoji}</span>
+                      )}
                     </div>
 
                     {/* 티어 섹션 */}
                     <div className="flex justify-end mb-5">
                       <div className="flex items-center gap-3">
                         {/* 티어 이미지 */}
-                        <div className="w-14 h-14 bg-gradient-to-br from-white to-slate-50 rounded-xl flex items-center justify-center shadow-lg border-2 border-slate-100 overflow-hidden transition-transform duration-300 group-hover:scale-110">
+                        <div className="w-full h-20 rounded-xl flex items-center justify-center">
                           <img
                               src={getTierImage(tier)}
                               alt={tier ?? 'UNRANKED'}
-                              className="w-full h-full object-contain p-1"
+                              className="w-full h-full object-fill scale-120"
                           />
                         </div>
 
                         {/* 티어 배지 */}
-                        <div className={`${tierBadgeStyle} px-5 py-3 rounded-xl text-sm font-black transition-all duration-300 group-hover:scale-105`}>
-                          <div className="text-center">
+                        <div
+                            className={`${tierBadgeStyle} px-5 py-3 rounded-xl text-sm font-black transition-all duration-300 group-hover:scale-105`}>
+                        <div className="text-center">
                             <div className="text-base leading-tight">
                               {tier ?? 'UNRANKED'}
                             </div>
