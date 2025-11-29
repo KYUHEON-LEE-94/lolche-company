@@ -157,7 +157,7 @@ export default function MemberRanking({members}: { members: Member[] }) {
           <header className="mb-10">
             <div className="flex items-center gap-6 mb-8">
               {/* 로고 */}
-              <div className="relative group flex justify-center">
+              <div className="relative group flex justify-center pt-4">
                 {/* 뒤 Glow */}
                 <div
                     className="absolute inset-0 w-[380px] h-24 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-3xl blur-3xl opacity-40 group-hover:opacity-60 transition-opacity"
@@ -165,7 +165,7 @@ export default function MemberRanking({members}: { members: Member[] }) {
 
                 {/* 로고 컨테이너 */}
                 <div
-                    className="relative w-[380px] h-24 bg-black rounded-3xl px-6 py-1 ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/30 group-hover:scale-105 transition-transform duration-300"
+                    className="relative w-[380px] h-24 bg-black rounded-3xl px-6 pt-[5px] ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/30 group-hover:scale-105 transition-transform duration-300"
                 >
                   <img
                       src="/images/logo.png"
@@ -174,16 +174,16 @@ export default function MemberRanking({members}: { members: Member[] }) {
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         e.currentTarget.parentElement!.innerHTML = `
-          <svg viewBox="0 0 400 120" class="w-full h-full">
-            <defs>
-              <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#fbbf24"/>
-                <stop offset="100%" style="stop-color:#f59e0b"/>
-              </linearGradient>
-            </defs>
-            <rect x="10" y="20" width="380" height="80" rx="16" fill="none" stroke="url(#gold-gradient)" stroke-width="8" />
-          </svg>
-        `
+<svg viewBox="0 0 400 120" class="w-full h-full">
+  <defs>
+    <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="20" width="380" height="80" rx="16" fill="none" stroke="url(#gold-gradient)" stroke-width="8" />
+</svg>
+`
                       }}
                   />
                 </div>
@@ -267,7 +267,7 @@ export default function MemberRanking({members}: { members: Member[] }) {
                           <img
                               src={getTierImage(tier)}
                               alt={tier ?? 'UNRANKED'}
-                              className="w-full h-full object-fill scale-120"
+                              className="w-full h-[100px] mr-[10px] object-fill scale-120"
                           />
                         </div>
                         <div className={`${tierBadgeStyle} px-5 py-3 rounded-xl text-sm font-black transition-all duration-300 group-hover:scale-105`}>
