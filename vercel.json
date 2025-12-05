@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/admin/sync-all",
-      "schedule": "0 * * * *"
+      "schedule": "30 9 * * *"
     }
   ]
 }
