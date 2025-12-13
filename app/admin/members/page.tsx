@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 type MemberRow = {
   id: string
@@ -18,25 +19,33 @@ type MemberRow = {
 }
 
 export default function AdminMemberListPage() {
+  const router = useRouter()
+
+  // ✅ 모든 hook은 최상단에서 선언
+  const [ready, setReady] = useState(false)
+
   const [members, setMembers] = useState<MemberRow[]>([])
   const [loading, setLoading] = useState(true)
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [syncAllLoading, setSyncAllLoading] = useState(false)
 
-  const loadMembers = async () => {
+  // ✅ 함수는 useCallback으로 고정(선택이지만 권장)
+  const loadMembers = useCallback(async () => {
     setLoading(true)
     setError(null)
+
     try {
       const { data, error } = await supabaseClient
-          .from('members')
-          .select(`
+      .from('members')
+      .select(`
           id, member_name, riot_game_name, riot_tagline,
           tft_tier, tft_rank, tft_league_points,
           tft_doubleup_tier, tft_doubleup_rank, tft_doubleup_league_points,
           last_synced_at
         `)
-          .order('member_name', { ascending: true })
+      .order('member_name', { ascending: true })
 
       if (error) {
         console.error(error)
@@ -51,12 +60,35 @@ export default function AdminMemberListPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-
-  useEffect(() => {
-    loadMembers()
   }, [])
+
+  // ✅ 권한 체크
+  useEffect(() => {
+    ;(async () => {
+      const res = await fetch('/api/admin/me', { method: 'GET' })
+
+      if (res.status === 401) {
+        router.replace('/login')
+        return
+      }
+      if (res.status === 403) {
+        router.replace('/')
+        return
+      }
+
+      setReady(true)
+    })()
+  }, [router])
+
+  // ✅ ready 된 다음에만 목록 로딩
+  useEffect(() => {
+    if (!ready) return
+    loadMembers()
+  }, [ready, loadMembers])
+
+  if (!ready) {
+    return <div className="p-6">권한 확인 중...</div>
+  }
 
   const handleDelete = async (id: string, name: string) => {
     const ok = window.confirm(
@@ -68,9 +100,7 @@ export default function AdminMemberListPage() {
     setError(null)
 
     try {
-      const res = await fetch(`/api/members/${id}`, {
-        method: 'DELETE',
-      })
+      const res = await fetch(`/api/members/${id}`, { method: 'DELETE' })
       const body = await res.json().catch(() => ({}))
 
       if (!res.ok) {
@@ -79,7 +109,6 @@ export default function AdminMemberListPage() {
         return
       }
 
-      // 성공 후 목록 다시 로드
       await loadMembers()
     } catch (e) {
       console.error(e)
@@ -89,10 +118,10 @@ export default function AdminMemberListPage() {
     }
   }
 
-
   const handleSync = async (id: string) => {
     setSyncingId(id)
     setError(null)
+
     try {
       const res = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
       const body = await res.json().catch(() => ({}))
@@ -116,11 +145,10 @@ export default function AdminMemberListPage() {
     }
   }
 
-  const [syncAllLoading, setSyncAllLoading] = useState(false)
-
   const handleSyncAll = async () => {
     setSyncAllLoading(true)
     setError(null)
+
     try {
       const res = await fetch('/api/admin/sync-all', { method: 'POST' })
       const body = await res.json().catch(() => ({}))
@@ -256,7 +284,7 @@ export default function AdminMemberListPage() {
                 </svg>
               </div>
               <p className="text-xl font-bold text-slate-700 mb-2">등록된 멤버가 없습니다</p>
-              <p className="text-slate-500">상단의 "멤버 등록" 메뉴에서 멤버를 추가하세요</p>
+              <p className="text-slate-500">상단의 [멤버 등록] 메뉴에서 멤버를 추가하세요</p>
             </div>
         )}
 
