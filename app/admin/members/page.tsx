@@ -68,7 +68,7 @@ export default function AdminMemberListPage() {
       const res = await fetch('/api/admin/me', { method: 'GET' })
 
       if (res.status === 401) {
-        router.replace('/login')
+        router.replace('/admin/login')
         return
       }
       if (res.status === 403) {

@@ -1,7 +1,23 @@
 'use client'
 
-import {useMemo, useState} from 'react'
-import type {Member} from '@/types/supabase'
+import {useEffect, useMemo, useState} from 'react'
+import { supabaseClient } from '@/lib/supabase'
+import AuthButtons from "@/app/components/AuthButtons";
+import TierPanel from '@/app/components/TierPanel'
+
+type Member = {
+  id: string
+  riot_game_name: string
+  riot_tagline: string
+  member_name: string
+  tft_tier: string | null
+  tft_rank: string | null
+  tft_league_points: number | null
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_league_points: number | null
+  tft_recent5: string | null
+}
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -103,12 +119,6 @@ function recent5WinRate(placements: number[]): number {
   return Math.round((wins / placements.length) * 100)
 }
 
-function getPlacementStyle(p: number): string {
-  if (p === 1) return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-md shadow-yellow-200'
-  if (p >= 2 && p <= 4) return 'bg-gradient-to-br from-green-400 to-green-600 text-white shadow-md shadow-green-200'
-  return 'bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-sm'
-}
-
 function getQueueTierAndLp(m: Member, queue: QueueType) {
   if (queue === 'solo') {
     return {
@@ -124,10 +134,64 @@ function getQueueTierAndLp(m: Member, queue: QueueType) {
   }
 }
 
-export default function MemberRanking({members}: { members: Member[] }) {
+export default function MemberRanking({members = []}: { members?: Member[] }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
+  // ✅ auth state
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    ;(async () => {
+      const { data } = await supabaseClient.auth.getSession()
+      if (!mounted) return
+
+      setUserEmail(data.session?.user?.email ?? null)
+      setAuthLoading(false)
+    })()
+
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null)
+    })
+
+    return () => {
+      mounted = false
+      sub.subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError(null)
+    setAuthLoading(true)
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setAuthError(error.message)
+    } else {
+      setEmail('')
+      setPassword('')
+    }
+    setAuthLoading(false)
+  }
+
+  const handleLogout = async () => {
+    setAuthLoading(true)
+    await supabaseClient.auth.signOut()
+    setAuthLoading(false)
+  }
 
   const sorted = useMemo(() => {
+    if (!members || members.length === 0) return []
+
     const candidates = members.filter((m) => {
       const { tier } = getQueueTierAndLp(m, queueType)
       return tier !== null
@@ -153,6 +217,8 @@ export default function MemberRanking({members}: { members: Member[] }) {
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-8">
         <div className="max-w-7xl mx-auto">
+
+          <AuthButtons />
           {/* 헤더 */}
           <header className="mb-10">
             <div className="flex items-center gap-6 mb-8">
@@ -216,7 +282,7 @@ export default function MemberRanking({members}: { members: Member[] }) {
                   type="button"
                   onClick={() => setQueueType('doubleup')}
                   className={
-                  'px-8 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ' +
+                      'px-8 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ' +
                       (queueType === 'doubleup'
                           ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black shadow-lg shadow-amber-500/50 scale-105'
                           : 'text-slate-300 hover:bg-slate-700/50')
@@ -260,102 +326,40 @@ export default function MemberRanking({members}: { members: Member[] }) {
                       )}
                     </div>
 
-                    {/* 티어 섹션 */}
-                    <div className="flex justify-end mb-5">
-                      <div className="flex items-center gap-6">
-                        <div className="w-full h-20 rounded-xl flex items-center justify-center">
-                          <img
-                              src={getTierImage(tier)}
-                              alt={tier ?? 'UNRANKED'}
-                              className="w-full h-[100px] mr-[10px] object-fill scale-120"
-                          />
-                        </div>
-                        <div className={`${tierBadgeStyle} px-5 py-3 rounded-xl text-sm font-black transition-all duration-300 group-hover:scale-105`}>
-                          <div className="text-center">
-                            <div className="text-base leading-tight">
-                              {tier ?? 'UNRANKED'}
-                            </div>
-                            {rank && <div className="text-xs opacity-90">{rank}</div>}
-                            <div className="text-xs opacity-90 mt-1 font-semibold">
-                              {lp} LP
-                            </div>
-                          </div>
+                    {/* 상단: 프로필 + 정보 */}
+                    <div className="flex gap-4 mb-5">
+                      {/* 좌측: 프로필 사진 */}
+                      <div className="flex-shrink-0">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-4 border-slate-600 shadow-lg overflow-hidden">
+                          <svg className="w-12 h-12 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                          </svg>
                         </div>
                       </div>
-                    </div>
 
-                    {/* 멤버 정보 */}
-                    <section className="space-y-3 mb-4">
-                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-900/30 via-amber-800/30 to-transparent p-4 border-l-4 border-amber-500 shadow-sm">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full -mr-10 -mt-10"></div>
-                        <div className="relative">
-                          <div className="text-xs font-semibold text-amber-400 mb-1.5 flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd"/>
-                            </svg>
-                            Riot ID
-                          </div>
+                      {/* 우측: 카톡ID + RIOT ID */}
+                      <div className="flex-1 flex flex-col justify-center space-y-2">
+                        <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
+                          <div className="text-xs text-slate-400 mb-0.5">카톡 ID</div>
+                          <div className="font-bold text-white text-sm">{m.member_name}</div>
+                        </div>
+                        <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
+                          <div className="text-xs text-slate-400 mb-0.5">RIOT ID</div>
                           <div className="font-bold text-white text-sm">
                             {m.riot_game_name}<span className="text-slate-400">#{m.riot_tagline}</span>
                           </div>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900/30 via-blue-800/30 to-transparent p-4 border-l-4 border-blue-500 shadow-sm">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
-                        <div className="relative">
-                          <div className="text-xs font-semibold text-blue-400 mb-1.5 flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
-                              <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
-                            </svg>
-                            단톡방 ID
-                          </div>
-                          <div className="font-bold text-white text-sm">
-                            {m.member_name}
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* 최근 전적 */}
-                    <section className="mt-auto rounded-2xl bg-slate-900/50 p-5 border border-slate-700/50 shadow-inner">
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="font-bold text-slate-300 flex items-center gap-2 text-sm">
-                          <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                          </svg>
-                          최근 5판
-                        </span>
-                        <span className={`text-xs font-black px-3 py-1.5 rounded-full ${
-                            winRate >= 60
-                                ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-md shadow-green-200'
-                                : winRate >= 40
-                                    ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-md shadow-yellow-200'
-                                    : 'bg-gradient-to-r from-red-400 to-rose-500 text-white shadow-md shadow-red-200'
-                        }`}>
-                          {winRate}%
-                        </span>
-                      </div>
-
-                      {placements.length > 0 ? (
-                          <div className="flex gap-2">
-                            {placements.map((p, i) => (
-                                <div
-                                    key={i}
-                                    className={`flex-1 h-14 rounded-xl flex flex-col items-center justify-center font-black text-xs ${getPlacementStyle(p)} transition-transform duration-200 hover:scale-110`}
-                                >
-                                  <div className="text-lg leading-none">{p}</div>
-                                  <div className="text-[10px] opacity-90 mt-0.5">위</div>
-                                </div>
-                            ))}
-                          </div>
-                      ) : (
-                          <div className="text-center text-sm text-slate-500 py-4 font-medium">
-                            전적 정보 없음
-                          </div>
-                      )}
-                    </section>
+                    {/* 티어 정보 섹션 */}
+                    <TierPanel
+                        tier={tier}
+                        rank={rank}
+                        lp={lp ?? 0}
+                        getTierImage={getTierImage}
+                        getTierBadgeStyle={getTierBadgeStyle}
+                    />
                   </article>
               )
             })}
