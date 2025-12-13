@@ -1,6 +1,6 @@
 // app/api/members/[id]/sync/route.ts
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import type {Database} from '@/types/supabase'
 
 // env 가져오기 (서버 전용)
@@ -142,7 +142,7 @@ export async function POST(
   const memberId = id
 
   // 1) 멤버 조회
-  const { data: memberData, error: memberError } = await supabase
+  const { data: memberData, error: memberError } = await supabaseAdmin
   .from('members')
   .select('*')
   .eq('id', memberId)
@@ -157,7 +157,6 @@ export async function POST(
   }
 
   const member = memberData as Database['public']['Tables']['members']['Row']
-  type MemberUpdate = Database['public']['Tables']['members']['Update']
 
   try {
     // ====== rate limit, last_synced 체크 (선택) ======
@@ -215,7 +214,7 @@ export async function POST(
     }
 
     // 5) Supabase 업데이트
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabaseAdmin
     .from('members')
     .update({
       riot_puuid: puuid ?? null,
@@ -232,12 +231,18 @@ export async function POST(
       last_synced_at: new Date().toISOString(),
     })
     .eq('id', memberId)
+    .select('id')
 
     if (updateError) {
       console.error(updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      // ✅ 여기 걸리면 RLS/권한/조건 문제 확정
       return NextResponse.json(
-          { error: 'Failed to update member', details: updateError.message },
-          { status: 500 },
+          { error: 'Update affected 0 rows. (RLS blocked or wrong id?)' },
+          { status: 403 }
       )
     }
 
@@ -275,9 +280,9 @@ export async function POST(
             : null,
       }
 
-      const { error: matchUpsertError } = await supabase
+      const { error: matchUpsertError } = await supabaseAdmin
       .from('tft_matches')
-      .upsert([matchRow] as any, { onConflict: 'match_id' })
+      .upsert([matchRow], { onConflict: 'match_id' })
 
       if (matchUpsertError) {
         console.error('tft_matches upsert error', matchUpsertError)
@@ -301,7 +306,7 @@ export async function POST(
       recentPlacements.push(placement)
 
 // 중복 방지 위해 기존 row 삭제
-      await supabase
+      await supabaseAdmin
       .from('tft_match_participants')
       .delete()
       .eq('match_id', metadata.match_id)
@@ -321,9 +326,9 @@ export async function POST(
         units: myPart.units ?? null,
       }
 
-      const { error: partInsertError } = await supabase
+      const { error: partInsertError } = await supabaseAdmin
       .from('tft_match_participants')
-      .insert([participantRow] as any)
+      .insert([participantRow])
 
       if (partInsertError) {
         console.error('tft_match_participants insert error', partInsertError)
@@ -335,7 +340,7 @@ export async function POST(
     if (recentPlacements.length > 0) {
       const recent5 = recentPlacements.slice(0, 5).join(',') // "W,L,W,W,L" 같은 문자열
 
-      const { error: recentUpdateError } = await supabase
+      const { error: recentUpdateError } = await supabaseAdmin
       .from('members')
       .update({ tft_recent5: recent5 })
       .eq('id', memberId)
