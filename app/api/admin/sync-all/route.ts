@@ -1,95 +1,74 @@
 // app/api/admin/sync-all/route.ts
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { syncOneMember} from '@/lib/sync/syncMember'
+import { doSyncMember } from '@/lib/sync/doSyncMember'
 
-const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '1500') // 멤버 간 기본 딜레이
-const RETRY_429_DELAY_MS = Number(process.env.RIOT_429_DELAY_MS ?? '30000') // 429 뜨면 기다릴 시간 (기본 30초)
-const MAX_RETRY_PER_MEMBER = 3
+const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '10')
+const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
+const STALE_HOURS = Number(process.env.SYNC_STALE_HOURS ?? '1') // 6시간 이상 지난 멤버만
+const INCLUDE_RUNNING = false // running 제외 추천
 
 function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-// 🔁 429 고려해서 /api/members/[id]/sync 호출하는 래퍼
-async function callMemberSyncWithRetry(origin: string, memberId: string) {
-  let lastRes: Response | null = null
-
-  for (let attempt = 1; attempt <= MAX_RETRY_PER_MEMBER; attempt++) {
-    const res = await fetch(`${origin}/api/members/${memberId}/sync`, {
-      method: 'POST',
-    })
-    lastRes = res
-
-    // 429가 아니면 그냥 반환
-    if (res.status !== 429) {
-      return res
-    }
-
-    // 429면: Riot 쪽에서도 보통 Retry-After 헤더 내려줌
-    const retryAfterHeader = res.headers.get('Retry-After')
-    const retryMs = retryAfterHeader
-        ? Number(retryAfterHeader) * 1000
-        : RETRY_429_DELAY_MS
-
-    console.warn(
-        `[sync-all] member=${memberId} 429 발생, attempt=${attempt}/${MAX_RETRY_PER_MEMBER}, ${retryMs}ms 대기`,
-    )
-
-    // 마지막 시도면 더 이상 대기하지 않고 루프 빠져나감
-    if (attempt === MAX_RETRY_PER_MEMBER) break
-
-    await sleep(retryMs)
-  }
-
-  // 모든 재시도 후 마지막 응답 리턴
-  return lastRes as Response
+  return new Promise((r) => setTimeout(r, ms))
 }
 
 export async function POST(req: Request) {
-  const origin = new URL(req.url).origin
+  const body = await req.json().catch(() => ({}))
+  const limit = Number(body.limit ?? DEFAULT_BATCH)
+  const cursorId = body.cursorId ?? null
 
-  // 1) 전체 멤버 조회
-  const { data: members, error } = await supabase
-      .from('members')
-      .select('id, member_name, last_synced_at')
-      .order('member_name', { ascending: true })
+  const staleSince = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString()
 
-  if (error || !members) {
-    console.error('load members error', error)
-    return NextResponse.json(
-        { error: '멤버 목록 조회 실패' },
-        { status: 500 },
-    )
+  // ✅ stale 대상 조회 (+ running 제외)
+  let q = supabaseAdmin
+  .from('members')
+  .select('id, member_name, last_synced_at, sync_status')
+  .or(`last_synced_at.is.null,last_synced_at.lt.${staleSince}`)
+  .neq('sync_status', 'running')
+  .order('id', { ascending: true })
+  .limit(limit)
+
+  if (cursorId) q = q.gt('id', cursorId)
+
+  if (!INCLUDE_RUNNING) {
+    // running인 멤버는 스킵 (중복 실행 방지)
+    q = q.neq('sync_status', 'running')
+  }
+
+  const { data: members, error } = await q
+
+  if (error) {
+    return NextResponse.json({ error: '멤버 조회 실패', detail: String(error) }, { status: 500 })
   }
 
   const results: Array<{
     memberId: string
-    status: number
+    memberName: string | null
     ok: boolean
-    message?: string | null
+    status: number
+    error: string | null
   }> = []
 
-  // 2) 각 멤버 순차 동기화
-  for (const m of members) {
-    const res = await callMemberSyncWithRetry(origin, m.id)
-
-    const body = await res.json().catch(() => ({}))
+  for (const m of members ?? []) {
+    const r = await syncOneMember(m.id, doSyncMember)
 
     results.push({
       memberId: m.id,
-      status: res.status,
-      ok: res.ok,
-      message: body.message ?? body.error ?? null,
+      memberName: m.member_name,
+      ok: r.ok,
+      status: r.status,
+      error: r.error ?? null,
     })
 
-    // 멤버 간 기본 딜레이
-    if (MEMBER_DELAY_MS > 0) {
-      await sleep(MEMBER_DELAY_MS)
-    }
+    if (MEMBER_DELAY_MS > 0) await sleep(MEMBER_DELAY_MS)
   }
 
+  const nextCursorId = members?.length ? members[members.length - 1].id : cursorId
+  const done = !members || members.length < limit
+
   return NextResponse.json({
-    totalMembers: members.length,
+    batch: { limit, cursorId, nextCursorId, done },
     processed: results.length,
     results,
   })
