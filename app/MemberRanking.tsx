@@ -215,15 +215,24 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
   }, [members, queueType])
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-8">
+      <div
+          className="min-h-screen px-4 py-8 relative"
+          style={{
+            backgroundImage: "url(/images/background/background1.png)",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundAttachment: "fixed",
+          }}
+      >
         <div className="max-w-7xl mx-auto">
 
-          <AuthButtons />
+          <AuthButtons/>
           {/* 헤더 */}
           <header className="mb-10">
             <div className="flex items-center gap-6 mb-8">
               {/* 로고 */}
-              <div className="relative group flex justify-center pt-4">
+              <div className="relative group flex justify-center">
                 {/* 뒤 Glow */}
                 <div
                     className="absolute inset-0 w-[380px] h-24 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-3xl blur-3xl opacity-40 group-hover:opacity-60 transition-opacity"
@@ -314,7 +323,8 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                       className="group relative flex flex-col rounded-3xl border-2 border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-6 shadow-xl hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50"
                   >
                     {/* 랭킹 배지 */}
-                    <div className={`absolute -top-4 -left-4 w-14 h-14 bg-gradient-to-br ${rankBadge.bg} rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-4 ring-slate-800 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
+                    <div
+                        className={`absolute -top-4 -left-4 w-14 h-14 bg-gradient-to-br ${rankBadge.bg} rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-4 ring-slate-800 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
                       {rankBadge.image ? (
                           <img
                               src={rankBadge.image}
@@ -330,9 +340,11 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                     <div className="flex gap-4 mb-5">
                       {/* 좌측: 프로필 사진 */}
                       <div className="flex-shrink-0">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-4 border-slate-600 shadow-lg overflow-hidden">
+                        <div
+                            className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-4 border-slate-600 shadow-lg overflow-hidden">
                           <svg className="w-12 h-12 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                  clipRule="evenodd"/>
                           </svg>
                         </div>
                       </div>
