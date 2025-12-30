@@ -2,25 +2,11 @@
 
 import {useEffect, useMemo, useState} from 'react'
 import { supabaseClient } from '@/lib/supabase'
+import type { Member } from '@/types/supabase'
 import AuthButtons from "@/app/components/AuthButtons";
 import TierPanel from '@/app/components/TierPanel'
 import Image from 'next/image'
 
-type Member = {
-  id: string
-  riot_game_name: string
-  riot_tagline: string
-  member_name: string
-  tft_tier: string | null
-  tft_rank: string | null
-  tft_league_points: number | null
-  tft_doubleup_tier: string | null
-  tft_doubleup_rank: string | null
-  tft_doubleup_league_points: number | null
-  tft_recent5: string | null
-  profile_image_path: string | null
-  profile_frame_path: string | null
-}
 
 type QueueType = 'solo' | 'doubleup'
 
