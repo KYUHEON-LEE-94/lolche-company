@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState} from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import AuthButtons from "@/app/components/AuthButtons";
 import TierPanel from '@/app/components/TierPanel'
+import Image from 'next/image'
 
 type Member = {
   id: string
@@ -17,9 +18,17 @@ type Member = {
   tft_doubleup_rank: string | null
   tft_doubleup_league_points: number | null
   tft_recent5: string | null
+  profile_image_path: string | null
+  profile_frame_path: string | null
 }
 
 type QueueType = 'solo' | 'doubleup'
+
+function getProfileImageUrl(path: string | null) {
+  if (!path) return null
+  const { data } = supabaseClient.storage.from('profile-images').getPublicUrl(path)
+  return data.publicUrl
+}
 
 function rankOrder(rank: string | null): number {
   if (!rank) return 999
@@ -142,6 +151,8 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
+
+
 
   useEffect(() => {
     let mounted = true
@@ -377,6 +388,8 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
               const { tier, rank, lp } = getQueueTierAndLp(m, queueType)
               const tierBadgeStyle = getTierBadgeStyle(tier)
               const rankBadge = getRankBadge(idx)
+              const profileUrl = getProfileImageUrl(m.profile_image_path)
+              const framePath = m.profile_frame_path
 
               return (
                   <article
@@ -400,10 +413,40 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5">
                       {/* 프로필 사진 - 모바일에서 중앙 정렬 */}
                       <div className="flex justify-center sm:justify-start flex-shrink-0">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-3 sm:border-4 border-slate-600 shadow-lg overflow-hidden">
-                          <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
+                        {/* ✅ 프레임/원 전체를 감싸는 컨테이너 (overflow 없음) */}
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+                          {/* ✅ 프레임은 가장 바깥에서 크게 */}
+                          {framePath && (
+                              <div className="absolute -inset-9 sm:-inset-10 pointer-events-none z-20">
+                                <Image
+                                    src={framePath}
+                                    alt="profile frame"
+                                    fill
+                                    className="object-contain drop-shadow-[0_0_14px_rgba(0,0,0,0.45)]"
+                                    sizes="140px"
+                                />
+                              </div>
+                          )}
+
+                          {/* ✅ 프로필 원(이미지)만 overflow-hidden */}
+                          <div
+                              className="absolute inset-0 rounded-full overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-3 sm:border-4 border-slate-600 shadow-lg z-10">
+                            {profileUrl ? (
+                                <Image
+                                    src={profileUrl}
+                                    alt={`${m.member_name} profile`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="96px"
+                                />
+                            ) : (
+                                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                        clipRule="evenodd"/>
+                                </svg>
+                            )}
+                          </div>
                         </div>
                       </div>
 
