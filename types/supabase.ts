@@ -29,6 +29,10 @@ export type Member = {
   tft_doubleup_wins: number | null
   tft_doubleup_losses: number | null
 
+  profile_image_path: string | null
+  profile_frame_path: string | null
+  profile_updated_at: string | null
+
   created_at: string
   last_synced_at: string | null
   memo: string | null
