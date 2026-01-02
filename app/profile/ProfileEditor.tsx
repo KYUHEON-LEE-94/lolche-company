@@ -104,9 +104,8 @@ export default function ProfileEditor({ userId, member }: Props) {
             }
 
             const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
-            const objectPath = `${userId}/avatar.${ext}`
+            const objectPath = `${userId}/avatar-${Date.now()}.${ext}`
 
-            // 1) Storage 업로드 (동일 경로 교체)
             const { error: upErr } = await supabase.storage
                 .from('profile-images')
                 .upload(objectPath, file, {
@@ -116,12 +115,17 @@ export default function ProfileEditor({ userId, member }: Props) {
 
             if (upErr) throw upErr
 
-            // 2) DB 업데이트 (members.profile_image_path)
+            // DB에 새 경로 저장
             const res = await fetch('/api/profile/image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imagePath: objectPath }),
             })
+
+            if (imagePath) {
+                await supabase.storage.from('profile-images').remove([imagePath])
+            }
+
             const data = await res.json().catch(() => ({}))
 
             if (!res.ok || !data.ok) {
