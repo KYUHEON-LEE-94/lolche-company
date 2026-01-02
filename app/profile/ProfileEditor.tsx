@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/browser'
+import { useRouter } from 'next/navigation'
 
 type Props = {
     userId: string
@@ -16,6 +17,14 @@ type Props = {
     }
 }
 
+type Frame = {
+    id: string
+    key: string
+    label: string
+    image_path: string
+    sort_order: number
+}
+
 const FRAME_PRESETS = [
     { key: 'gold', label: '펭구', path: '/frames/frame1.png' },
     { key: 'silver', label: '펭구링', path: '/frames/frame2.png' },
@@ -23,6 +32,7 @@ const FRAME_PRESETS = [
 ] as const
 
 export default function ProfileEditor({ userId, member }: Props) {
+    const router = useRouter()
 
     const supabase = useMemo(() => createClient(), [])
 
@@ -35,6 +45,10 @@ export default function ProfileEditor({ userId, member }: Props) {
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
     const [imagePath, setImagePath] = useState<string | null>(member.profile_image_path)
     const [framePath, setFramePath] = useState<string | null>(member.profile_frame_path)
+    const [frameUrl, setFrameUrl] = useState<string | null>(null)
+
+    const [frames, setFrames] = useState<Frame[]>([])
+    const [framesLoading, setFramesLoading] = useState(true)
 
     const [imageUrl, setImageUrl] = useState<string | null>(null)
     const [uploading, setUploading] = useState(false)
@@ -42,8 +56,18 @@ export default function ProfileEditor({ userId, member }: Props) {
 
     const [toast, setToast] = useState<string | null>(null)
 
+    const [isAdmin, setIsAdmin] = useState(false)
+
     const hasImage = !!imagePath
-    const hasFrame = !!framePath
+
+    useEffect(() => {
+        if (!framePath) {
+            setFrameUrl(null)
+            return
+        }
+        const { data } = supabase.storage.from('profile-frames').getPublicUrl(framePath)
+        setFrameUrl(`${data.publicUrl}?t=${Date.now()}`) // 캐시 무효화(선택)
+    }, [framePath])
 
     // public bucket 기준: 경로 → 공개 URL로 변환
     useEffect(() => {
@@ -56,6 +80,46 @@ export default function ProfileEditor({ userId, member }: Props) {
         setImageUrl(`${data.publicUrl}?t=${Date.now()}`)
     }, [imagePath])
 
+    useEffect(() => {
+        let mounted = true
+        ;(async () => {
+            setFramesLoading(true)
+            const { data, error } = await supabase
+                .from('profile_frames')
+                .select('id,key,label,image_path,sort_order')
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+
+            if (!mounted) return
+            if (error) {
+                showToast(error.message)
+                setFrames([])
+            } else {
+                setFrames(data ?? [])
+            }
+            setFramesLoading(false)
+        })()
+
+        return () => {
+            mounted = false
+        }
+    }, [])
+
+    useEffect(() => {
+        ;(async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data } = await supabase
+                .from('admins')
+                .select('user_id')
+                .eq('user_id', user.id)
+                .maybeSingle()
+
+            setIsAdmin(!!data)
+        })()
+    }, [])
+
     function showToast(msg: string) {
         setToast(msg)
         setTimeout(() => setToast(null), 2500)
@@ -67,8 +131,14 @@ export default function ProfileEditor({ userId, member }: Props) {
         })
     }, [userId])
     // -----------------------
-    // 프레임 저장
+    // 프레임 이미지
     // -----------------------
+    function framePublicUrl(imagePath: string) {
+        const { data } = supabase.storage.from('profile-frames').getPublicUrl(imagePath)
+        return data.publicUrl
+    }
+
+
     async function saveFrame(nextFramePath: string | null) {
         setSavingFrame(true)
         try {
@@ -208,16 +278,8 @@ export default function ProfileEditor({ userId, member }: Props) {
                         </div>
 
                         {/* 프레임 오버레이 */}
-                        {hasFrame && (
-                            <div className="absolute -inset-9 sm:-inset-10 pointer-events-none z-20">
-                                <Image
-                                    src={framePath!}
-                                    alt="profile frame"
-                                    fill
-                                    className="object-contain drop-shadow-[0_0_14px_rgba(0,0,0,0.45)]"
-                                    priority
-                                />
-                            </div>
+                        {frameUrl && (
+                            <Image src={frameUrl} alt="profile frame" fill className="object-contain" />
                         )}
                     </div>
 
@@ -286,43 +348,61 @@ export default function ProfileEditor({ userId, member }: Props) {
                         <div className="mt-1 text-xs text-slate-400">프레임은 프리셋 중에서 선택해요.</div>
                     </div>
 
-                    <button
-                        disabled={savingFrame}
-                        onClick={() => saveFrame(null)}
-                        className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-                    >
-                        해제
-                    </button>
+                    {/* ✅ 오른쪽 액션 버튼들 */}
+                    <div className="flex items-center gap-2">
+                        {isAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => router.push('/admin/profile-frames')}
+                                className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
+                            >
+                                프레임 관리
+                            </button>
+                        )}
+
+                        <button
+                            disabled={savingFrame}
+                            onClick={() => saveFrame(null)}
+                            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                        >
+                            해제
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {FRAME_PRESETS.map((f) => {
-                        const selected = framePath === f.path
-                        return (
-                            <button
-                                key={f.key}
-                                disabled={savingFrame}
-                                onClick={() => saveFrame(f.path)}
-                                className={[
-                                    'rounded-2xl p-4 ring-1 transition',
-                                    selected
-                                        ? 'bg-amber-500/10 ring-amber-400/60'
-                                        : 'bg-slate-800/40 ring-slate-700/50 hover:bg-slate-800/60',
-                                    savingFrame ? 'opacity-50' : '',
-                                ].join(' ')}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="relative w-12 h-12">
-                                        <Image src={f.path} alt={f.label} fill className="object-contain" />
+                    {framesLoading ? (
+                        <div className="text-xs text-slate-400">프레임 불러오는 중...</div>
+                    ) : (
+                        frames.map((f) => {
+                            const selected = framePath === f.image_path
+                            const url = framePublicUrl(f.image_path)
+                            return (
+                                <button
+                                    key={f.id}
+                                    disabled={savingFrame}
+                                    onClick={() => saveFrame(f.image_path)} // ✅ members.profile_frame_path에 저장
+                                    className={[
+                                        'rounded-2xl p-4 ring-1 transition',
+                                        selected
+                                            ? 'bg-amber-500/10 ring-amber-400/60'
+                                            : 'bg-slate-800/40 ring-slate-700/50 hover:bg-slate-800/60',
+                                        savingFrame ? 'opacity-50' : '',
+                                    ].join(' ')}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative w-12 h-12">
+                                            <Image src={url} alt={f.label} fill className="object-contain"/>
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="text-slate-100 font-bold">{f.label}</div>
+                                            <div className="text-xs text-slate-400">{selected ? '선택됨' : '선택'}</div>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <div className="text-slate-100 font-bold">{f.label}</div>
-                                        <div className="text-xs text-slate-400">{selected ? '선택됨' : '선택'}</div>
-                                    </div>
-                                </div>
-                            </button>
-                        )
-                    })}
+                                </button>
+                            )
+                        })
+                    )}
                 </div>
 
                 {savingFrame && <div className="mt-4 text-xs text-slate-400">저장 중...</div>}

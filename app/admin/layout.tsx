@@ -6,8 +6,9 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 const navItems = [
-  { href: '/admin/members/register', label: '멤버 등록' },
-  { href: '/admin/members', label: '멤버 리스트 / 동기화' },
+    { href: '/admin/members/register', label: '멤버 등록' },
+    { href: '/admin/members', label: '멤버 리스트 / 동기화' },
+    { href: '/admin/profile-frames', label: '프레임 이미지 관리' }, // ✅ 추가
 ]
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -23,9 +24,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <nav className="flex gap-2">
                 {navItems.map((item) => {
                   // ✅ 정확히 매칭되게: startsWith로 하면 /admin/members 가 register도 잡을 수 있음
-                  const active =
-                      pathname === item.href ||
-                      (item.href !== '/admin/members/register' && pathname.startsWith(item.href + '/'))
+                    const active = (() => {
+                        // 1️⃣ 멤버 등록은 정확히 일치할 때만
+                        if (item.href === '/admin/members/register') {
+                            return pathname === '/admin/members/register'
+                        }
+
+                        // 2️⃣ 멤버 리스트는 register 제외
+                        if (item.href === '/admin/members') {
+                            return pathname === '/admin/members'
+                                || (pathname.startsWith('/admin/members/') &&
+                                    !pathname.startsWith('/admin/members/register'))
+                        }
+
+                        // 3️⃣ 기타 메뉴 (프레임 관리 등)
+                        return pathname.startsWith(item.href)
+                    })()
 
                   return (
                       <Link

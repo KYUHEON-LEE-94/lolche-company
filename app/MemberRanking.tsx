@@ -129,6 +129,11 @@ function getQueueTierAndLp(m: Member, queue: QueueType) {
   }
 }
 
+function getFramePublicUrl(framePath: string) {
+  const { data } = supabaseClient.storage.from('profile-frames').getPublicUrl(framePath)
+  return data.publicUrl
+}
+
 export default function MemberRanking({members = []}: { members?: Member[] }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
   // ✅ auth state
@@ -370,9 +375,7 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
           <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((m, idx) => {
               const placements = parseRecent5(m.tft_recent5)
-              const winRate = recent5WinRate(placements)
               const { tier, rank, lp } = getQueueTierAndLp(m, queueType)
-              const tierBadgeStyle = getTierBadgeStyle(tier)
               const rankBadge = getRankBadge(idx)
               const profileUrl = getProfileImageUrl(m.profile_image_path)
               const framePath = m.profile_frame_path
@@ -405,7 +408,7 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                           {framePath && (
                               <div className="absolute -inset-9 sm:-inset-10 pointer-events-none z-20">
                                 <Image
-                                    src={framePath}
+                                    src={getFramePublicUrl(framePath)}
                                     alt="profile frame"
                                     fill
                                     className="object-contain drop-shadow-[0_0_14px_rgba(0,0,0,0.45)]"
