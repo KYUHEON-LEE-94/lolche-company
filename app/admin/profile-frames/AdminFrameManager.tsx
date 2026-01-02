@@ -123,7 +123,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">key (unique)</span>
+                        <span className="text-xs text-gray-500">고유이름</span>
                         <input
                             value={key}
                             onChange={(e) => setKey(e.target.value)}
@@ -133,7 +133,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     </label>
 
                     <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">label</span>
+                        <span className="text-xs text-gray-500">라벨</span>
                         <input
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
@@ -143,7 +143,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     </label>
 
                     <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">sort_order</span>
+                        <span className="text-xs text-gray-500">정렬 번호</span>
                         <input
                             type="number"
                             value={sortOrder}
