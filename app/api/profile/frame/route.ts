@@ -1,6 +1,7 @@
 // app/api/profile/frame/route.ts
 import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
     const supabase = await createRouteClient()
@@ -21,6 +22,11 @@ export async function POST(req: Request) {
             .eq('user_id', user.id)
 
         if (error) return NextResponse.json({ ok: false, message: error.message }, { status: 500 })
+
+        // ✅ 캐시 무효화
+        revalidatePath('/profile')
+        revalidatePath('/')
+
         return NextResponse.json({ ok: true })
     }
 
@@ -53,6 +59,10 @@ export async function POST(req: Request) {
     if (updateError) {
         return NextResponse.json({ ok: false, message: updateError.message }, { status: 500 })
     }
+
+    // ✅ 캐시 무효화
+    revalidatePath('/profile')
+    revalidatePath('/')
 
     return NextResponse.json({ ok: true })
 }

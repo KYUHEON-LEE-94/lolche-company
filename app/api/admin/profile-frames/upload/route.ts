@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/isAdmin'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
     const { ok, supabase, user } = await requireAdmin()
@@ -16,16 +17,13 @@ export async function POST(req: Request) {
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
-    const objectPath = `${key}.${ext}` // 예: pengu_gold.png
+    const objectPath = `${key}.${ext}`
 
-    // 1) Storage 업로드 (관리자만 가능 - RLS 정책)
     const { error: upErr } = await supabase.storage
         .from('profile-frames')
         .upload(objectPath, file, { upsert: true, contentType: file.type })
-
     if (upErr) return NextResponse.json({ ok: false, message: upErr.message }, { status: 400 })
 
-    // 2) DB row insert
     const { error: insErr } = await supabase.from('profile_frames').insert({
         key,
         label,
@@ -33,8 +31,12 @@ export async function POST(req: Request) {
         sort_order: sortOrder,
         created_by: user.id,
     })
-
     if (insErr) return NextResponse.json({ ok: false, message: insErr.message }, { status: 400 })
+
+    // ✅ 캐시 무효화
+    revalidatePath('/profile')
+    revalidatePath('/admin/profile-frames')
+    revalidatePath('/') // 랭킹 홈
 
     return NextResponse.json({ ok: true, image_path: objectPath })
 }

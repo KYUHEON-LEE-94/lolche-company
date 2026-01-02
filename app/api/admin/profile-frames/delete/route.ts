@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/isAdmin'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
     const { ok, supabase } = await requireAdmin()
@@ -17,6 +18,11 @@ export async function POST(req: Request) {
     // 2) Storage 삭제
     const { error: rmErr } = await supabase.storage.from('profile-frames').remove([image_path])
     if (rmErr) return NextResponse.json({ ok: false, message: rmErr.message }, { status: 400 })
+
+    // ✅ 3) 캐시 무효화 (프레임 목록/프로필/랭킹 반영)
+    revalidatePath('/profile')
+    revalidatePath('/admin/profile-frames')
+    revalidatePath('/') // 랭킹 홈
 
     return NextResponse.json({ ok: true })
 }
