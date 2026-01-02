@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
     const supabase = await createRouteClient()
@@ -31,6 +32,12 @@ export async function POST(req: Request) {
     if (updateError) {
         return NextResponse.json({ ok: false, message: updateError.message }, { status: 500 })
     }
+
+    // ✅ 변경 즉시 반영 (Vercel ISR/캐시 무효화)
+    revalidatePath('/profile')
+    revalidatePath('/') // 랭킹 홈
+    // 필요하면 멤버 상세 페이지가 있다면 그것도 추가:
+    // revalidatePath('/members') or revalidatePath(`/members/${...}`)
 
     return NextResponse.json({ ok: true })
 }
