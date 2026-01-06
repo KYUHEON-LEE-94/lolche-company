@@ -68,6 +68,17 @@ export type TftMatchParticipant = {
   units: Json | null
 }
 
+export type ProfileFrame = {
+  id: string
+  key: string
+  label: string
+  image_path: string
+  is_active: boolean
+  sort_order: number
+  created_by: string | null
+  created_at: string
+}
+
 export type TablesInsert<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Insert']
 
@@ -107,6 +118,14 @@ export interface Database {
           id?: number
         }
         Update: Optional<TftMatchParticipant>
+      }
+      profile_frames: {
+        Row: ProfileFrame
+        Insert: Optional<Omit<ProfileFrame, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<ProfileFrame>
       }
     }
     Views: Record<string, never>
