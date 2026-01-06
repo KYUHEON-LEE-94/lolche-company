@@ -1,7 +1,6 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { supabaseClient } from '@/lib/supabase'
 
 export default function AdminMemberRegisterPage() {
   const [memberName, setMemberName] = useState('')
@@ -18,27 +17,25 @@ export default function AdminMemberRegisterPage() {
     setError(null)
 
     try {
-      // 1) Supabase에 멤버 생성
-      const { data, error: insertError } = await supabaseClient
-      .from('members')
-      .insert([
-        {
+      const memberResponse = await fetch('/api/admin/members/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           member_name: memberName,
           riot_game_name: riotGameName,
           riot_tagline: riotTagline,
-        } as any,
-      ])
-      .select('id')
-      .single()
+        }),
+      })
 
-      if (insertError || !data) {
-        console.error(insertError)
-        setError('멤버 생성에 실패했습니다.')
+      const memberBody = await memberResponse.json().catch(() => ({}))
+      console.log(memberBody);
+      if (!memberResponse.ok || !memberBody.ok) {
+        setError(memberBody.message ?? '멤버 생성에 실패했습니다.')
         setLoading(false)
         return
       }
 
-      const memberId = data.id as string
+      const memberId = memberBody.memberId as string
 
       // 2) Riot API 동기화 호출
       const res = await fetch(`/api/members/${memberId}/sync`, {

@@ -100,7 +100,7 @@ export default function AdminMemberListPage() {
     setError(null)
 
     try {
-      const res = await fetch(`/api/members/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/members/${id}`, { method: 'DELETE' })
       const body = await res.json().catch(() => ({}))
 
       if (!res.ok) {

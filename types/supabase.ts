@@ -68,7 +68,8 @@ export type TftMatchParticipant = {
   units: Json | null
 }
 
-
+export type TablesInsert<T extends keyof Database['public']['Tables']> =
+    Database['public']['Tables'][T]['Insert']
 
 type Optional<T> = {
   [K in keyof T]?: T[K] | undefined
