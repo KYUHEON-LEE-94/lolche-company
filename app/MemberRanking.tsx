@@ -1,14 +1,39 @@
 'use client'
 
-import {useEffect, useMemo, useState} from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
-import AuthButtons from "@/app/components/AuthButtons";
+import AuthButtons from '@/app/components/AuthButtons'
 import TierPanel from '@/app/components/TierPanel'
 import Image from 'next/image'
 
-
 type QueueType = 'solo' | 'doubleup'
+
+// UI 표시용(서버와 동일하게 맞추기)
+const MIN_SYNC_INTERVAL_SEC = Number(process.env.NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC ?? '300')
+
+function formatAgo(ms: number) {
+  const sec = Math.floor(ms / 1000)
+  if (sec < 60) return `${sec}초 전`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}분 전`
+  const hr = Math.floor(min / 60)
+  return `${hr}시간 전`
+}
+
+function formatRemain(sec: number) {
+  if (sec <= 0) return '지금 가능'
+  if (sec < 60) return `${sec}초 후 가능`
+  const m = Math.ceil(sec / 60)
+  return `${m}분 후 가능`
+}
+
+function calcRemainSec(lastSyncedAt: string | null | undefined, cooldownSec: number, nowMs: number) {
+  if (!lastSyncedAt) return 0
+  const last = new Date(lastSyncedAt).getTime()
+  const diff = Math.floor((nowMs - last) / 1000)
+  return Math.max(0, cooldownSec - diff)
+}
 
 function getProfileImageUrl(path: string | null) {
   if (!path) return null
@@ -19,56 +44,79 @@ function getProfileImageUrl(path: string | null) {
 function rankOrder(rank: string | null): number {
   if (!rank) return 999
   switch (rank) {
-    case 'I': return 1
-    case 'II': return 2
-    case 'III': return 3
-    case 'IV': return 4
-    default: return 999
+    case 'I':
+      return 1
+    case 'II':
+      return 2
+    case 'III':
+      return 3
+    case 'IV':
+      return 4
+    default:
+      return 999
   }
 }
 
 function tierOrder(tier: string | null): number {
   switch (tier) {
-    case 'CHALLENGER': return 1
-    case 'GRANDMASTER': return 2
-    case 'MASTER': return 3
-    case 'DIAMOND': return 4
-    case 'EMERALD': return 5
-    case 'PLATINUM': return 6
-    case 'GOLD': return 7
-    case 'SILVER': return 8
-    case 'BRONZE': return 9
-    case 'IRON': return 10
-    default: return 999
+    case 'CHALLENGER':
+      return 1
+    case 'GRANDMASTER':
+      return 2
+    case 'MASTER':
+      return 3
+    case 'DIAMOND':
+      return 4
+    case 'EMERALD':
+      return 5
+    case 'PLATINUM':
+      return 6
+    case 'GOLD':
+      return 7
+    case 'SILVER':
+      return 8
+    case 'BRONZE':
+      return 9
+    case 'IRON':
+      return 10
+    default:
+      return 999
   }
 }
 
 const getTierImage = (tier: string | null) => {
-  if (!tier) return "/images/unranked.png"
+  if (!tier) return '/images/unranked.png'
   const t = tier.toUpperCase()
-  if (t.includes("CHALLENGER")) return "/images/tier/challenger.png"
-  if (t.includes("GRANDMASTER")) return "/images/tier/grandmaster.png"
-  if (t.includes("MASTER")) return "/images/tier/master.png"
-  if (t.includes("DIAMOND")) return "/images/tier/diamond.png"
-  if (t.includes("EMERALD")) return "/images/tier/emerald.png"
-  if (t.includes("PLATINUM")) return "/images/tier/platinum.png"
-  if (t.includes("GOLD")) return "/images/tier/gold.png"
-  if (t.includes("SILVER")) return "/images/tier/silver.png"
-  if (t.includes("BRONZE")) return "/images/tier/bronze.png"
-  if (t.includes("IRON")) return "/images/tier/iron.png"
-  return "/images/unranked.png"
+  if (t.includes('CHALLENGER')) return '/images/tier/challenger.png'
+  if (t.includes('GRANDMASTER')) return '/images/tier/grandmaster.png'
+  if (t.includes('MASTER')) return '/images/tier/master.png'
+  if (t.includes('DIAMOND')) return '/images/tier/diamond.png'
+  if (t.includes('EMERALD')) return '/images/tier/emerald.png'
+  if (t.includes('PLATINUM')) return '/images/tier/platinum.png'
+  if (t.includes('GOLD')) return '/images/tier/gold.png'
+  if (t.includes('SILVER')) return '/images/tier/silver.png'
+  if (t.includes('BRONZE')) return '/images/tier/bronze.png'
+  if (t.includes('IRON')) return '/images/tier/iron.png'
+  return '/images/unranked.png'
 }
 
 const getTierBadgeStyle = (tier: string | null) => {
   if (!tier) return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
   const t = tier.toUpperCase()
-  if (t.includes('CHALLENGER')) return 'bg-gradient-to-br from-yellow-400 via-amber-400 to-amber-600 text-white shadow-lg shadow-yellow-300/50'
-  if (t.includes('GRANDMASTER')) return 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-lg shadow-red-300/50'
-  if (t.includes('MASTER')) return 'bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-300/50'
-  if (t.includes('DIAMOND')) return 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 text-white shadow-lg shadow-blue-300/50'
-  if (t.includes('EMERALD')) return 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-300/50'
-  if (t.includes('PLATINUM')) return 'bg-gradient-to-br from-cyan-400 via-teal-400 to-teal-600 text-white shadow-lg shadow-cyan-300/50'
-  if (t.includes('GOLD')) return 'bg-gradient-to-br from-amber-400 via-yellow-500 to-yellow-600 text-white shadow-lg shadow-amber-300/50'
+  if (t.includes('CHALLENGER'))
+    return 'bg-gradient-to-br from-yellow-400 via-amber-400 to-amber-600 text-white shadow-lg shadow-yellow-300/50'
+  if (t.includes('GRANDMASTER'))
+    return 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-lg shadow-red-300/50'
+  if (t.includes('MASTER'))
+    return 'bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-300/50'
+  if (t.includes('DIAMOND'))
+    return 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 text-white shadow-lg shadow-blue-300/50'
+  if (t.includes('EMERALD'))
+    return 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-300/50'
+  if (t.includes('PLATINUM'))
+    return 'bg-gradient-to-br from-cyan-400 via-teal-400 to-teal-600 text-white shadow-lg shadow-cyan-300/50'
+  if (t.includes('GOLD'))
+    return 'bg-gradient-to-br from-amber-400 via-yellow-500 to-yellow-600 text-white shadow-lg shadow-amber-300/50'
   if (t.includes('SILVER')) return 'bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 text-white shadow-md'
   if (t.includes('BRONZE')) return 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white shadow-md'
   if (t.includes('IRON')) return 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 text-white shadow-md'
@@ -77,25 +125,13 @@ const getTierBadgeStyle = (tier: string | null) => {
 
 const getRankBadge = (idx: number) => {
   if (idx === 0) {
-    return {
-      image: '/images/rank/rank1.png',
-      bg: 'from-yellow-400 to-amber-500',
-      shadow: 'shadow-yellow-300'
-    }
+    return { image: '/images/rank/rank1.png', bg: 'from-yellow-400 to-amber-500', shadow: 'shadow-yellow-300' }
   }
   if (idx === 1) {
-    return {
-      image: '/images/rank/rank2.png',
-      bg: 'from-slate-300 to-slate-400',
-      shadow: 'shadow-slate-300'
-    }
+    return { image: '/images/rank/rank2.png', bg: 'from-slate-300 to-slate-400', shadow: 'shadow-slate-300' }
   }
   if (idx === 2) {
-    return {
-      image: '/images/rank/rank3.png',
-      bg: 'from-orange-400 to-orange-600',
-      shadow: 'shadow-orange-300'
-    }
+    return { image: '/images/rank/rank3.png', bg: 'from-orange-400 to-orange-600', shadow: 'shadow-orange-300' }
   }
   return { emoji: `#${idx + 1}`, bg: 'from-gray-200 to-gray-300', shadow: 'shadow-gray-200' }
 }
@@ -103,9 +139,9 @@ const getRankBadge = (idx: number) => {
 function parseRecent5(raw: string | null | undefined): number[] {
   if (!raw) return []
   return raw
-  .split(',')
-  .map((s) => Number(s.trim()))
-  .filter((n) => Number.isFinite(n) && n >= 1 && n <= 8)
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n >= 1 && n <= 8)
 }
 
 function recent5WinRate(placements: number[]): number {
@@ -116,17 +152,9 @@ function recent5WinRate(placements: number[]): number {
 
 function getQueueTierAndLp(m: Member, queue: QueueType) {
   if (queue === 'solo') {
-    return {
-      tier: m.tft_tier,
-      rank: m.tft_rank,
-      lp: m.tft_league_points ?? 0,
-    }
+    return { tier: m.tft_tier, rank: m.tft_rank, lp: m.tft_league_points ?? 0 }
   }
-  return {
-    tier: m.tft_doubleup_tier,
-    rank: m.tft_doubleup_rank,
-    lp: m.tft_doubleup_league_points ?? 0,
-  }
+  return { tier: m.tft_doubleup_tier, rank: m.tft_doubleup_rank, lp: m.tft_doubleup_league_points ?? 0 }
 }
 
 function getFramePublicUrl(framePath: string) {
@@ -134,24 +162,76 @@ function getFramePublicUrl(framePath: string) {
   return data.publicUrl
 }
 
-export default function MemberRanking({members = []}: { members?: Member[] }) {
+export default function MemberRanking({ members = [] }: { members?: Member[] }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
-  // ✅ auth state
+
+  // auth (지금 코드에서 쓰고 있진 않지만 유지)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
 
+  // sync UI state
+  const [syncingId, setSyncingId] = useState<string | null>(null)
 
+  // ✅ 멤버별 메시지(동기화 완료/쿨다운/에러)
+  const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
 
+  // ✅ 동기화 직후 즉시 "최근 동기화"를 UI에 반영하기 위한 로컬 캐시
+  const [localLastSynced, setLocalLastSynced] = useState<Record<string, string | null>>({})
+
+  // ✅ 카운트다운 갱신용
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // 공개 동기화 호출
+  const handleSyncOne = async (id: string) => {
+    if (syncingId) return // 동시에 여러개 막기(원하면 제거 가능)
+    setSyncingId(id)
+    setSyncMsgById((prev) => ({ ...prev, [id]: '' }))
+
+    try {
+      const res = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+
+      if (!res.ok || body?.ok === false) {
+        if (res.status === 429) {
+          setSyncMsgById((prev) => ({ ...prev, [id]: '요청이 많아서(429) 잠시 후 다시 시도해주세요.' }))
+        } else {
+          setSyncMsgById((prev) => ({ ...prev, [id]: body?.error ?? `동기화 실패 (status: ${res.status})` }))
+        }
+        return
+      }
+
+      if (body?.skipped) {
+        const s = body?.nextAllowedInSec ?? 0
+        setSyncMsgById((prev) => ({ ...prev, [id]: `이미 최신이에요 · ${formatRemain(s)}` }))
+        return
+      }
+
+      // ✅ 성공: 즉시 UI 반영
+      const iso = new Date().toISOString()
+      setLocalLastSynced((prev) => ({ ...prev, [id]: iso }))
+      setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 완료!' }))
+    } catch (e) {
+      console.error(e)
+      setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 중 오류가 발생했습니다.' }))
+    } finally {
+      setSyncingId(null)
+    }
+  }
+
+  // auth session (유지)
   useEffect(() => {
     let mounted = true
 
     ;(async () => {
       const { data } = await supabaseClient.auth.getSession()
       if (!mounted) return
-
       setUserEmail(data.session?.user?.email ?? null)
       setAuthLoading(false)
     })()
@@ -171,11 +251,7 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
     setAuthError(null)
     setAuthLoading(true)
 
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
     if (error) {
       setAuthError(error.message)
     } else {
@@ -220,43 +296,34 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
       <div
           className="min-h-screen px-4 py-8 relative"
           style={{
-            backgroundImage: "url(/images/background/background1.png)",
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundAttachment: "fixed",
+            backgroundImage: 'url(/images/background/background1.png)',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
           }}
       >
         <div className="max-w-7xl mx-auto">
-          {/* 로그인 버튼 - 반응형 개선 */}
           <div className="flex justify-end mb-4">
             <AuthButtons />
           </div>
 
           {/* 헤더 */}
           <header className="mb-10">
-            {/* 로고 - 반응형 개선 */}
+            {/* 로고 */}
             <div className="flex justify-center mb-8">
               <div className="relative group w-full max-w-[380px]">
-                {/* animated glow */}
                 <div className="absolute inset-0 w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-400/50 via-blue-500/50 to-purple-600/50 blur-2xl opacity-60 group-hover:opacity-80 transition-all duration-500 animate-pulse" />
-
-                {/* outer glow ring */}
                 <div className="absolute inset-0 w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-purple-600/20 blur-xl" />
 
-                {/* logo plate */}
                 <div className="relative w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 ring-1 ring-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 group-hover:scale-[1.02] group-hover:ring-white/30 overflow-hidden backdrop-blur-sm">
-
-                  {/* top shine effect */}
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
-                  {/* corner accents - 모바일에서 크기 축소 */}
                   <div className="absolute top-2 sm:top-3 left-2 sm:left-3 w-6 sm:w-8 h-6 sm:h-8 border-l-2 border-t-2 border-cyan-400/60 rounded-tl-xl sm:rounded-tl-2xl" />
                   <div className="absolute top-2 sm:top-3 right-2 sm:right-3 w-6 sm:w-8 h-6 sm:h-8 border-r-2 border-t-2 border-purple-400/60 rounded-tr-xl sm:rounded-tr-2xl" />
                   <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 w-6 sm:w-8 h-6 sm:h-8 border-l-2 border-b-2 border-blue-400/60 rounded-bl-xl sm:rounded-bl-2xl" />
                   <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 w-6 sm:w-8 h-6 sm:h-8 border-r-2 border-b-2 border-violet-400/60 rounded-br-xl sm:rounded-br-2xl" />
 
-                  {/* content */}
                   <div className="relative w-full h-full flex items-center justify-center px-4 sm:px-6">
                     <img
                         src="/images/logo.png"
@@ -266,71 +333,14 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                           e.currentTarget.style.display = 'none'
                         }}
                     />
-
-                    {/* fallback svg with enhanced styling */}
-                    <svg
-                        viewBox="0 0 380 96"
-                        className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        aria-hidden
-                    >
-                      <defs>
-                        <linearGradient id="tft-gradient-enhanced" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#22d3ee" />
-                          <stop offset="30%" stopColor="#60a5fa" />
-                          <stop offset="60%" stopColor="#818cf8" />
-                          <stop offset="100%" stopColor="#a78bfa" />
-                        </linearGradient>
-
-                        <linearGradient id="shine-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
-                          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-                        </linearGradient>
-
-                        <filter id="neon-glow">
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                          <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                          </feMerge>
-                        </filter>
-                      </defs>
-
-                      {/* decorative frame */}
-                      <rect
-                          x="10"
-                          y="10"
-                          width="360"
-                          height="76"
-                          rx="18"
-                          fill="none"
-                          stroke="url(#tft-gradient-enhanced)"
-                          strokeWidth="2"
-                          filter="url(#neon-glow)"
-                      />
-
-                      {/* inner accent line */}
-                      <rect
-                          x="14"
-                          y="14"
-                          width="352"
-                          height="68"
-                          rx="14"
-                          fill="none"
-                          stroke="url(#shine-gradient)"
-                          strokeWidth="1"
-                          opacity="0.5"
-                      />
-                    </svg>
                   </div>
 
-                  {/* bottom gradient overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* 탭 네비게이션 - 반응형 개선 */}
+            {/* 탭 */}
             <div className="flex justify-center">
               <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-xl border border-slate-700/50 p-1 sm:p-1.5 inline-flex gap-1 sm:gap-1.5 w-full sm:w-auto max-w-md sm:max-w-none">
                 <button
@@ -345,11 +355,16 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                 >
                   <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                      />
                     </svg>
                     <span className="whitespace-nowrap">솔로 랭크</span>
                   </div>
                 </button>
+
                 <button
                     type="button"
                     onClick={() => setQueueType('doubleup')}
@@ -371,40 +386,43 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
             </div>
           </header>
 
-          {/* 랭킹 카드 그리드 - 반응형 개선 */}
+          {/* 랭킹 카드 */}
           <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((m, idx) => {
-              const placements = parseRecent5(m.tft_recent5)
               const { tier, rank, lp } = getQueueTierAndLp(m, queueType)
               const rankBadge = getRankBadge(idx)
               const profileUrl = getProfileImageUrl(m.profile_image_path)
               const framePath = m.profile_frame_path
+
+              // ✅ last_synced_at: 로컬 캐시 우선
+              const effectiveLastSyncedAt = (localLastSynced[m.id] ?? (m).last_synced_at) as
+                  | string
+                  | null
+                  | undefined
+
+              const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
+              const btnDisabled = syncingId === m.id || remainSec > 0
 
               return (
                   <article
                       key={m.id}
                       className="group relative flex flex-col rounded-2xl sm:rounded-3xl border-2 border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50"
                   >
-                    {/* 랭킹 배지 - 반응형 크기 조정 */}
-                    <div className={`absolute -top-3 -left-3 sm:-top-4 sm:-left-4 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${rankBadge.bg} rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-2 sm:ring-4 ring-slate-800 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
+                    {/* 랭킹 배지 */}
+                    <div
+                        className={`absolute -top-3 -left-3 sm:-top-4 sm:-left-4 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${rankBadge.bg} rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-2 sm:ring-4 ring-slate-800 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+                    >
                       {rankBadge.image ? (
-                          <img
-                              src={rankBadge.image}
-                              alt={`rank-${idx}`}
-                              className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-                          />
+                          <img src={rankBadge.image} alt={`rank-${idx}`} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
                       ) : (
                           <span className="text-xs sm:text-sm font-bold text-gray-700">{rankBadge.emoji}</span>
                       )}
                     </div>
 
-                    {/* 상단: 프로필 + 정보 - 레이아웃 개선 */}
+                    {/* 상단: 프로필 + 정보 */}
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5">
-                      {/* 프로필 사진 - 모바일에서 중앙 정렬 */}
                       <div className="flex justify-center sm:justify-start flex-shrink-0">
-                        {/* ✅ 프레임/원 전체를 감싸는 컨테이너 (overflow 없음) */}
                         <div className="relative w-20 h-20 sm:w-24 sm:h-24">
-                          {/* ✅ 프레임은 가장 바깥에서 크게 */}
                           {framePath && (
                               <div className="absolute -inset-9 sm:-inset-10 pointer-events-none z-20">
                                 <Image
@@ -417,29 +435,22 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                               </div>
                           )}
 
-                          {/* ✅ 프로필 원(이미지)만 overflow-hidden */}
-                          <div
-                              className="absolute inset-0 rounded-full overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-3 sm:border-4 border-slate-600 shadow-lg z-10">
+                          <div className="absolute inset-0 rounded-full overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-3 sm:border-4 border-slate-600 shadow-lg z-10">
                             {profileUrl ? (
-                                <Image
-                                    src={profileUrl}
-                                    alt={`${m.member_name} profile`}
-                                    fill
-                                    className="object-cover"
-                                    sizes="96px"
-                                />
+                                <Image src={profileUrl} alt={`${m.member_name} profile`} fill className="object-cover" sizes="96px" />
                             ) : (
-                                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="currentColor"
-                                     viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                        clipRule="evenodd"/>
+                                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                      fillRule="evenodd"
+                                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                      clipRule="evenodd"
+                                  />
                                 </svg>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* 우측: 카톡ID + RIOT ID */}
                       <div className="flex-1 flex flex-col justify-center space-y-2">
                         <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
                           <div className="text-xs text-slate-400 mb-0.5">카톡 ID</div>
@@ -448,20 +459,69 @@ export default function MemberRanking({members = []}: { members?: Member[] }) {
                         <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
                           <div className="text-xs text-slate-400 mb-0.5">RIOT ID</div>
                           <div className="font-bold text-white text-sm break-all">
-                            {m.riot_game_name}<span className="text-slate-400">#{m.riot_tagline}</span>
+                            {m.riot_game_name}
+                            <span className="text-slate-400">#{m.riot_tagline}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* 티어 정보 섹션 */}
-                    <TierPanel
-                        tier={tier}
-                        rank={rank}
-                        lp={lp ?? 0}
-                        getTierImage={getTierImage}
-                        getTierBadgeStyle={getTierBadgeStyle}
-                    />
+                    {/* 티어 정보 */}
+                    <TierPanel tier={tier} rank={rank} lp={lp ?? 0} getTierImage={getTierImage} getTierBadgeStyle={getTierBadgeStyle} />
+
+                    {/* ✅ 최근 동기화 + 쿨다운 + 버튼 */}
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div className="text-xs text-slate-300/90">
+                        {effectiveLastSyncedAt ? (
+                            <>
+                              <span className="text-slate-400">최근 동기화:</span>{' '}
+                              <span className="font-semibold text-white">
+                          {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
+                        </span>{' '}
+                              <span className="text-slate-400">({formatRemain(remainSec)})</span>
+                            </>
+                        ) : (
+                            <span className="text-slate-400">최근 동기화: - (지금 가능)</span>
+                        )}
+
+                        {syncMsgById[m.id] ? (
+                            <div className="mt-1 text-[11px] text-amber-300">{syncMsgById[m.id]}</div>
+                        ) : null}
+                      </div>
+
+                      <button
+                          type="button"
+                          onClick={() => handleSyncOne(m.id)}
+                          disabled={btnDisabled}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold
+                               bg-gradient-to-r from-blue-600 to-indigo-600 text-white
+                               shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40
+                               disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          title={remainSec > 0 ? `쿨다운 중 · ${formatRemain(remainSec)}` : '동기화'}
+                      >
+                        {syncingId === m.id ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              동기화 중...
+                            </>
+                        ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                              </svg>
+                              {remainSec > 0 ? '대기' : '동기화'}
+                            </>
+                        )}
+                      </button>
+                    </div>
                   </article>
               )
             })}
