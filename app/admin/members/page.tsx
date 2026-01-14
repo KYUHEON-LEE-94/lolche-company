@@ -118,32 +118,42 @@ export default function AdminMemberListPage() {
     }
   }
 
-  const handleSync = async (id: string) => {
-    setSyncingId(id)
-    setError(null)
+    const handleSync = async (id: string) => {
+        setSyncingId(id)
+        setError(null)
 
-    try {
-      const res = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
-      const body = await res.json().catch(() => ({}))
+        try {
+            const res = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
+            const body = await res.json().catch(() => ({}))
 
-      if (!res.ok) {
-        console.error('sync error', body)
-        if (res.status === 429) {
-          setError('라이엇 API 호출 제한 때문에 동기화가 차단되었습니다. 잠시 후 다시 시도해주세요.')
-        } else {
-          setError(`동기화 실패 (status: ${res.status}) ${body.error ?? ''}`)
+            // ✅ 1) HTTP OK여도 ok:false면 실패로 처리
+            if (!res.ok || body?.ok === false) {
+                console.error('sync error', body)
+
+                if (res.status === 429) {
+                    setError('라이엇 API 호출 제한 때문에 동기화가 차단되었습니다. 잠시 후 다시 시도해주세요.')
+                } else {
+                    setError(body?.error ?? `동기화 실패 (status: ${res.status})`)
+                }
+                return
+            }
+
+            // ✅ 2) 쿨다운/스킵이면 안내
+            if (body?.skipped) {
+                const remain = body?.nextAllowedInSec ?? 0
+                setError(`이미 최신 상태입니다. ${remain}초 후 다시 시도 가능`)
+                return
+            }
+
+            // ✅ 3) 성공이면 목록 갱신
+            await loadMembers()
+        } catch (e) {
+            console.error(e)
+            setError('동기화 중 오류가 발생했습니다.')
+        } finally {
+            setSyncingId(null)
         }
-        return
-      }
-
-      await loadMembers()
-    } catch (e) {
-      console.error(e)
-      setError('동기화 중 오류가 발생했습니다.')
-    } finally {
-      setSyncingId(null)
     }
-  }
 
   const handleSyncAll = async () => {
     setSyncAllLoading(true)

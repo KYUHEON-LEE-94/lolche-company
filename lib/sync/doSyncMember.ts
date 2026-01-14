@@ -143,6 +143,7 @@ export async function doSyncMember(memberId: string) {
   const { data: updatedRows, error: updateError } = await supabaseAdmin
   .from('members')
   .update({
+    last_synced_at: new Date().toISOString(), // ✅ 추가
     riot_puuid: puuid ?? null,
     tft_tier: solo?.tier ?? null,
     tft_rank: solo?.rank ?? null,
