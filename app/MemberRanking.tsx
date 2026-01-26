@@ -101,27 +101,45 @@ const getTierImage = (tier: string | null) => {
 }
 
 const getTierBadgeStyle = (tier: string | null) => {
-  if (!tier) return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
+  if (!tier)
+    return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-base'
+
   const t = tier.toUpperCase()
+
   if (t.includes('CHALLENGER'))
-    return 'bg-gradient-to-br from-yellow-400 via-amber-400 to-amber-600 text-white shadow-lg shadow-yellow-300/50'
+    return 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600 text-white shadow-md shadow-yellow-400/40 text-sm'
+
   if (t.includes('GRANDMASTER'))
-    return 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-lg shadow-red-300/50'
+    return 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-md shadow-rose-400/40 text-sm'
+
   if (t.includes('MASTER'))
-    return 'bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-300/50'
+    return 'bg-gradient-to-br from-purple-500 via-indigo-500 to-indigo-600 text-white shadow-sm shadow-purple-400/40 text-base'
+
   if (t.includes('DIAMOND'))
-    return 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 text-white shadow-lg shadow-blue-300/50'
+    return 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-base'
+
   if (t.includes('EMERALD'))
-    return 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-300/50'
+    return 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white text-base'
+
   if (t.includes('PLATINUM'))
-    return 'bg-gradient-to-br from-cyan-400 via-teal-400 to-teal-600 text-white shadow-lg shadow-cyan-300/50'
+    return 'bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-base'
+
   if (t.includes('GOLD'))
-    return 'bg-gradient-to-br from-amber-400 via-yellow-500 to-yellow-600 text-white shadow-lg shadow-amber-300/50'
-  if (t.includes('SILVER')) return 'bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 text-white shadow-md'
-  if (t.includes('BRONZE')) return 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white shadow-md'
-  if (t.includes('IRON')) return 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 text-white shadow-md'
-  return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
+    return 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white text-base'
+
+  if (t.includes('SILVER'))
+    return 'bg-gradient-to-br from-slate-300 to-slate-400 text-white text-base'
+
+  if (t.includes('BRONZE'))
+    return 'bg-gradient-to-br from-orange-500 to-orange-600 text-white text-base'
+
+  if (t.includes('IRON'))
+    return 'bg-gradient-to-br from-gray-500 to-gray-600 text-white text-base'
+
+  return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-base'
 }
+
+
 
 const getRankBadge = (idx: number) => {
   if (idx === 0) {
