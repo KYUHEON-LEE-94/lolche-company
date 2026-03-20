@@ -79,6 +79,29 @@ export type ProfileFrame = {
   created_at: string
 }
 
+// --- 신규 타입 추가: Season ---
+export type Season = {
+  id: number
+  set_number: number
+  season_name: string
+  is_active: boolean
+  start_date: string | null
+  end_date: string | null
+  created_at: string
+}
+
+// --- 신규 타입 추가: HallOfFame ---
+export type HallOfFame = {
+  id: string
+  season_id: number | null
+  member_id: string | null
+  tier: string | null
+  rank: string | null
+  lp: number | null
+  wins: number | null
+  recorded_at: string | null
+}
+
 export type TablesInsert<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Insert']
 
@@ -126,6 +149,23 @@ export interface Database {
           created_at?: string
         }
         Update: Optional<ProfileFrame>
+      }
+      seasons: {
+        Row: Season
+        Insert: Optional<Omit<Season, 'id' | 'created_at'>> & {
+          id?: number
+          created_at?: string
+        }
+        Update: Optional<Season>
+      }
+      // --- 신규 테이블 추가: hall_of_fame ---
+      hall_of_fame: {
+        Row: HallOfFame
+        Insert: Optional<Omit<HallOfFame, 'id' | 'recorded_at'>> & {
+          id?: string
+          recorded_at?: string
+        }
+        Update: Optional<HallOfFame>
       }
     }
     Views: Record<string, never>
