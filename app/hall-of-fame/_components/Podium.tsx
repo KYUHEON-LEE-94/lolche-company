@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 
 const RANK_CONFIG = {
     1: {
-        frameImg:      '/hall-of-fame/hall-of-fame_1st.png',
+        frameImg:      '/iamges/hall-of-fame/hall-of-fame_1st.png',
         frameW:        200,
         ringGradient:  'from-yellow-300 via-amber-400 to-yellow-600',
         glowColor:     '#f59e0b',
@@ -37,7 +37,7 @@ const RANK_CONFIG = {
         pedestalNumColor: 'text-amber-500/30',
     },
     2: {
-        frameImg:      '/hall-of-fame/hall-of-fame_2nd.png',
+        frameImg:      '/iamges/hall-of-fame/hall-of-fame_2nd.png',
         frameW:        160,
         ringGradient:  'from-slate-300 via-gray-200 to-slate-400',
         glowColor:     '#94a3b8',
@@ -59,7 +59,7 @@ const RANK_CONFIG = {
         pedestalNumColor: 'text-slate-500/30',
     },
     3: {
-        frameImg:      '/hall-of-fame/hall-of-fame_3rd.png',
+        frameImg:      '/iamges/hall-of-fame/hall-of-fame_3rd.png',
         frameW:        160,
         ringGradient:  'from-orange-400 via-amber-600 to-orange-700',
         glowColor:     '#c2410c',
@@ -95,9 +95,9 @@ function PodiumCard({
     const cfg = RANK_CONFIG[rank];
 
     const rankImgMap = {
-        1: '/hall-of-fame/hall-of-fame_1st.png',
-        2: '/hall-of-fame/hall-of-fame_2nd.png',
-        3: '/hall-of-fame/hall-of-fame_3rd.png',
+        1: '/images/hall-of-fame/hall-of-fame_1st.png',
+        2: '/images/hall-of-fame/hall-of-fame_2nd.png',
+        3: '/images/hall-of-fame/hall-of-fame_3rd.png',
     };
 
     const profileImg = data.members?.profile_image_path
