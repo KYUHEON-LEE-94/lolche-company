@@ -36,7 +36,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                       transition={{ delay: 0.5 }}
                       className="text-amber-500 font-bold tracking-[0.4em] mb-4"
                   >
-                    THE LEGENDS OF TFT
+                    롤체 컴퍼니
                   </motion.h2>
                   <motion.h1
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -44,7 +44,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                       transition={{ delay: 0.8, duration: 1 }}
                       className="text-7xl md:text-9xl font-black italic mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
                   >
-                    HALL OF FAME
+                    명예의 전당
                   </motion.h1>
                   <motion.button
                       whileHover={{ scale: 1.1 }}
