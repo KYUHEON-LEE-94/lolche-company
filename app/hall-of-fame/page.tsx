@@ -1,6 +1,5 @@
 import { supabaseService } from '@/lib/supabase/service';
 import HallOfFameClientPage from './_components/HallOfFameClientPage';
-import { Season, HallOfFame, Member } from '@/types/supabase';
 
 export default async function HallOfFamePage({
                                                searchParams,
@@ -14,6 +13,7 @@ export default async function HallOfFamePage({
 
   // 2. 시즌 목록 가져오기
   const { data: seasons } = await supabaseService
+  .schema("public")
   .from('seasons')
   .select('*')
   .order('set_number', { ascending: false });
