@@ -1,258 +1,155 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 핵심 구조:
-//   [컨테이너] (relative, 프레임 크기)
-//     ├─ [프로필 원] (absolute, z-0) ← 프레임 구멍 위치에 맞춰 배치
-//     └─ [프레임 PNG] (absolute inset-0, z-10, pointer-events-none) ← 위에 덮음
-//
-// profileHole: 프레임 PNG 내부 원형 투명 영역 위치 (실측 기준)
-//   - top/left/size: 프레임 이미지 크기 대비 % 값
-//   - 프레임 이미지마다 구멍 위치가 다를 수 있으므로 순위별로 분리
+// 순위별 설정: 프레임 경로, 크기, 프로필 위치(구멍 위치)를 정의합니다.
 // ─────────────────────────────────────────────────────────────────────────────
-
 const RANK_CONFIG = {
     1: {
-        frameImg:      '/iamges/hall-of-fame/hall-of-fame_1st.png',
-        frameW:        200,
-        ringGradient:  'from-yellow-300 via-amber-400 to-yellow-600',
-        glowColor:     '#f59e0b',
-        glowIntensity: 30,
-        order:         'md:order-2',
-        crownEmoji:    '👑',
-        tierColor:     'text-amber-400',
-        lpColor:       'text-amber-300/70',
-        badgeBg:       'bg-amber-500/90 border-amber-400/60',
-        badgeText:     'text-white',
-        nameFontSize:  'text-xl',
-        // 단상
-        pedestalH:     'h-28',
-        pedestalTopLine:   'from-amber-300 via-amber-400 to-amber-300',
-        pedestalBg:    'from-amber-950/60 via-slate-900/80 to-slate-900/90',
-        pedestalBorder:'border-amber-500/20',
-        pedestalGlow:  '#f59e0b22',
-        pedestalNum:   '1',
-        pedestalNumColor: 'text-amber-500/30',
+        frameImg: '/images/hall-of-fame/hall-of-fame_1st.png',
+        frameW: 280, // 1등은 더 크게
+        order: 'md:order-2',
+        isFirst: true,
+        // 프레임 구멍 위치 미세조정 (top, left, width, height %)
+        profilePos: 'top-[17.5%] left-[17.5%] w-[65%] h-[65%]',
+        tierColor: 'text-amber-400',
+        pedestalH: 'h-24',
+        pedestalBg: 'from-amber-900/20 to-slate-900/90',
+        pedestalBorder: 'border-amber-500/30',
     },
     2: {
-        frameImg:      '/iamges/hall-of-fame/hall-of-fame_2nd.png',
-        frameW:        160,
-        ringGradient:  'from-slate-300 via-gray-200 to-slate-400',
-        glowColor:     '#94a3b8',
-        glowIntensity: 18,
-        order:         'md:order-1',
-        crownEmoji:    '',
-        tierColor:     'text-slate-400',
-        lpColor:       'text-slate-500',
-        badgeBg:       'bg-slate-700/90 border-slate-500/60',
-        badgeText:     'text-slate-200',
-        nameFontSize:  'text-lg',
-        // 단상
-        pedestalH:     'h-16',
-        pedestalTopLine:   'from-slate-400 via-slate-300 to-slate-400',
-        pedestalBg:    'from-slate-700/40 via-slate-900/80 to-slate-900/90',
-        pedestalBorder:'border-slate-500/20',
-        pedestalGlow:  '#94a3b822',
-        pedestalNum:   '2',
-        pedestalNumColor: 'text-slate-500/30',
+        frameImg: '/images/hall-of-fame/hall-of-fame_2nd.png',
+        frameW: 240,
+        order: 'md:order-1',
+        isFirst: false,
+        profilePos: 'top-[19%] left-[19%] w-[62%] h-[62%]',
+        tierColor: 'text-slate-300',
+        pedestalH: 'h-16',
+        pedestalBg: 'from-slate-800/20 to-slate-900/90',
+        pedestalBorder: 'border-slate-500/30',
     },
     3: {
-        frameImg:      '/iamges/hall-of-fame/hall-of-fame_3rd.png',
-        frameW:        160,
-        ringGradient:  'from-orange-400 via-amber-600 to-orange-700',
-        glowColor:     '#c2410c',
-        glowIntensity: 18,
-        order:         'md:order-3',
-        crownEmoji:    '',
-        tierColor:     'text-orange-500',
-        lpColor:       'text-orange-600/70',
-        badgeBg:       'bg-orange-900/90 border-orange-600/60',
-        badgeText:     'text-orange-200',
-        nameFontSize:  'text-lg',
-        // 단상
-        pedestalH:     'h-10',
-        pedestalTopLine:   'from-orange-600 via-orange-400 to-orange-600',
-        pedestalBg:    'from-orange-950/40 via-slate-900/80 to-slate-900/90',
-        pedestalBorder:'border-orange-700/20',
-        pedestalGlow:  '#c2410c22',
-        pedestalNum:   '3',
-        pedestalNumColor: 'text-orange-700/30',
+        frameImg: '/images/hall-of-fame/hall-of-fame_3rd.png',
+        frameW: 240,
+        order: 'md:order-3',
+        isFirst: false,
+        profilePos: 'top-[19%] left-[19%] w-[62%] h-[62%]',
+        tierColor: 'text-orange-500',
+        pedestalH: 'h-12',
+        pedestalBg: 'from-orange-900/20 to-slate-900/90',
+        pedestalBorder: 'border-orange-700/30',
     },
 } as const;
 
-// ─── 카드 ─────────────────────────────────────────────────────────────────────
-function PodiumCard({
-                        rank,
-                        data,
-                        visible,
-                    }: {
-    rank: 1 | 2 | 3;
-    data: any;
-    visible: boolean;
-}) {
+// ─── 개별 카드 컴포넌트 ────────────────────────────────────────────────────────
+function PodiumCard({ rank, data, delay }: { rank: 1 | 2 | 3; data: any; delay: number }) {
     const cfg = RANK_CONFIG[rank];
-
-    const rankImgMap = {
-        1: '/images/hall-of-fame/hall-of-fame_1st.png',
-        2: '/images/hall-of-fame/hall-of-fame_2nd.png',
-        3: '/images/hall-of-fame/hall-of-fame_3rd.png',
-    };
 
     const profileImg = data.members?.profile_image_path
         ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${data.members.profile_image_path}`
-        : rankImgMap[rank];
+        : '/images/logo.png';
 
     return (
-        <div
-            className={`
-        flex flex-col items-center
-        ${cfg.order}
-        transition-all duration-700 ease-out
-        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
-      `}
+        <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay, duration: 0.8, ease: "easeOut" }}
+            className={`flex flex-col items-center ${cfg.order} ${cfg.isFirst ? 'z-20 md:-translate-y-8' : 'z-10'}`}
         >
-            {/* 왕관 자리 */}
-            <div className="h-9 flex items-end justify-center mb-1">
-                {cfg.crownEmoji && (
-                    <span
-                        className="text-3xl leading-none select-none"
-                        style={{ animation: 'bounce 2.4s ease-in-out infinite' }}
-                    >
-            {cfg.crownEmoji}
-          </span>
-                )}
-            </div>
-
-            {/* ── 원형 링 + 이미지 ── */}
-            <div className="relative group">
-                <div
-                    className="absolute inset-0 rounded-full pointer-events-none"
-                    style={{
-                        background: `radial-gradient(circle, ${cfg.glowColor}55 0%, transparent 70%)`,
-                        transform: 'scale(1.4)',
-                        filter: 'blur(24px)',
-                    }}
-                />
-                <div
-                    className={`relative rounded-full p-[6px] bg-gradient-to-br ${cfg.ringGradient}`}
-                    style={{
-                        width:  cfg.frameW,
-                        height: cfg.frameW,
-                        boxShadow: `0 0 ${cfg.glowIntensity}px ${cfg.glowColor}88`,
-                    }}
-                >
-                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 relative">
-                        <img
-                            src={profileImg}
-                            alt={data.members?.member_name}
-                            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div
-                            className="absolute inset-0 rounded-full pointer-events-none"
-                            style={{
-                                background:
-                                    'radial-gradient(ellipse at 42% 25%, rgba(255,255,255,0.15) 0%, transparent 55%)',
-                            }}
-                        />
-                    </div>
+            {/* ── 프레임 & 프로필 레이어 ── */}
+            <div
+                className="relative group mb-2"
+                style={{ width: cfg.frameW, height: cfg.frameW }}
+            >
+                {/* 1. 뒤에 깔리는 프로필 이미지 (원형) */}
+                <div className={`absolute ${cfg.profilePos} rounded-full overflow-hidden z-0`}>
+                    <img
+                        src={profileImg}
+                        alt={data.members?.member_name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
                 </div>
+
+                {/* 2. 위에 덮이는 프레임 PNG */}
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                    <Image
+                        src={cfg.frameImg}
+                        alt={`Rank ${rank}`}
+                        fill
+                        className="object-contain"
+                    />
+                </div>
+
+                {/* 3. 광채 효과 (선택사항) */}
+                <div className="absolute inset-0 rounded-full bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 blur-xl" />
             </div>
 
             {/* ── 이름 + 정보 ── */}
-            <div className="flex flex-col items-center gap-2 text-center px-3 mt-4 mb-4">
-                <h3
-                    className={`
-            font-black text-white leading-snug
-            ${cfg.nameFontSize}
-            max-w-[200px] break-keep line-clamp-2
-            drop-shadow-[0_1px_8px_rgba(0,0,0,1)]
-          `}
-                >
+            <div className="flex flex-col items-center gap-1 text-center px-4 mb-6 z-30">
+                <h3 className="text-xl font-black text-white line-clamp-2 break-keep min-h-[3rem] flex items-center justify-center drop-shadow-lg">
                     {data.members?.member_name}
                 </h3>
-                <span
-                    className={`
-            text-[11px] font-bold tracking-widest uppercase
-            px-3 py-0.5 rounded-full border backdrop-blur-sm
-            ${cfg.badgeBg} ${cfg.badgeText}
-          `}
-                >
-          {data.tier} {data.rank}
-        </span>
-                <span className={`text-xs font-semibold ${cfg.lpColor}`}>
-          {data.lp.toLocaleString()} LP
-        </span>
+                <span className={`text-xs font-bold px-3 py-0.5 rounded-full bg-black/60 border border-white/10 ${cfg.tierColor}`}>
+                    {data.tier} {data.rank}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">
+                    {data.lp.toLocaleString()} LP
+                </span>
             </div>
 
-            {/* ── 단상 ── */}
+            {/* ── 단상 (Pedestal) ── */}
             <div
                 className={`
-          relative w-48 ${cfg.pedestalH} overflow-hidden
-          rounded-t-xl border-t border-x ${cfg.pedestalBorder}
-          bg-gradient-to-b ${cfg.pedestalBg}
-        `}
-                style={{ boxShadow: `inset 0 1px 0 ${cfg.pedestalGlow}, inset 0 0 30px ${cfg.pedestalGlow}` }}
+                    relative w-56 ${cfg.pedestalH} 
+                    bg-gradient-to-b ${cfg.pedestalBg}
+                    border-t-2 ${cfg.pedestalBorder} rounded-t-3xl
+                    hidden md:flex items-end justify-center overflow-hidden
+                `}
             >
-                {/* 상단 하이라이트 라인 */}
-                <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${cfg.pedestalTopLine} opacity-60`} />
-                {/* 내부 순위 숫자 워터마크 */}
-                <div className={`absolute inset-0 flex items-center justify-center text-6xl font-black ${cfg.pedestalNumColor} select-none`}>
-                    {cfg.pedestalNum}
-                </div>
-                {/* 좌우 세로 하이라이트 */}
-                <div className="absolute top-0 left-3 w-px h-full bg-gradient-to-b from-white/10 to-transparent" />
-                <div className="absolute top-0 right-3 w-px h-full bg-gradient-to-b from-white/10 to-transparent" />
+                <span className="absolute -bottom-4 text-7xl font-black text-white/5 italic select-none">
+                    {rank}
+                </span>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
-// ─── 메인 ─────────────────────────────────────────────────────────────────────
+// ─── 메인 포디엄 컴포넌트 ──────────────────────────────────────────────────────
 export default function Podium({ top3 }: { top3: any[] }) {
-    const [visible, setVisible] = useState(false);
+    // 인트로 상태 관리 (필요 시 상위 페이지에서 관리하도록 수정 가능)
+    const [showContent, setShowContent] = useState(false);
 
     useEffect(() => {
-        const t = setTimeout(() => setVisible(true), 80);
+        // 인트로 후 0.5초 뒤에 카드가 나타나게 설정
+        const t = setTimeout(() => setShowContent(true), 500);
         return () => clearTimeout(t);
     }, []);
 
-    const layout: Array<{ rank: 1 | 2 | 3; idx: number }> = [
-        { rank: 2, idx: 1 },
-        { rank: 1, idx: 0 },
-        { rank: 3, idx: 2 },
+    const layout = [
+        { rank: 2 as const, idx: 1, delay: 0.4 },
+        { rank: 1 as const, idx: 0, delay: 0.2 },
+        { rank: 3 as const, idx: 2, delay: 0.6 },
     ];
 
     return (
-        <div className="relative flex flex-col items-center pt-12 pb-10 overflow-hidden">
-            {/* 앰비언트 배경 */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-amber-500/5 blur-[100px]" />
-            </div>
+        <div className="relative flex flex-col items-center justify-center min-h-[600px] overflow-visible">
+            {/* 앰비언트 라이트 (바닥 광원) */}
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[120%] h-40 bg-amber-500/5 blur-[100px] pointer-events-none" />
 
-            {/* 헤더 */}
-            <div className="flex items-center gap-3 mb-10 z-10">
-                <div className="h-px w-16 bg-gradient-to-r from-transparent to-amber-500/40" />
-                <span className="text-[10px] font-black tracking-[0.3em] text-amber-500/50 uppercase select-none">
-          Hall of Fame
-        </span>
-                <div className="h-px w-16 bg-gradient-to-l from-transparent to-amber-500/40" />
-            </div>
-
-            {/* 포디엄 카드들 — items-end로 단상 높이 차이 자연 정렬 */}
-            <div className="flex flex-col md:flex-row items-center md:items-end justify-center gap-8 md:gap-0 z-10 w-full px-4">
-                {layout.map(({ rank, idx }) => {
+            {/* 카드 렌더링 영역 */}
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-center gap-6 md:gap-2 w-full px-4 z-10">
+                {showContent && layout.map(({ rank, idx, delay }) => {
                     const data = top3[idx];
-                    if (!data) return <div key={rank} className="hidden md:block" style={{ width: RANK_CONFIG[rank].frameW }} />;
-                    return <PodiumCard key={rank} rank={rank} data={data} visible={visible} />;
+                    if (!data) return <div key={rank} className="hidden md:block" style={{ width: 240 }} />;
+                    return <PodiumCard key={rank} rank={rank} data={data} delay={delay} />;
                 })}
             </div>
 
-            {/* 하단 구분선 */}
-            <div className="mt-10 w-full max-w-lg pointer-events-none">
-                <div className="h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
-            </div>
+            {/* 바닥 수평선 가이드 */}
+            <div className="absolute bottom-20 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
         </div>
     );
 }
