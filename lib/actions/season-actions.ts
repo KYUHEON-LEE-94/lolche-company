@@ -97,3 +97,22 @@ export async function updateSeasonStatusAction(id: number, targetStatus: boolean
         return { ok: false, message: error.message };
     }
 }
+
+export async function deleteSeasonHallOfFameAction(seasonId: number) {
+    try {
+        const { supabaseService } = await import('@/lib/supabase/service');
+
+        // 해당 시즌 ID를 가진 명예의 전당 기록만 삭제
+        const { error } = await supabaseService
+            .from('hall_of_fame')
+            .delete()
+            .eq('season_id', seasonId);
+
+        if (error) throw error;
+
+        return { ok: true };
+    } catch (error: any) {
+        console.error('시즌 기록 삭제 에러:', error);
+        return { ok: false, message: error.message };
+    }
+}
