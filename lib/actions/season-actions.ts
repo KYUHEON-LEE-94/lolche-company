@@ -84,6 +84,7 @@ export async function updateSeasonStatusAction(id: number, targetStatus: boolean
 
         // 2. 해당 시즌 상태 업데이트
         const { error } = await supabaseService
+            .schema("public")
             .from('seasons')
             .update({ is_active: targetStatus })
             .eq('id', id);

@@ -1,6 +1,7 @@
 // app/page.tsx
 import { supabase } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
+import { supabaseService } from '@/lib/supabase/service';
 import MemberRanking from './MemberRanking'
 export const revalidate = 60
 export default async function HomePage() {
@@ -16,9 +17,18 @@ export default async function HomePage() {
 
   const members = (data ?? []) as Member[]
 
+    const { data: activeSeason } = await supabaseService
+        .from('seasons')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
+
   return (
       <main className="mx-auto">
-        <MemberRanking members={members} />
+          <MemberRanking
+              members={members || []}
+              currentSeason={activeSeason} // ✅ 시즌 정보 전달
+          />
       </main>
   )
 }

@@ -9,6 +9,12 @@ import Image from 'next/image'
 
 type QueueType = 'solo' | 'doubleup'
 
+type Season = {
+  id: number;
+  season_name: string;
+  set_number: number;
+  is_active: boolean;
+}
 // UI 표시용(서버와 동일하게 맞추기)
 const MIN_SYNC_INTERVAL_SEC = Number(process.env.NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC ?? '300')
 
@@ -180,7 +186,9 @@ function getFramePublicUrl(framePath: string) {
   return data.publicUrl
 }
 
-export default function MemberRanking({ members = [] }: { members?: Member[] }) {
+export default function MemberRanking({ members = [] ,
+                                        currentSeason
+}: { members?: Member[], currentSeason?: Season | null }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
 
   // auth (지금 코드에서 쓰고 있진 않지만 유지)
@@ -327,7 +335,33 @@ export default function MemberRanking({ members = [] }: { members?: Member[] }) 
           </div>
 
           {/* 헤더 */}
-          <header className="mb-10">
+          <header className="mb-10 text-center">
+
+            {/* ✅ 시즌 정보 표시 (새로 추가되는 부분) */}
+            <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-1000">
+              {currentSeason ? (
+                  <div className="inline-block">
+                    <div className="flex items-center justify-center gap-3 mb-1">
+                      <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-500/50" />
+                      <span className="text-amber-500 font-black tracking-[0.3em] text-[10px] sm:text-xs uppercase">
+                     Now Playing
+                   </span>
+                      <div className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-500/50" />
+                    </div>
+                    <h2 className="text-3xl sm:text-5xl font-black italic tracking-tighter text-black drop-shadow-2xl">
+                      {currentSeason.season_name}
+                      <span className="ml-3 text-amber-500 not-italic text-xl sm:text-2xl opacity-80">
+                    SET {currentSeason.set_number}
+                  </span>
+                    </h2>
+                  </div>
+              ) : (
+                  <span className="text-slate-500 font-bold tracking-widest uppercase text-xs">
+                No Active Season
+              </span>
+              )}
+            </div>
+
             {/* 로고 */}
             <div className="flex justify-center mb-8">
               <div className="relative group w-full max-w-[380px]">
