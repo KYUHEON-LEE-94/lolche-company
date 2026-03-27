@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { archiveSeason } from '@/lib/actions/season-actions'
 
 type MemberRow = {
   id: string
@@ -31,32 +30,6 @@ export default function AdminMemberListPage() {
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [syncAllLoading, setSyncAllLoading] = useState(false)
-
-  const [archiveLoading, setArchiveLoading] = useState(false) // 시즌 마감 로딩 상태
-  const [activeSeason, setActiveSeason] = useState<{id: number, season_name: string} | null>(null)
-
-  // ✅ 1. 활성화된 시즌 정보 가져오기 (최상위로 이동)
-  const loadActiveSeason = useCallback(async () => {
-
-    const { error, data } = await supabaseClient
-        .schema("public")
-        .from('seasons')
-        .select('id, season_name')
-        .eq('is_active', true)
-        .maybeSingle()
-
-  console.log("data", data);
-
-    if (error) {
-      console.error('시즌 로딩 에러:', error);
-      return;
-    }
-    if (data) {
-      setActiveSeason(data as { id: number; season_name: string });
-    } else {
-      setActiveSeason(null);
-    }
-  }, [])
 
 
   // ✅ 함수는 useCallback으로 고정(선택이지만 권장)
@@ -90,41 +63,6 @@ export default function AdminMemberListPage() {
     }
   }, [])
 
-  // ✅ 3. 시즌 마감 핸들러 (최상위로 이동)
-  const handleArchiveSeason = async (type: 'solo' | 'doubleup') => {
-    if (!activeSeason) {
-      alert('현재 활성화된 시즌이 없습니다.')
-      return
-    }
-
-    const modeName = type === 'solo' ? '솔로 랭크' : '더블업 랭크'
-    const ok = window.confirm(
-        `[${activeSeason.season_name}] ${modeName} 순위를 명예의 전당에 등록하시겠습니까?\n이 작업은 실시간 데이터를 복사하므로 신중히 결정해주세요.`
-    )
-    if (!ok) return
-
-    setArchiveLoading(true)
-    setError(null)
-
-    try {
-      // ✅ 서버 액션 호출 시 type('solo' 또는 'doubleup')을 두 번째 인자로 전달
-      const result = await archiveSeason(activeSeason.id, type)
-
-      if (result.ok) {
-        alert(`${modeName} 명예의 전당 등록이 완료되었습니다.`)
-        // 성공 후 멤버 목록이나 시즌 정보를 다시 불러와 최신화
-        await loadMembers()
-        await loadActiveSeason()
-      } else {
-        setError(result.message)
-      }
-    } catch (e) {
-      setError(`${modeName} 마감 중 오류가 발생했습니다.`)
-    } finally {
-      setArchiveLoading(false)
-    }
-  }
-
 
   // ✅ 권한 체크
   useEffect(() => {
@@ -148,8 +86,7 @@ export default function AdminMemberListPage() {
   useEffect(() => {
     if (!ready) return
     loadMembers();
-    loadActiveSeason();
-  }, [ready, loadMembers, loadActiveSeason]);
+  }, [ready, loadMembers]);
 
   if (!ready) {
     return <div className="p-6">권한 확인 중...</div>
@@ -294,26 +231,6 @@ export default function AdminMemberListPage() {
                 </svg>
                 멤버들의 TFT 정보를 관리
               </p>
-            </div>
-
-            {/* 🔥 명예의 전당 등록 버튼 추가 */}
-            <div className="flex gap-2">
-              <button
-                  type="button"
-                  onClick={() => handleArchiveSeason('solo')}
-                  disabled={archiveLoading || loading || !activeSeason}
-                  className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
-              >
-                {archiveLoading ? <span className="animate-spin text-xs">...</span> : '🏆'} 솔로 랭크 마감
-              </button>
-              <button
-                  type="button"
-                  onClick={() => handleArchiveSeason('doubleup')}
-                  disabled={archiveLoading || loading || !activeSeason}
-                  className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20"
-              >
-                {archiveLoading ? <span className="animate-spin text-xs">...</span> : '🏆'} 더블업 마감
-              </button>
             </div>
 
             <button

@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 const navItems = [
     { href: '/admin/members/register', label: '멤버 등록' },
     { href: '/admin/members', label: '멤버 리스트 / 동기화' },
+    { href: '/admin/seasons', label: '시즌 & 명예의 전당' },
     { href: '/admin/profile-frames', label: '프레임 이미지 관리' }, // ✅ 추가
 ]
 
