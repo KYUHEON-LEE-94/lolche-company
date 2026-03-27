@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import {Spinner} from '@/app/components/Spinner'
 
 type MemberRow = {
   id: string
@@ -42,17 +43,6 @@ function TierBadge({ tier, rank, lp }: { tier: string | null; rank: string | nul
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
         {tier} {rank ?? ''} · {lp ?? 0} LP
     </span>
-  )
-}
-
-// ─── 스피너 ──────────────────────────────────────────────────────────────────
-
-function Spinner({ size = 4 }: { size?: number }) {
-  return (
-      <svg className={`animate-spin h-${size} w-${size}`} viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
   )
 }
 
@@ -107,8 +97,9 @@ export default function AdminMemberListPage() {
 
   if (!ready) {
     return (
-        <div className="flex items-center justify-center py-20 gap-3 text-slate-500">
-          <Spinner size={5} /> 권한 확인 중...
+        <div className="flex items-center justify-center py-20 gap-2.5 text-slate-500">
+          <Spinner size={4} /> {/* 5 -> 4로 축소 */}
+          <span className="text-sm font-medium tracking-tight">권한 확인 중...</span>
         </div>
     )
   }
@@ -216,9 +207,9 @@ export default function AdminMemberListPage() {
 
         {/* ── 로딩 ── */}
         {loading && (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
-              <Spinner size={8} />
-              <p className="text-sm font-medium">멤버 목록 로딩 중...</p>
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
+              <Spinner size={6} /> {/* 8 -> 6으로 축소하여 부담스럽지 않게 조정 */}
+              <p className="text-sm font-semibold tracking-wide opacity-80">멤버 목록 로딩 중...</p>
             </div>
         )}
 
