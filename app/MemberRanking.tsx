@@ -4,19 +4,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import AuthButtons from '@/app/components/AuthButtons'
-import TierPanel from '@/app/components/TierPanel'
 import Image from 'next/image'
 
 type QueueType = 'solo' | 'doubleup'
 
 type Season = {
-  id: number;
-  season_name: string;
-  set_number: number;
-  is_active: boolean;
+  id: number
+  season_name: string
+  set_number: number
+  is_active: boolean
 }
-// UI 표시용(서버와 동일하게 맞추기)
+
 const MIN_SYNC_INTERVAL_SEC = Number(process.env.NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC ?? '300')
+
+// ─── 유틸 ────────────────────────────────────────────────────────────────────
 
 function formatAgo(ms: number) {
   const sec = Math.floor(ms / 1000)
@@ -29,15 +30,17 @@ function formatAgo(ms: number) {
 
 function formatRemain(sec: number) {
   if (sec <= 0) return '지금 가능'
-  if (sec < 60) return `${sec}초 후 가능`
-  const m = Math.ceil(sec / 60)
-  return `${m}분 후 가능`
+  if (sec < 60) return `${sec}초 후`
+  return `${Math.ceil(sec / 60)}분 후`
 }
 
-function calcRemainSec(lastSyncedAt: string | null | undefined, cooldownSec: number, nowMs: number) {
+function calcRemainSec(
+    lastSyncedAt: string | null | undefined,
+    cooldownSec: number,
+    nowMs: number,
+) {
   if (!lastSyncedAt) return 0
-  const last = new Date(lastSyncedAt).getTime()
-  const diff = Math.floor((nowMs - last) / 1000)
+  const diff = Math.floor((nowMs - new Date(lastSyncedAt).getTime()) / 1000)
   return Math.max(0, cooldownSec - diff)
 }
 
@@ -47,199 +50,394 @@ function getProfileImageUrl(path: string | null) {
   return data.publicUrl
 }
 
+function getFramePublicUrl(framePath: string) {
+  const { data } = supabaseClient.storage.from('profile-frames').getPublicUrl(framePath)
+  return data.publicUrl
+}
+
+// ─── 티어 헬퍼 ───────────────────────────────────────────────────────────────
+
 function rankOrder(rank: string | null): number {
-  if (!rank) return 999
-  switch (rank) {
-    case 'I':
-      return 1
-    case 'II':
-      return 2
-    case 'III':
-      return 3
-    case 'IV':
-      return 4
-    default:
-      return 999
-  }
+  const map: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 }
+  return rank ? (map[rank] ?? 999) : 999
 }
 
 function tierOrder(tier: string | null): number {
-  switch (tier) {
-    case 'CHALLENGER':
-      return 1
-    case 'GRANDMASTER':
-      return 2
-    case 'MASTER':
-      return 3
-    case 'DIAMOND':
-      return 4
-    case 'EMERALD':
-      return 5
-    case 'PLATINUM':
-      return 6
-    case 'GOLD':
-      return 7
-    case 'SILVER':
-      return 8
-    case 'BRONZE':
-      return 9
-    case 'IRON':
-      return 10
-    default:
-      return 999
+  const map: Record<string, number> = {
+    CHALLENGER: 1, GRANDMASTER: 2, MASTER: 3,
+    DIAMOND: 4, EMERALD: 5, PLATINUM: 6,
+    GOLD: 7, SILVER: 8, BRONZE: 9, IRON: 10,
   }
-}
-
-const getTierImage = (tier: string | null) => {
-  if (!tier) return '/images/unranked.png'
-  const t = tier.toUpperCase()
-  if (t.includes('CHALLENGER')) return '/images/tier/challenger.png'
-  if (t.includes('GRANDMASTER')) return '/images/tier/grandmaster.png'
-  if (t.includes('MASTER')) return '/images/tier/master.png'
-  if (t.includes('DIAMOND')) return '/images/tier/diamond.png'
-  if (t.includes('EMERALD')) return '/images/tier/emerald.png'
-  if (t.includes('PLATINUM')) return '/images/tier/platinum.png'
-  if (t.includes('GOLD')) return '/images/tier/gold.png'
-  if (t.includes('SILVER')) return '/images/tier/silver.png'
-  if (t.includes('BRONZE')) return '/images/tier/bronze.png'
-  if (t.includes('IRON')) return '/images/tier/iron.png'
-  return '/images/unranked.png'
-}
-
-const getTierBadgeStyle = (tier: string | null) => {
-  if (!tier)
-    return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-base'
-
-  const t = tier.toUpperCase()
-
-  if (t.includes('CHALLENGER'))
-    return 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600 text-white shadow-md shadow-yellow-400/40 text-sm'
-
-  if (t.includes('GRANDMASTER'))
-    return 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-md shadow-rose-400/40 text-sm'
-
-  if (t.includes('MASTER'))
-    return 'bg-gradient-to-br from-purple-500 via-indigo-500 to-indigo-600 text-white shadow-sm shadow-purple-400/40 text-base'
-
-  if (t.includes('DIAMOND'))
-    return 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-base'
-
-  if (t.includes('EMERALD'))
-    return 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white text-base'
-
-  if (t.includes('PLATINUM'))
-    return 'bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-base'
-
-  if (t.includes('GOLD'))
-    return 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white text-base'
-
-  if (t.includes('SILVER'))
-    return 'bg-gradient-to-br from-slate-300 to-slate-400 text-white text-base'
-
-  if (t.includes('BRONZE'))
-    return 'bg-gradient-to-br from-orange-500 to-orange-600 text-white text-base'
-
-  if (t.includes('IRON'))
-    return 'bg-gradient-to-br from-gray-500 to-gray-600 text-white text-base'
-
-  return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-base'
-}
-
-
-
-const getRankBadge = (idx: number) => {
-  if (idx === 0) {
-    return { image: '/images/rank/rank1.png', bg: 'from-yellow-400 to-amber-500', shadow: 'shadow-yellow-300' }
-  }
-  if (idx === 1) {
-    return { image: '/images/rank/rank2.png', bg: 'from-slate-300 to-slate-400', shadow: 'shadow-slate-300' }
-  }
-  if (idx === 2) {
-    return { image: '/images/rank/rank3.png', bg: 'from-orange-400 to-orange-600', shadow: 'shadow-orange-300' }
-  }
-  return { emoji: `#${idx + 1}`, bg: 'from-gray-200 to-gray-300', shadow: 'shadow-gray-200' }
-}
-
-function parseRecent5(raw: string | null | undefined): number[] {
-  if (!raw) return []
-  return raw
-      .split(',')
-      .map((s) => Number(s.trim()))
-      .filter((n) => Number.isFinite(n) && n >= 1 && n <= 8)
-}
-
-function recent5WinRate(placements: number[]): number {
-  if (placements.length === 0) return 0
-  const wins = placements.filter((p) => p >= 1 && p <= 4).length
-  return Math.round((wins / placements.length) * 100)
+  return tier ? (map[tier] ?? 999) : 999
 }
 
 function getQueueTierAndLp(m: Member, queue: QueueType) {
   if (queue === 'solo') {
     return { tier: m.tft_tier, rank: m.tft_rank, lp: m.tft_league_points ?? 0 }
   }
-  return { tier: m.tft_doubleup_tier, rank: m.tft_doubleup_rank, lp: m.tft_doubleup_league_points ?? 0 }
+  return {
+    tier: m.tft_doubleup_tier,
+    rank: m.tft_doubleup_rank,
+    lp: m.tft_doubleup_league_points ?? 0,
+  }
 }
 
-function getFramePublicUrl(framePath: string) {
-  const { data } = supabaseClient.storage.from('profile-frames').getPublicUrl(framePath)
-  return data.publicUrl
+// ─── 티어별 스타일 맵 ─────────────────────────────────────────────────────────
+
+const TIER_STYLES: Record<
+    string,
+    { strip: string; text: string; glow: string; badge: string; icon: string }
+> = {
+  CHALLENGER:  { strip: 'from-yellow-400 to-amber-500',  text: 'text-yellow-400',  glow: 'hover:shadow-yellow-500/20  hover:border-yellow-500/25',  badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-500/20',  icon: '👑' },
+  GRANDMASTER: { strip: 'from-red-500 to-rose-600',      text: 'text-red-400',     glow: 'hover:shadow-red-500/20    hover:border-red-500/25',      badge: 'bg-red-500/10   text-red-300   border-red-500/20',      icon: '♦' },
+  MASTER:      { strip: 'from-purple-500 to-violet-600', text: 'text-purple-400',  glow: 'hover:shadow-purple-500/20 hover:border-purple-500/25',  badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20', icon: '◆' },
+  DIAMOND:     { strip: 'from-blue-400 to-blue-600',     text: 'text-blue-400',    glow: 'hover:shadow-blue-500/20   hover:border-blue-500/25',    badge: 'bg-blue-500/10   text-blue-300   border-blue-500/20',    icon: '◇' },
+  EMERALD:     { strip: 'from-emerald-400 to-emerald-600',text:'text-emerald-400', glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/25',badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',icon: '◈' },
+  PLATINUM:    { strip: 'from-cyan-400 to-teal-500',     text: 'text-cyan-400',    glow: 'hover:shadow-cyan-500/20   hover:border-cyan-500/25',    badge: 'bg-cyan-500/10   text-cyan-300   border-cyan-500/20',    icon: '◉' },
+  GOLD:        { strip: 'from-amber-400 to-yellow-500',  text: 'text-amber-400',   glow: 'hover:shadow-amber-500/20  hover:border-amber-500/25',   badge: 'bg-amber-500/10  text-amber-300  border-amber-500/20',   icon: '○' },
+  SILVER:      { strip: 'from-slate-400 to-slate-500',   text: 'text-slate-400',   glow: 'hover:shadow-slate-400/20  hover:border-slate-400/25',   badge: 'bg-slate-400/10  text-slate-300  border-slate-400/20',   icon: '○' },
+  BRONZE:      { strip: 'from-orange-500 to-orange-700', text: 'text-orange-400',  glow: 'hover:shadow-orange-500/20 hover:border-orange-500/25',  badge: 'bg-orange-500/10 text-orange-300 border-orange-500/20', icon: '○' },
+  IRON:        { strip: 'from-gray-500 to-gray-600',     text: 'text-gray-400',    glow: 'hover:shadow-gray-500/20   hover:border-gray-500/25',    badge: 'bg-gray-500/10   text-gray-300   border-gray-500/20',    icon: '◌' },
 }
 
-export default function MemberRanking({ members = [] ,
-                                        currentSeason
-}: { members?: Member[], currentSeason?: Season | null }) {
+const FALLBACK_STYLE = {
+  strip: 'from-slate-600 to-slate-700',
+  text: 'text-slate-400',
+  glow: '',
+  badge: 'bg-slate-700/50 text-slate-400 border-slate-600/30',
+  icon: '?',
+}
+
+function getTierStyle(tier: string | null) {
+  return (tier && TIER_STYLES[tier.toUpperCase()]) ? TIER_STYLES[tier.toUpperCase()] : FALLBACK_STYLE
+}
+
+// ─── 랭킹 배지 ───────────────────────────────────────────────────────────────
+
+function RankBadge({ idx }: { idx: number }) {
+  if (idx === 0)
+    return (
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-yellow-500/40 text-sm">
+          🥇
+        </div>
+    )
+  if (idx === 1)
+    return (
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg shadow-slate-400/30 text-sm">
+          🥈
+        </div>
+    )
+  if (idx === 2)
+    return (
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30 text-sm">
+          🥉
+        </div>
+    )
+  return (
+      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 border border-white/8 text-xs font-bold text-slate-400">
+        #{idx + 1}
+      </div>
+  )
+}
+
+// ─── 동기화 버튼 ─────────────────────────────────────────────────────────────
+
+function SyncButton({
+                      memberId,
+                      remainSec,
+                      isSyncing,
+                      onSync,
+                    }: {
+  memberId: string
+  remainSec: number
+  isSyncing: boolean
+  onSync: () => void
+}) {
+  const disabled = isSyncing || remainSec > 0
+
+  return (
+      <button
+          type="button"
+          onClick={onSync}
+          disabled={disabled}
+          title={remainSec > 0 ? `쿨다운 중 · ${formatRemain(remainSec)}` : '동기화'}
+          className="
+        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+        bg-indigo-500/10 border border-indigo-500/25 text-indigo-400
+        hover:bg-indigo-500/20 hover:text-indigo-300 transition-all duration-200
+        disabled:opacity-40 disabled:cursor-not-allowed
+      "
+      >
+        {isSyncing ? (
+            <>
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              동기화 중
+            </>
+        ) : (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M4 4v5h5M20 20v-5h-5M4.582 9a8 8 0 0115.356 4M19.418 15a8 8 0 01-15.356-4" />
+              </svg>
+              {remainSec > 0 ? formatRemain(remainSec) : '동기화'}
+            </>
+        )}
+      </button>
+  )
+}
+
+// ─── 멤버 카드 ───────────────────────────────────────────────────────────────
+
+function MemberCard({
+                      member,
+                      idx,
+                      queue,
+                      isSyncing,
+                      syncMsg,
+                      effectiveLastSyncedAt,
+                      nowMs,
+                      onSync,
+                    }: {
+  member: Member
+  idx: number
+  queue: QueueType
+  isSyncing: boolean
+  syncMsg: string
+  effectiveLastSyncedAt: string | null | undefined
+  nowMs: number
+  onSync: () => void
+}) {
+  const { tier, rank, lp } = getQueueTierAndLp(member, queue)
+  const style = getTierStyle(tier)
+  const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
+
+  const profileUrl = getProfileImageUrl(member.profile_image_path)
+  const framePath = member.profile_frame_path
+
+  return (
+      <article
+          className={`
+        group relative flex flex-col rounded-2xl
+        bg-[#0d1117] border border-white/[0.06]
+        overflow-hidden
+        transition-all duration-300
+        hover:-translate-y-1 hover:shadow-2xl
+        ${style.glow}
+      `}
+      >
+        {/* 티어 컬러 스트립 */}
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${style.strip}`} />
+
+        {/* 배경 랭크 숫자 */}
+        <span
+            className="
+          pointer-events-none select-none absolute -right-2 top-3
+          text-[72px] font-black leading-none
+          text-white/[0.03] tracking-tight tabular-nums
+        "
+        >
+        {String(idx + 1).padStart(2, '0')}
+      </span>
+
+        <div className="relative p-5 pl-6 flex flex-col gap-4">
+
+          {/* 상단: 랭킹 배지 */}
+          <div className="flex items-start justify-between">
+            <RankBadge idx={idx} />
+            {/* 티어 아이콘 배지 */}
+            {tier && (
+                <span className={`text-[10px] font-black tracking-widest px-2 py-1 rounded-md border ${style.badge}`}>
+              {tier}
+            </span>
+            )}
+          </div>
+
+          {/* 프로필 */}
+          <div className="flex items-center gap-3">
+            {/* 아바타 */}
+            <div className="relative w-[52px] h-[52px] flex-shrink-0">
+              {framePath && (
+                  <div className="absolute -inset-9 z-20 pointer-events-none">
+                    <Image
+                        src={getFramePublicUrl(framePath)}
+                        alt="profile frame"
+                        fill
+                        sizes="140px"
+                        className="object-contain"
+                    />
+                  </div>
+              )}
+              <div className="
+              relative z-10 w-full h-full rounded-xl overflow-hidden
+              bg-gradient-to-br from-slate-700 to-slate-800
+              border border-white/10
+              flex items-center justify-center
+            ">
+                {profileUrl ? (
+                    <Image src={profileUrl} alt={`${member.member_name} 프로필`} fill sizes="52px" className="object-cover" />
+                ) : (
+                    <svg className="w-6 h-6 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                )}
+              </div>
+            </div>
+
+            {/* 이름 정보 */}
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-0.5">카카오 ID</p>
+              <p className="font-bold text-white text-[15px] leading-tight truncate">{member.member_name}</p>
+              <p className="text-[12px] text-slate-500 mt-0.5 truncate">
+                {member.riot_game_name}
+                <span className="text-slate-600">#{member.riot_tagline}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* 구분선 */}
+          <div className="h-px bg-white/[0.05]" />
+
+          {/* 티어 + LP */}
+          <div className="flex items-center gap-3">
+            {/* 티어 아이콘 */}
+            <span className={`text-3xl leading-none ${style.text} drop-shadow-sm`}>
+            {style.icon}
+          </span>
+
+            <div className="flex-1">
+              <p className={`text-xl font-black leading-tight tracking-wide ${style.text}`}>
+                {tier ?? 'UNRANKED'}
+              </p>
+              <p className="text-[11px] font-bold text-slate-500 tracking-widest">
+                {rank ? `${rank} · DIVISION` : 'NO RANK'}
+              </p>
+            </div>
+
+            {/* LP 배지 */}
+            <div className="text-right bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2">
+              <p className="text-lg font-black text-white leading-none tabular-nums">{lp}</p>
+              <p className="text-[10px] font-bold text-slate-500 tracking-widest mt-0.5">LP</p>
+            </div>
+          </div>
+
+          {/* 구분선 */}
+          <div className="h-px bg-white/[0.05]" />
+
+          {/* 동기화 영역 */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] text-slate-600 leading-snug">
+              {effectiveLastSyncedAt ? (
+                  <>
+                    최근{' '}
+                    <span className="text-slate-400 font-semibold">
+                  {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
+                </span>
+                  </>
+              ) : (
+                  <span>동기화 기록 없음</span>
+              )}
+              {syncMsg && (
+                  <span className="block mt-0.5 text-amber-400">{syncMsg}</span>
+              )}
+            </div>
+
+            <SyncButton
+                memberId={member.id}
+                remainSec={remainSec}
+                isSyncing={isSyncing}
+                onSync={onSync}
+            />
+          </div>
+        </div>
+      </article>
+  )
+}
+
+// ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
+
+export default function MemberRanking({
+                                        members = [],
+                                        currentSeason,
+                                      }: {
+  members?: Member[]
+  currentSeason?: Season | null
+}) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
 
-  // auth (지금 코드에서 쓰고 있진 않지만 유지)
+  // auth
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
 
-  // sync UI state
+  // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
-
-  // ✅ 멤버별 메시지(동기화 완료/쿨다운/에러)
   const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
-
-  // ✅ 동기화 직후 즉시 "최근 동기화"를 UI에 반영하기 위한 로컬 캐시
   const [localLastSynced, setLocalLastSynced] = useState<Record<string, string | null>>({})
-
-  // ✅ 카운트다운 갱신용
   const [nowMs, setNowMs] = useState(() => Date.now())
+
   useEffect(() => {
     const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
 
-  // 공개 동기화 호출
+  // auth session
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      const { data } = await supabaseClient.auth.getSession()
+      if (!mounted) return
+      setUserEmail(data.session?.user?.email ?? null)
+      setAuthLoading(false)
+    })()
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null)
+    })
+    return () => {
+      mounted = false
+      sub.subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError(null)
+    setAuthLoading(true)
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
+    if (error) setAuthError(error.message)
+    else { setEmail(''); setPassword('') }
+    setAuthLoading(false)
+  }
+
+  const handleLogout = async () => {
+    setAuthLoading(true)
+    await supabaseClient.auth.signOut()
+    setAuthLoading(false)
+  }
+
+  // 동기화
   const handleSyncOne = async (id: string) => {
-    if (syncingId) return // 동시에 여러개 막기(원하면 제거 가능)
+    if (syncingId) return
     setSyncingId(id)
     setSyncMsgById((prev) => ({ ...prev, [id]: '' }))
-
     try {
       const res = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
       const body = await res.json().catch(() => ({}))
-
       if (!res.ok || body?.ok === false) {
-        if (res.status === 429) {
-          setSyncMsgById((prev) => ({ ...prev, [id]: '요청이 많아서(429) 잠시 후 다시 시도해주세요.' }))
-        } else {
-          setSyncMsgById((prev) => ({ ...prev, [id]: body?.error ?? `동기화 실패 (status: ${res.status})` }))
-        }
+        const msg = res.status === 429
+            ? '요청이 많아서(429) 잠시 후 다시 시도해주세요.'
+            : body?.error ?? `동기화 실패 (status: ${res.status})`
+        setSyncMsgById((prev) => ({ ...prev, [id]: msg }))
         return
       }
-
       if (body?.skipped) {
         const s = body?.nextAllowedInSec ?? 0
-        setSyncMsgById((prev) => ({ ...prev, [id]: `이미 최신이에요 · ${formatRemain(s)}` }))
+        setSyncMsgById((prev) => ({ ...prev, [id]: `이미 최신 · ${formatRemain(s)}` }))
         return
       }
-
-      // ✅ 성공: 즉시 UI 반영
       const iso = new Date().toISOString()
       setLocalLastSynced((prev) => ({ ...prev, [id]: iso }))
       setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 완료!' }))
@@ -251,76 +449,27 @@ export default function MemberRanking({ members = [] ,
     }
   }
 
-  // auth session (유지)
-  useEffect(() => {
-    let mounted = true
-
-    ;(async () => {
-      const { data } = await supabaseClient.auth.getSession()
-      if (!mounted) return
-      setUserEmail(data.session?.user?.email ?? null)
-      setAuthLoading(false)
-    })()
-
-    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null)
-    })
-
-    return () => {
-      mounted = false
-      sub.subscription.unsubscribe()
-    }
-  }, [])
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAuthError(null)
-    setAuthLoading(true)
-
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
-    if (error) {
-      setAuthError(error.message)
-    } else {
-      setEmail('')
-      setPassword('')
-    }
-    setAuthLoading(false)
-  }
-
-  const handleLogout = async () => {
-    setAuthLoading(true)
-    await supabaseClient.auth.signOut()
-    setAuthLoading(false)
-  }
-
+  // 정렬
   const sorted = useMemo(() => {
-    if (!members || members.length === 0) return []
-
-    const candidates = members.filter((m) => {
-      const { tier } = getQueueTierAndLp(m, queueType)
-      return tier !== null
-    })
-
-    const copy = [...candidates]
-    copy.sort((a, b) => {
-      const qa = getQueueTierAndLp(a, queueType)
-      const qb = getQueueTierAndLp(b, queueType)
-
-      const tierDiff = tierOrder(qa.tier) - tierOrder(qb.tier)
-      if (tierDiff !== 0) return tierDiff
-
-      const rankDiff = rankOrder(qa.rank ?? null) - rankOrder(qb.rank ?? null)
-      if (rankDiff !== 0) return rankDiff
-
-      return (qb.lp ?? 0) - (qa.lp ?? 0)
-    })
-
-    return copy
+    if (!members.length) return []
+    return [...members]
+        .filter((m) => getQueueTierAndLp(m, queueType).tier !== null)
+        .sort((a, b) => {
+          const qa = getQueueTierAndLp(a, queueType)
+          const qb = getQueueTierAndLp(b, queueType)
+          const tierDiff = tierOrder(qa.tier) - tierOrder(qb.tier)
+          if (tierDiff !== 0) return tierDiff
+          const rankDiff = rankOrder(qa.rank ?? null) - rankOrder(qb.rank ?? null)
+          if (rankDiff !== 0) return rankDiff
+          return (qb.lp ?? 0) - (qa.lp ?? 0)
+        })
   }, [members, queueType])
+
+  // ─── 렌더 ────────────────────────────────────────────────────────────────
 
   return (
       <div
-          className="min-h-screen px-4 py-8 relative"
+          className="min-h-screen"
           style={{
             backgroundImage: 'url(/images/background/background1.png)',
             backgroundRepeat: 'no-repeat',
@@ -329,254 +478,118 @@ export default function MemberRanking({ members = [] ,
             backgroundAttachment: 'fixed',
           }}
       >
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-end mb-4">
-            <AuthButtons />
-          </div>
+        {/* 다크 오버레이 */}
+        <div className="min-h-screen bg-[#07090f]/85 backdrop-blur-sm px-4 py-8">
+          <div className="max-w-6xl mx-auto">
 
-          {/* 헤더 */}
-          <header className="mb-10 text-center">
-
-            {/* ✅ 시즌 정보 표시 (새로 추가되는 부분) */}
-            <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-1000">
-              {currentSeason ? (
-                  <div className="inline-block">
-                    <div className="flex items-center justify-center gap-3 mb-1">
-                      <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-500/50" />
-                      <span className="text-amber-500 font-black tracking-[0.3em] text-[10px] sm:text-xs uppercase">
-                     Now Playing
-                   </span>
-                      <div className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-500/50" />
-                    </div>
-                    <h2 className="text-3xl sm:text-5xl font-black italic tracking-tighter text-black drop-shadow-2xl">
-                      {currentSeason.season_name}
-                      <span className="ml-3 text-amber-500 not-italic text-xl sm:text-2xl opacity-80">
-                    SET {currentSeason.set_number}
-                  </span>
-                    </h2>
-                  </div>
-              ) : (
-                  <span className="text-slate-500 font-bold tracking-widest uppercase text-xs">
-                No Active Season
-              </span>
-              )}
+            {/* auth 버튼 */}
+            <div className="flex justify-end mb-6">
+              <AuthButtons />
             </div>
 
-            {/* 로고 */}
-            <div className="flex justify-center mb-8">
-              <div className="relative group w-full max-w-[380px]">
-                <div className="absolute inset-0 w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-400/50 via-blue-500/50 to-purple-600/50 blur-2xl opacity-60 group-hover:opacity-80 transition-all duration-500 animate-pulse" />
-                <div className="absolute inset-0 w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-purple-600/20 blur-xl" />
+            {/* ── 헤더 ── */}
+            <header className="text-center mb-12">
 
-                <div className="relative w-full h-20 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 ring-1 ring-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 group-hover:scale-[1.02] group-hover:ring-white/30 overflow-hidden backdrop-blur-sm">
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              {/* 시즌 */}
+              <div className="mb-6">
+                {currentSeason ? (
+                    <>
+                      <div className="inline-flex items-center gap-3 mb-2">
+                        <div className="h-px w-10 bg-gradient-to-r from-transparent to-amber-500/50" />
+                        <span className="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase">
+                      Now Playing
+                    </span>
+                        <div className="h-px w-10 bg-gradient-to-l from-transparent to-amber-500/50" />
+                      </div>
+                      <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                        {currentSeason.season_name}
+                      </h1>
+                      <p className="mt-1 text-sm font-bold text-amber-500 tracking-[0.2em]">
+                        SET {currentSeason.set_number}
+                      </p>
+                    </>
+                ) : (
+                    <span className="text-slate-500 font-bold tracking-widest uppercase text-xs">
+                  No Active Season
+                </span>
+                )}
+              </div>
 
-                  <div className="absolute top-2 sm:top-3 left-2 sm:left-3 w-6 sm:w-8 h-6 sm:h-8 border-l-2 border-t-2 border-cyan-400/60 rounded-tl-xl sm:rounded-tl-2xl" />
-                  <div className="absolute top-2 sm:top-3 right-2 sm:right-3 w-6 sm:w-8 h-6 sm:h-8 border-r-2 border-t-2 border-purple-400/60 rounded-tr-xl sm:rounded-tr-2xl" />
-                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 w-6 sm:w-8 h-6 sm:h-8 border-l-2 border-b-2 border-blue-400/60 rounded-bl-xl sm:rounded-bl-2xl" />
-                  <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 w-6 sm:w-8 h-6 sm:h-8 border-r-2 border-b-2 border-violet-400/60 rounded-br-xl sm:rounded-br-2xl" />
-
-                  <div className="relative w-full h-full flex items-center justify-center px-4 sm:px-6">
+              {/* 로고 */}
+              <div className="flex justify-center mb-8">
+                <div className="relative group w-full max-w-[320px]">
+                  {/* glow */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-600/30 blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
+                  <div className="relative h-[68px] rounded-2xl bg-[#0d1117] border border-white/10 overflow-hidden flex items-center justify-center px-6">
+                    {/* 상단 하이라이트 */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                     <img
                         src="/images/logo.png"
                         alt="롤체 컴퍼니 로고"
-                        className="max-h-[56px] sm:max-h-[72px] w-auto object-contain drop-shadow-[0_0_12px_rgba(96,165,250,0.5)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_rgba(96,165,250,0.7)]"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
+                        className="max-h-[48px] w-auto object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)] group-hover:drop-shadow-[0_0_20px_rgba(99,102,241,0.7)] transition-all duration-300"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                 </div>
               </div>
-            </div>
 
-            {/* 탭 */}
-            <div className="flex justify-center">
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-xl border border-slate-700/50 p-1 sm:p-1.5 inline-flex gap-1 sm:gap-1.5 w-full sm:w-auto max-w-md sm:max-w-none">
-                <button
-                    type="button"
-                    onClick={() => setQueueType('solo')}
-                    className={
-                        'flex-1 sm:flex-none px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 ' +
-                        (queueType === 'solo'
-                            ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black shadow-lg shadow-amber-500/50 scale-105'
-                            : 'text-slate-300 hover:bg-slate-700/50')
-                    }
-                >
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="whitespace-nowrap">솔로 랭크</span>
-                  </div>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => setQueueType('doubleup')}
-                    className={
-                        'flex-1 sm:flex-none px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 ' +
-                        (queueType === 'doubleup'
-                            ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black shadow-lg shadow-amber-500/50 scale-105'
-                            : 'text-slate-300 hover:bg-slate-700/50')
-                    }
-                >
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-2.5">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                    </svg>
-                    <span className="whitespace-nowrap">더블업 랭크</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </header>
-
-          {/* 랭킹 카드 */}
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {sorted.map((m, idx) => {
-              const { tier, rank, lp } = getQueueTierAndLp(m, queueType)
-              const rankBadge = getRankBadge(idx)
-              const profileUrl = getProfileImageUrl(m.profile_image_path)
-              const framePath = m.profile_frame_path
-
-              // ✅ last_synced_at: 로컬 캐시 우선
-              const effectiveLastSyncedAt = (localLastSynced[m.id] ?? (m).last_synced_at) as
-                  | string
-                  | null
-                  | undefined
-
-              const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
-              const btnDisabled = syncingId === m.id || remainSec > 0
-
-              return (
-                  <article
-                      key={m.id}
-                      className="group relative flex flex-col rounded-2xl sm:rounded-3xl border-2 border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/50"
-                  >
-                    {/* 랭킹 배지 */}
-                    <div
-                        className={`absolute -top-3 -left-3 sm:-top-4 sm:-left-4 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${rankBadge.bg} rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl font-black text-white shadow-xl ${rankBadge.shadow} ring-2 sm:ring-4 ring-slate-800 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+              {/* 큐 탭 */}
+              <div className="inline-flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+                {(['solo', 'doubleup'] as const).map((q) => (
+                    <button
+                        key={q}
+                        type="button"
+                        onClick={() => setQueueType(q)}
+                        className={`
+                    flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200
+                    ${queueType === q
+                            ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-[#1a0a00] shadow-lg shadow-amber-500/30'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }
+                  `}
                     >
-                      {rankBadge.image ? (
-                          <img src={rankBadge.image} alt={`rank-${idx}`} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                      {q === 'solo' ? (
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
                       ) : (
-                          <span className="text-xs sm:text-sm font-bold text-gray-700">{rankBadge.emoji}</span>
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                          </svg>
                       )}
-                    </div>
+                      {q === 'solo' ? '솔로 랭크' : '더블업 랭크'}
+                    </button>
+                ))}
+              </div>
+            </header>
 
-                    {/* 상단: 프로필 + 정보 */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5">
-                      <div className="flex justify-center sm:justify-start flex-shrink-0">
-                        <div className="relative w-20 h-20 sm:w-24 sm:h-24">
-                          {framePath && (
-                              <div className="absolute -inset-9 sm:-inset-10 pointer-events-none z-20">
-                                <Image
-                                    src={getFramePublicUrl(framePath)}
-                                    alt="profile frame"
-                                    fill
-                                    className="object-contain drop-shadow-[0_0_14px_rgba(0,0,0,0.45)]"
-                                    sizes="140px"
-                                />
-                              </div>
-                          )}
+            {/* ── 랭킹 그리드 ── */}
+            {sorted.length === 0 ? (
+                <div className="text-center py-20 text-slate-600 font-medium">
+                  랭킹 데이터가 없습니다.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sorted.map((m, idx) => {
+                    const effectiveLastSyncedAt = (localLastSynced[m.id] ?? (m as any).last_synced_at) as
+                        | string | null | undefined
+                    return (
+                        <MemberCard
+                            key={m.id}
+                            member={m}
+                            idx={idx}
+                            queue={queueType}
+                            isSyncing={syncingId === m.id}
+                            syncMsg={syncMsgById[m.id] ?? ''}
+                            effectiveLastSyncedAt={effectiveLastSyncedAt}
+                            nowMs={nowMs}
+                            onSync={() => handleSyncOne(m.id)}
+                        />
+                    )
+                  })}
+                </div>
+            )}
 
-                          <div className="absolute inset-0 rounded-full overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-3 sm:border-4 border-slate-600 shadow-lg z-10">
-                            {profileUrl ? (
-                                <Image src={profileUrl} alt={`${m.member_name} profile`} fill className="object-cover" sizes="96px" />
-                            ) : (
-                                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path
-                                      fillRule="evenodd"
-                                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                      clipRule="evenodd"
-                                  />
-                                </svg>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-center space-y-2">
-                        <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
-                          <div className="text-xs text-slate-400 mb-0.5">카톡 ID</div>
-                          <div className="font-bold text-white text-sm break-all">{m.member_name}</div>
-                        </div>
-                        <div className="bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-600">
-                          <div className="text-xs text-slate-400 mb-0.5">RIOT ID</div>
-                          <div className="font-bold text-white text-sm break-all">
-                            {m.riot_game_name}
-                            <span className="text-slate-400">#{m.riot_tagline}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 티어 정보 */}
-                    <TierPanel tier={tier} rank={rank} lp={lp ?? 0} getTierImage={getTierImage} getTierBadgeStyle={getTierBadgeStyle} />
-
-                    {/* ✅ 최근 동기화 + 쿨다운 + 버튼 */}
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <div className="text-xs text-slate-300/90">
-                        {effectiveLastSyncedAt ? (
-                            <>
-                              <span className="text-slate-400">최근 동기화:</span>{' '}
-                              <span className="font-semibold text-white">
-                          {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
-                        </span>{' '}
-                              <span className="text-slate-400">({formatRemain(remainSec)})</span>
-                            </>
-                        ) : (
-                            <span className="text-slate-400">최근 동기화: - (지금 가능)</span>
-                        )}
-
-                        {syncMsgById[m.id] ? (
-                            <div className="mt-1 text-[11px] text-amber-300">{syncMsgById[m.id]}</div>
-                        ) : null}
-                      </div>
-
-                      <button
-                          type="button"
-                          onClick={() => handleSyncOne(m.id)}
-                          disabled={btnDisabled}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold
-                               bg-gradient-to-r from-blue-600 to-indigo-600 text-white
-                               shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40
-                               disabled:opacity-50 disabled:cursor-not-allowed transition"
-                          title={remainSec > 0 ? `쿨다운 중 · ${formatRemain(remainSec)}` : '동기화'}
-                      >
-                        {syncingId === m.id ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                              </svg>
-                              동기화 중...
-                            </>
-                        ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                />
-                              </svg>
-                              {remainSec > 0 ? '대기' : '동기화'}
-                            </>
-                        )}
-                      </button>
-                    </div>
-                  </article>
-              )
-            })}
           </div>
         </div>
       </div>
