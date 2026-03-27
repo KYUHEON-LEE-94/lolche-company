@@ -4,6 +4,25 @@ import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/browser'
 
+// 동일한 스피너 컴포넌트
+function Spinner({ size = 4 }: { size?: number }) {
+    return (
+        <svg className={`animate-spin h-${size} w-${size}`} viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+    )
+}
+
+// 동일한 입력창 스타일
+const inputCls = `
+  w-full px-4 py-2.5 rounded-xl text-sm font-medium text-white
+  bg-white/[0.04] border border-white/[0.08]
+  placeholder:text-slate-600
+  focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5
+  transition-all duration-200
+`
+
 type FrameRow = {
     id: string
     key: string
@@ -103,109 +122,130 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
     }
 
     return (
-        <div className="grid gap-6">
-            <header className="flex items-end justify-between gap-4">
+        <div className="space-y-8">
+            {/* ── 헤더 ── */}
+            <header className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900">프레임 관리</h1>
-                    <p className="mt-1 text-sm text-gray-600">관리자만 프레임을 추가/삭제할 수 있어요.</p>
+                    <h1 className="text-2xl font-black text-white tracking-tight mb-1">프레임 관리</h1>
+                    <p className="text-sm text-slate-500">프로필을 꾸며줄 전용 프레임을 추가하거나 삭제합니다</p>
                 </div>
             </header>
 
+            {/* ── 알림 (Toast) ── */}
             {toast && (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+                <div className="animate-in fade-in slide-in-from-top-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-400 font-bold">
                     {toast}
                 </div>
             )}
 
-            {/* 업로드 폼 */}
-            <section className="rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
-                <div className="text-gray-900 font-extrabold mb-4">프레임 추가</div>
+            {/* ── 업로드 폼 ── */}
+            <section className="rounded-2xl border p-6 bg-white/[0.02]" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-2 mb-6">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <h2 className="text-xs font-black text-slate-400 tracking-widest uppercase">New Frame</h2>
+                </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">고유이름</span>
+                <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Key (고유이름)</label>
                         <input
                             value={key}
                             onChange={(e) => setKey(e.target.value)}
                             placeholder="pengu_gold"
-                            className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                            className={inputCls}
                         />
-                    </label>
+                    </div>
 
-                    <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">라벨</span>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Label (표시이름)</label>
                         <input
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
                             placeholder="펭구 골드"
-                            className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                            className={inputCls}
                         />
-                    </label>
+                    </div>
 
-                    <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">정렬 번호</span>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Sort Order (정렬)</label>
                         <input
                             type="number"
                             value={sortOrder}
                             onChange={(e) => setSortOrder(Number(e.target.value))}
-                            className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                            className={inputCls}
                         />
-                    </label>
+                    </div>
 
-                    <label className="grid gap-1">
-                        <span className="text-xs text-gray-500">image file</span>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Image File</label>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                            className="rounded-lg bg-white border border-gray-300 px-3 py-2 text-gray-900 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gray-700 hover:file:bg-gray-200"
+                            className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-slate-300 hover:file:bg-white/20`}
                         />
-                    </label>
+                    </div>
                 </div>
 
                 <button
                     disabled={busy}
                     onClick={uploadFrame}
-                    className="mt-5 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold bg-amber-500 text-gray-900 hover:bg-amber-400 disabled:opacity-50"
+                    className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
                 >
-                    {busy ? '처리 중...' : '프레임 업로드'}
+                    {busy ? <Spinner size={4} /> : null}
+                    {busy ? '처리 중' : '프레임 업로드'}
                 </button>
             </section>
 
-            {/* 목록 */}
-            <section className="rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
-                <div className="text-gray-900 font-extrabold mb-4">프레임 목록</div>
+            {/* ── 프레임 목록 ── */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                    <h2 className="text-xs font-black text-slate-400 tracking-widest uppercase">Frame List</h2>
+                    <span className="text-[10px] font-bold text-slate-600 ml-auto">{frames.length} items</span>
+                </div>
 
                 <div className="grid gap-3">
-                    {frames.map((f) => (
+                    {frames.map((f, idx) => (
                         <div
                             key={f.id}
-                            className="flex items-center justify-between gap-4 rounded-xl bg-white border border-gray-200 p-4"
+                            className="flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-white/[0.02]"
+                            style={{
+                                background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                                borderColor: 'rgba(255,255,255,0.05)'
+                            }}
                         >
                             <div className="flex items-center gap-4">
-                                <div className="relative w-14 h-14 rounded-lg bg-gray-50 border border-gray-200">
-                                    <Image src={frameUrl(f.image_path)} alt={f.label} fill className="object-contain p-1" />
+                                {/* 프레임 미리보기 */}
+                                <div className="relative w-14 h-14 rounded-xl bg-slate-900 border border-white/5 flex-shrink-0">
+                                    <Image src={frameUrl(f.image_path)} alt={f.label} fill className="object-contain p-2" />
                                 </div>
-                                <div>
-                                    <div className="text-gray-900 font-bold">{f.label}</div>
-                                    <div className="text-xs text-gray-600">
-                                        key: {f.key} · order: {f.sort_order}
+
+                                <div className="min-w-0">
+                                    <div className="text-white font-bold text-sm truncate">{f.label}</div>
+                                    <div className="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                                        <span className="bg-white/5 px-1.5 py-0.5 rounded text-slate-400">key: {f.key}</span>
+                                        <span>order: {f.sort_order}</span>
                                     </div>
-                                    <div className="text-xs text-gray-400">{f.image_path}</div>
+                                    <div className="text-[10px] text-slate-700 truncate max-w-[150px] sm:max-w-xs mt-1">{f.image_path}</div>
                                 </div>
                             </div>
 
                             <button
                                 disabled={busy}
                                 onClick={() => deleteFrame(f)}
-                                className="px-4 py-2 rounded-lg text-sm font-bold bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50"
+                                className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 disabled:opacity-30 transition-all"
                             >
                                 삭제
                             </button>
                         </div>
                     ))}
 
-                    {frames.length === 0 && <div className="text-sm text-gray-500">등록된 프레임이 없어요.</div>}
+                    {frames.length === 0 && (
+                        <div className="text-center py-12 rounded-2xl border border-dashed border-slate-800">
+                            <p className="text-sm text-slate-600 font-medium italic">등록된 프레임이 없습니다.</p>
+                        </div>
+                    )}
                 </div>
             </section>
         </div>
