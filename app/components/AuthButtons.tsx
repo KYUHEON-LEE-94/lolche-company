@@ -100,7 +100,7 @@ export default function AuthButtons() {
 
         {isAdmin && (
             <button
-                onClick={() => router.push('/admin/members')}
+                onClick={() => router.push('/admin/members/sync')}
                 className="px-4 py-2 rounded-xl text-sm font-bold bg-blue-600/90 text-white hover:bg-blue-600 transition"
                 title="관리자 페이지로 이동"
             >

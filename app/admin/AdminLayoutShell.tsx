@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 const navItems = [
-    { href: '/admin/members/register', label: '멤버 등록', icon: 'UserPlus' },
-    { href: '/admin/members', label: '멤버 관리', icon: 'Users' },
+    { href: '/admin/members/control', label: '멤버 등록', icon: 'UserPlus' },
+    { href: '/admin/members/sync', label: '멤버 관리', icon: 'Users' },
 ]
 
 export default function AdminLayoutShell({ children }: { children: ReactNode }) {
