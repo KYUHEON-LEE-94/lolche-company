@@ -3,14 +3,6 @@
 import { FormEvent, useState, useEffect, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 
-function Spinner() {
-  return (
-      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
-  )
-}
 
 function Field({
                  label, hint, children,
@@ -40,6 +32,8 @@ export default function AdminMemberRegisterPage() {
 
   // 폼 상태 (등록/수정 공용)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null) // 삭제 로딩 상태 추가
+
   const [memberName, setMemberName] = useState('')
   const [riotGameName, setRiotGameName] = useState('')
   const [riotTagline, setRiotTagline] = useState('')
@@ -58,6 +52,23 @@ export default function AdminMemberRegisterPage() {
   }, [])
 
   useEffect(() => { loadMembers() }, [loadMembers])
+
+  // 멤버 삭제 핸들러 (동기화 페이지에서 이사 옴)
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`"${name}" 멤버를 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.`)) return
+
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/admin/members/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('삭제 실패')
+
+      // 만약 수정 중인 멤버를 삭제했다면 폼 리셋
+      if (editingId === id) resetForm()
+
+      await loadMembers()
+    } catch { alert('삭제 중 오류가 발생했습니다.') }
+    finally { setDeletingId(null) }
+  }
 
   // 등록/수정 모드 전환 및 초기화
   const resetForm = () => {
@@ -179,9 +190,12 @@ export default function AdminMemberRegisterPage() {
 
           <div className="grid gap-3">
             {filteredMembers.map((m) => (
-                <div key={m.id} className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all">
+                <div key={m.id}
+                     className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all">
+
+                  {/* 1. 왼쪽: 아바타 및 이름 정보 */}
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-400">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-500 uppercase">
                       {m.member_name[0]}
                     </div>
                     <div>
@@ -191,16 +205,34 @@ export default function AdminMemberRegisterPage() {
                       </div>
                     </div>
                   </div>
-                  <button
-                      onClick={() => handleEditStart(m)}
-                      className="px-4 py-2 rounded-lg text-xs font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    정보 수정
-                  </button>
+
+                  {/* 2. 오른쪽: 버튼 그룹 (묶어서 간격 조절) */}
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <button
+                        onClick={() => handleEditStart(m)}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
+                    >
+                      정보 수정
+                    </button>
+
+                    <button
+                        onClick={() => handleDelete(m.id, m.member_name)}
+                        disabled={deletingId === m.id}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500 hover:text-white transition-all"
+                    >
+                      {deletingId === m.id ? (
+                          <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                          '삭제'
+                      )}
+                    </button>
+                  </div>
+
                 </div>
             ))}
             {filteredMembers.length === 0 && (
-                <div className="text-center py-20 text-slate-600 border-2 border-dashed border-white/5 rounded-3xl">
+                <div
+                    className="text-center py-20 text-slate-600 border-2 border-dashed border-white/5 rounded-3xl">
                   검색 결과가 없습니다.
                 </div>
             )}

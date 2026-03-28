@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 const navItems = [
-    { href: '/admin/members/register', label: '멤버 등록',          icon: 'UserPlus' },
-    { href: '/admin/members',          label: '멤버 리스트',         icon: 'Users' },
+    { href: '/admin/members/control', label: '멤버 관리',          icon: 'UserPlus' },
+    { href: '/admin/members/sync',          label: '멤버 동기화',         icon: 'Users' },
     { href: '/admin/seasons',          label: '시즌 관리',           icon: 'Trophy' },
     { href: '/admin/profile-frames',   label: '프레임 관리',         icon: 'Image' },
 ]
