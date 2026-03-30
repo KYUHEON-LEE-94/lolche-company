@@ -1,46 +1,108 @@
 import { supabaseService } from '@/lib/supabase/service';
 import HallOfFameClientPage from './_components/HallOfFameClientPage';
+import { unstable_noStore as noStore } from 'next/cache';
+
+// ─── 1. 가중치 설정 ──────────────────────────────────────────────────
+const TIER_ORDER: Record<string, number> = {
+    'CHALLENGER': 100,
+    'GRANDMASTER': 90,
+    'MASTER': 80,
+    'DIAMOND': 70,
+    'EMERALD': 60,
+    'PLATINUM': 50,
+    'GOLD': 40,
+    'SILVER': 30,
+    'BRONZE': 20,
+    'IRON': 10,
+};
+
+const RANK_ORDER: Record<string, number> = {
+    'I': 4,
+    'II': 3,
+    'III': 2,
+    'IV': 1,
+};
 
 export default async function HallOfFamePage({
-                                               searchParams,
+                                                 searchParams,
                                              }: {
-  searchParams: Promise<{ season?: string; queue?: 'solo' | 'doubleup' }>;
+    searchParams: Promise<{ season?: string; queue?: 'solo' | 'doubleup' }>;
 }) {
-  // 1. 비동기 파라미터 추출
-  const params = await searchParams;
-  const seasonParam = params.season;
-  const currentQueue = params.queue || 'solo';
+    noStore(); // 실시간 데이터 반영을 위해 캐시 방지
 
-  // 2. 시즌 목록 가져오기
-  const { data: seasons } = await supabaseService
-  .schema("public")
-  .from('seasons')
-  .select('*')
-  .order('set_number', { ascending: false });
+    const params = await searchParams;
+    const seasonParam = params.season;
+    const currentQueue = params.queue || 'solo';
 
-  if (!seasons || seasons.length === 0) return <div className="text-white p-10">시즌 정보가 없습니다.</div>;
+    // 2. 시즌 목록 가져오기
+    const { data: seasons } = await supabaseService
+        .schema("public")
+        .from('seasons')
+        .select('*')
+        .order('set_number', { ascending: false });
 
-  // 3. 현재 시즌 확정
-  const currentSeasonId = seasonParam ? parseInt(seasonParam) : seasons[0].id;
-  const currentSeason = seasons.find((s) => s.id === currentSeasonId) || seasons[0];
+    if (!seasons || seasons.length === 0) return <div className="text-white p-10">시즌 정보가 없습니다.</div>;
 
-  // 4. 해당 시즌 + 큐 타입 데이터 가져오기
-  const { data: allRankers } = await supabaseService
-  .from('hall_of_fame')
-  .select(`*, members(member_name, profile_image_path)`)
-  .eq('season_id', currentSeasonId)
-  .eq('queue_type', currentQueue)
-  .order('lp', { ascending: false });
+    const currentSeasonId = seasonParam ? parseInt(seasonParam) : seasons[0].id;
+    const currentSeason = seasons.find((s) => s.id === currentSeasonId) || seasons[0];
 
-  const top3 = allRankers?.slice(0, 3) || [];
+    // 3. 해당 시즌 데이터 가져오기
+    const { data: rawRankers } = await supabaseService
+        .schema("public")
+        .from('hall_of_fame')
+        .select(`*, members(member_name, profile_image_path)`)
+        .eq('season_id', currentSeasonId)
+        .eq('queue_type', currentQueue);
 
-  // ✅ UI 제어는 클라이언트 컴포넌트로 넘깁니다.
-  return (
-      <HallOfFameClientPage
-          seasons={seasons}
-          currentSeason={currentSeason}
-          currentQueue={currentQueue}
-          top3={top3}
-      />
-  );
+    // 4. 🔥 공동 순위 계산 로직 적용
+    // A. 먼저 티어 > 랭크 > LP 순으로 정렬합니다.
+    const sorted = (rawRankers || []).sort((a: any, b: any) => {
+        const tierA = TIER_ORDER[a.tier?.toUpperCase()] || 0;
+        const tierB = TIER_ORDER[b.tier?.toUpperCase()] || 0;
+        if (tierB !== tierA) return tierB - tierA;
+
+        const rankA = RANK_ORDER[a.rank] || 0;
+        const rankB = RANK_ORDER[b.rank] || 0;
+        if (rankB !== rankA) return rankB - rankA;
+
+        return (b.lp || 0) - (a.lp || 0);
+    });
+
+    // B. 공동 순위(display_rank) 부여 (1-2-2-4 방식)
+    let currentRank = 1;
+
+    const allRankers = sorted.map((item, index) => {
+        if (index > 0) {
+            const prev = sorted[index - 1];
+
+            // 이전 유저와 티어, 랭크, LP가 모두 같은지 확인
+            const isSameScore =
+                prev.tier === item.tier &&
+                prev.rank === item.rank &&
+                prev.lp === item.lp;
+
+            // 점수가 다를 때만 현재 순위를 (index + 1)로 갱신
+            if (!isSameScore) {
+                currentRank = index + 1;
+            }
+        }
+
+        return {
+            ...item,
+            display_rank: currentRank // ✅ 클라이언트에서 사용할 실제 순위
+        };
+    });
+
+    // 상위 3개 요소 추출 (공동 순위여도 포디움에는 상위 3개 데이터가 들어감)
+    const top3 = allRankers.slice(0, 3);
+
+    return (
+        <HallOfFameClientPage
+            seasons={seasons}
+            currentSeason={currentSeason}
+            currentQueue={currentQueue}
+            top3={top3}
+            allRankers={allRankers} // 전체 리스트 전달
+        />
+    );
 }
