@@ -1,34 +1,32 @@
-// app/page.tsx
 import { supabase } from '@/lib/supabase'
+import { supabaseService } from '@/lib/supabase/service'
 import type { Member } from '@/types/supabase'
-import { supabaseService } from '@/lib/supabase/service';
 import MemberRanking from './MemberRanking'
+
 export const revalidate = 60
+
 export default async function HomePage() {
-  const { data, error } = await supabase
-  .from('members')
-  .select('*')
-  .or('tft_tier.not.is.null,tft_doubleup_tier.not.is.null') // ✅ 둘 중 하나만 있어도 포함
-  .order('member_name', { ascending: true }) // 정렬 기준은 자유롭게
+  const [{ data, error }, { data: activeSeason }] = await Promise.all([
+    supabase
+      .from('members')
+      .select('*')
+      .or('tft_tier.not.is.null,tft_doubleup_tier.not.is.null')
+      .order('member_name', { ascending: true }),
+    supabaseService
+      .from('seasons')
+      .select('*')
+      .eq('is_active', true)
+      .maybeSingle(),
+  ])
 
-  if (error) {
-    console.error('Supabase error:', error)
-  }
-
-  const members = (data ?? []) as Member[]
-
-    const { data: activeSeason } = await supabaseService
-        .from('seasons')
-        .select('*')
-        .eq('is_active', true)
-        .maybeSingle();
+  if (error) console.error('Supabase error:', error)
 
   return (
-      <main className="mx-auto">
-          <MemberRanking
-              members={members || []}
-              currentSeason={activeSeason} // ✅ 시즌 정보 전달
-          />
-      </main>
+    <main className="mx-auto">
+      <MemberRanking
+        members={(data ?? []) as Member[]}
+        currentSeason={activeSeason}
+      />
+    </main>
   )
 }

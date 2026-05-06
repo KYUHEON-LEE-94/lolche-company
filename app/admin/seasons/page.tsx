@@ -15,8 +15,15 @@ const inputCls = `
   transition-all duration-200
 `
 
+type Season = {
+    id: number
+    season_name: string
+    set_number: number
+    is_active: boolean
+}
+
 export default function AdminSeasonManagementPage() {
-    const [seasons,        setSeasons]        = useState<any[]>([])
+    const [seasons,        setSeasons]        = useState<Season[]>([])
     const [loading,        setLoading]        = useState(true)
     const [processingId,   setProcessingId]   = useState<number | null>(null)
     const [archiveLoading, setArchiveLoading] = useState(false)
@@ -208,7 +215,7 @@ export default function AdminSeasonManagementPage() {
                         </tr>
                         </thead>
                         <tbody>
-                        {seasons.map((s, idx) => (
+                        {seasons.map((s) => (
                             <tr key={s.id} /* ... 기존 스타일 ... */ >
                                 <td className="px-5 py-4">
                                     <p className="font-bold text-white text-sm">{s.season_name}</p>

@@ -155,8 +155,8 @@ export default function ProfileEditor({ userId, member }: Props) {
 
             setFramePath(nextFramePath)
             showToast('프레임이 저장됐어요 ✅')
-        } catch (e: any) {
-            showToast(e?.message ?? '프레임 저장 중 오류가 발생했어요.')
+        } catch (e) {
+            showToast(e instanceof Error ? e.message : '프레임 저장 중 오류가 발생했어요.')
         } finally {
             setSavingFrame(false)
         }
@@ -204,8 +204,8 @@ export default function ProfileEditor({ userId, member }: Props) {
 
             setImagePath(objectPath)
             showToast('프로필 이미지가 저장됐어요 ✅')
-        } catch (e: any) {
-            showToast(e?.message ?? '이미지 업로드 중 오류가 발생했어요.')
+        } catch (e) {
+            showToast(e instanceof Error ? e.message : '이미지 업로드 중 오류가 발생했어요.')
         } finally {
             setUploading(false)
         }
@@ -235,8 +235,8 @@ export default function ProfileEditor({ userId, member }: Props) {
 
             setImagePath(null)
             showToast('프로필 이미지가 제거됐어요 ✅')
-        } catch (e: any) {
-            showToast(e?.message ?? '이미지 제거 중 오류가 발생했어요.')
+        } catch (e) {
+            showToast(e instanceof Error ? e.message : '이미지 제거 중 오류가 발생했어요.')
         } finally {
             setUploading(false)
         }

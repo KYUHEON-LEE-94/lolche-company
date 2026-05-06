@@ -42,13 +42,7 @@ function NavIcon({ name }: { name: string }) {
 export default function AdminLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname()
 
-    const isActive = (href: string) => {
-        if (href === '/admin/members/register') return pathname === '/admin/members/register'
-        if (href === '/admin/members')
-            return pathname === '/admin/members' ||
-                (pathname.startsWith('/admin/members/') && !pathname.startsWith('/admin/members/register'))
-        return pathname.startsWith(href)
-    }
+    const isActive = (href: string) => pathname.startsWith(href)
 
     return (
         <div

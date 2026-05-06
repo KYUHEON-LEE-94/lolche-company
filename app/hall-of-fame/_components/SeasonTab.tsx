@@ -1,7 +1,8 @@
-// src/app/hall-of-fame/_components/SeasonTab.tsx
 import Link from 'next/link';
 
-export default function SeasonTab({ seasons, currentId }: { seasons: any[], currentId: number }) {
+type SeasonTabItem = { id: number; season_name: string }
+
+export default function SeasonTab({ seasons, currentId }: { seasons: SeasonTabItem[]; currentId: number }) {
     return (
         <nav className="flex flex-wrap justify-center gap-2 mb-12">
             {seasons.map((s) => (

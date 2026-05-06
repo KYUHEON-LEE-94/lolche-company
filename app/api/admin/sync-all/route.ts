@@ -109,7 +109,15 @@ async function runSyncAll(params: {
 
   console.log('[sync-all] fetched members', { count: members?.length ?? 0 })
 
-  const results: any[] = []
+  type SyncResultItem = {
+    memberId: string
+    memberName: string
+    ok: boolean
+    status: number | string
+    error: string | null
+    durationMs: number
+  }
+  const results: SyncResultItem[] = []
 
   for (const m of members ?? []) {
     const t0 = Date.now()
@@ -158,14 +166,15 @@ async function runSyncAll(params: {
         error: r.error ?? null,
         durationMs: Date.now() - t0,
       })
-    } catch (e: any) {
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : 'member sync exception'
       console.error('[sync-all] member exception', { memberId: m.id, e })
 
       await writeSyncLog({
         type: params.trigger === 'cron' ? 'cron' : 'manual',
         memberId: m.id,
         status: 'error',
-        message: e?.message ?? 'member sync exception',
+        message: errMsg,
         durationMs: Date.now() - t0,
       })
 
@@ -174,7 +183,7 @@ async function runSyncAll(params: {
         memberName: m.member_name,
         ok: false,
         status: 'error',
-        error: e?.message ?? 'member sync exception',
+        error: errMsg,
         durationMs: Date.now() - t0,
       })
     }

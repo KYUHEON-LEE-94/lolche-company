@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
+export type HallOfFameRanker = {
+    id: string
+    tier: string | null
+    rank: string | null
+    lp: number | null
+    display_rank: number
+    members: { member_name: string; profile_image_path: string | null } | null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 순위별 설정: 이제 'rank'는 display_rank를 의미합니다.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +48,7 @@ const RANK_CONFIG = {
 
 // ─── 개별 카드 컴포넌트 ────────────────────────────────────────────────────────
 // position: 1(중앙), 2(왼쪽), 3(오른쪽) 배치를 결정
-function PodiumCard({ data, delay, position }: { data: any; delay: number; position: number }) {
+function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: number; position: number }) {
     // ✅ 서버에서 넘겨준 display_rank를 기준으로 설정을 가져옵니다. (최대 3위까지만 프레임 적용)
     const displayRank = data.display_rank;
     const configRank = Math.min(displayRank, 3) as 1 | 2 | 3;
@@ -87,7 +96,7 @@ function PodiumCard({ data, delay, position }: { data: any; delay: number; posit
                     {data.tier} {data.rank}
                 </span>
                 <span className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">
-                    {data.lp.toLocaleString()} LP
+                    {(data.lp ?? 0).toLocaleString()} LP
                 </span>
             </div>
 
@@ -102,7 +111,7 @@ function PodiumCard({ data, delay, position }: { data: any; delay: number; posit
 }
 
 // ─── 메인 포디엄 컴포넌트 ──────────────────────────────────────────────────────
-export default function Podium({ top3 }: { top3: any[] }) {
+export default function Podium({ top3 }: { top3: HallOfFameRanker[] }) {
     const [showContent, setShowContent] = useState(false);
 
     useEffect(() => {

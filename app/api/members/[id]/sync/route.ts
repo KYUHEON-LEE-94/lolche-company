@@ -68,18 +68,18 @@ export async function POST(
       nextAllowedInSec: MIN_SYNC_INTERVAL_SEC,
       result,
     })
-  } catch (e: any) {
-    // ✅ (4) 실패 로그: 응답 직전에
+  } catch (e) {
+    const errMsg = e instanceof Error ? e.message : 'sync failed'
     await writeSyncLog({
       type: 'manual',
       memberId,
       status: 'error',
-      message: e?.message ?? 'sync failed',
+      message: errMsg,
       durationMs: Date.now() - t0,
     })
 
     return NextResponse.json(
-        { ok: false, error: e?.message ?? 'sync failed' },
+        { ok: false, error: errMsg },
         { status: 500 }
     )
   }

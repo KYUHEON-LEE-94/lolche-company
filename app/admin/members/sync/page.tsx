@@ -128,8 +128,11 @@ export default function AdminMemberListPage() {
       if (!res.ok || body?.ok === false) throw new Error(body?.error)
       showMsg('success', '동기화 완료!')
       await loadMembers()
-    } catch (e: any) { showMsg('error', e.message || '동기화 실패') }
-    finally { setSyncingId(null) }
+    } catch (e) {
+      showMsg('error', e instanceof Error ? e.message : '동기화 실패')
+    } finally {
+      setSyncingId(null)
+    }
   }
 
   const handleSyncAll = async () => {

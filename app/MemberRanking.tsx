@@ -143,12 +143,10 @@ function RankBadge({ idx }: { idx: number }) {
 // ─── 동기화 버튼 ─────────────────────────────────────────────────────────────
 
 function SyncButton({
-                      memberId,
                       remainSec,
                       isSyncing,
                       onSync,
                     }: {
-  memberId: string
   remainSec: number
   isSyncing: boolean
   onSync: () => void
@@ -344,7 +342,6 @@ function MemberCard({
             </div>
 
             <SyncButton
-                memberId={member.id}
                 remainSec={remainSec}
                 isSyncing={isSyncing}
                 onSync={onSync}
@@ -366,13 +363,6 @@ export default function MemberRanking({
 }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
 
-  // auth
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [authError, setAuthError] = useState<string | null>(null)
-
   // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
@@ -383,40 +373,6 @@ export default function MemberRanking({
     const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
-
-  // auth session
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      const { data } = await supabaseClient.auth.getSession()
-      if (!mounted) return
-      setUserEmail(data.session?.user?.email ?? null)
-      setAuthLoading(false)
-    })()
-    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null)
-    })
-    return () => {
-      mounted = false
-      sub.subscription.unsubscribe()
-    }
-  }, [])
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAuthError(null)
-    setAuthLoading(true)
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
-    if (error) setAuthError(error.message)
-    else { setEmail(''); setPassword('') }
-    setAuthLoading(false)
-  }
-
-  const handleLogout = async () => {
-    setAuthLoading(true)
-    await supabaseClient.auth.signOut()
-    setAuthLoading(false)
-  }
 
   // 동기화
   const handleSyncOne = async (id: string) => {
@@ -571,8 +527,7 @@ export default function MemberRanking({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sorted.map((m, idx) => {
-                    const effectiveLastSyncedAt = (localLastSynced[m.id] ?? (m as any).last_synced_at) as
-                        | string | null | undefined
+                    const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
                     return (
                         <MemberCard
                             key={m.id}

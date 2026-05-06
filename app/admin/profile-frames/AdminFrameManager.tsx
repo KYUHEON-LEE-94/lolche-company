@@ -92,8 +92,8 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             setSortOrder(0)
 
             await reloadFrames()
-        } catch (e: any) {
-            show(e?.message ?? '업로드 중 오류')
+        } catch (e) {
+            show(e instanceof Error ? e.message : '업로드 중 오류')
         } finally {
             setBusy(false)
         }
@@ -114,8 +114,8 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
 
             show('삭제 완료 ✅')
             await reloadFrames()
-        } catch (e: any) {
-            show(e?.message ?? '삭제 중 오류')
+        } catch (e) {
+            show(e instanceof Error ? e.message : '삭제 중 오류')
         } finally {
             setBusy(false)
         }
