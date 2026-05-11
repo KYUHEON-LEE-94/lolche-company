@@ -126,8 +126,13 @@ export default function AdminMemberListPage() {
       const res  = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
       const body = await res.json()
       if (!res.ok || body?.ok === false) throw new Error(body?.error)
-      showMsg('success', '동기화 완료!')
-      await loadMembers()
+      if (body?.skipped) {
+        const remain = body.nextAllowedInSec ? `${body.nextAllowedInSec}초 후 가능` : '잠시 후 다시 시도하세요'
+        showMsg('error', `이미 최신 상태입니다. (${remain})`)
+      } else {
+        showMsg('success', '동기화 완료!')
+        await loadMembers()
+      }
     } catch (e: any) { showMsg('error', e.message || '동기화 실패') }
     finally { setSyncingId(null) }
   }

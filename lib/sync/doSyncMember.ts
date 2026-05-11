@@ -117,18 +117,6 @@ export async function doSyncMember(memberId: string) {
 
   const member = memberData as Database['public']['Tables']['members']['Row']
 
-  // 최근 동기화 제한(10분)
-  if (member.last_synced_at) {
-    const last = new Date(member.last_synced_at).getTime()
-    const now = Date.now()
-    const diffMs = now - last
-    const diffMinutes = diffMs / 1000 / 60
-    if (diffMinutes < 10) {
-      const remainSec = Math.ceil((10 * 60 * 1000 - diffMs) / 1000)
-      throw new SyncError(`최근에 이미 동기화되었습니다. (${diffMinutes.toFixed(2)}m)`, 429, remainSec)
-    }
-  }
-
   // PUUID
   let puuid = member.riot_puuid
   if (!puuid) {

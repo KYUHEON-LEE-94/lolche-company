@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
+import { requireAdmin } from '@/app/lib/isAdmin'
 
 const MIN_SYNC_INTERVAL_SEC = Number(process.env.MIN_SYNC_INTERVAL_SEC ?? '300')
 
@@ -9,7 +10,10 @@ export async function POST(
     _req: Request,
     ctx: { params: Promise<{ id: string }> }
 ) {
-  const t0 = Date.now() // ✅ (1) 시작 시간
+  const { ok } = await requireAdmin()
+  if (!ok) return NextResponse.json({ ok: false, error: '관리자만 가능합니다.' }, { status: 403 })
+
+  const t0 = Date.now()
 
   const { id: memberId } = await ctx.params
 

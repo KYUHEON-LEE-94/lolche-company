@@ -4,6 +4,9 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { syncOneMember } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
+import { requireAdmin } from '@/app/lib/isAdmin'
+
+export const maxDuration = 300
 
 const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '20')
 const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
@@ -117,15 +120,7 @@ async function runSyncAll(params: {
     try {
       const r = await syncOneMember(m.id, doSyncMember)
 
-      let status: 'success' | 'skipped' | 'error'
-
-      if (!r.ok) {
-        status = 'error'
-      } else if (r.error) {
-        status = 'skipped'
-      } else {
-        status = 'success'
-      }
+      const status: 'success' | 'error' = r.ok ? 'success' : 'error'
 
       // ✅ 멤버별 DB 로그
       await writeSyncLog({
@@ -203,6 +198,9 @@ async function runSyncAll(params: {
  * ✅ POST: 관리자 수동 실행
  */
 export async function POST(req: Request) {
+  const { ok } = await requireAdmin()
+  if (!ok) return NextResponse.json({ error: '관리자만 가능합니다.' }, { status: 403 })
+
   const body = await req.json().catch(() => ({}))
   const parsedLimit = Number.isFinite(Number(body.limit)) ? Number(body.limit) : undefined
   return runSyncAll({
