@@ -6,8 +6,7 @@ import { SyncError } from '@/lib/sync/syncMember'
 // env
 const RIOT_API_KEY = process.env.RIOT_API_KEY
 const ACCOUNT_BASE_URL = process.env.RIOT_ACCOUNT_BASE_URL
-const TFT_SUMMONER_BASE_URL = process.env.RIOT_TFT_SUMMONER_BASE_URL
-const TFT_LEAGUE_BASE_URL = process.env.RIOT_TFT_LEAGUE_BASE_URL
+const TFT_LEAGUE_BY_PUUID_URL = process.env.RIOT_TFT_LEAGUE_BY_PUUID_URL
 const TFT_MATCH_BASE_URL = process.env.RIOT_TFT_MATCH_BASE_URL
 
 const RIOT_MATCH_DETAIL_DELAY_MS = Number(process.env.RIOT_MATCH_DETAIL_DELAY_MS ?? '1200')
@@ -16,7 +15,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_SUMMONER_BASE_URL || !TFT_LEAGUE_BASE_URL || !TFT_MATCH_BASE_URL) {
+if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BY_PUUID_URL || !TFT_MATCH_BASE_URL) {
   throw new Error('Riot API env variables are not set')
 }
 
@@ -81,15 +80,8 @@ type RiotMatchResponse = {
   info: RiotMatchInfo
 }
 
-async function fetchSummonerId(puuid: string): Promise<string> {
-  const url = `${TFT_SUMMONER_BASE_URL}/${encodeURIComponent(puuid)}?api_key=${RIOT_API_KEY}`
-  const res = await riotFetchOrThrow(url)
-  const data = await res.json()
-  return data.id as string
-}
-
-async function fetchTftLeaguesBySummonerId(summonerId: string): Promise<TftLeagueEntry[]> {
-  const url = `${TFT_LEAGUE_BASE_URL}/${encodeURIComponent(summonerId)}?api_key=${RIOT_API_KEY}`
+async function fetchTftLeaguesByPuuid(puuid: string): Promise<TftLeagueEntry[]> {
+  const url = `${TFT_LEAGUE_BY_PUUID_URL}/${encodeURIComponent(puuid)}?api_key=${RIOT_API_KEY}`
   const res = await riotFetchOrThrow(url)
   const data = (await res.json()) as TftLeagueEntry[]
   return data ?? []
@@ -131,9 +123,19 @@ export async function doSyncMember(memberId: string) {
     puuid = await fetchPuuid(member.riot_game_name, member.riot_tagline)
   }
 
-  // League (PUUID → Summoner ID → League entries)
-  const summonerId = await fetchSummonerId(puuid!)
-  const leagues = await fetchTftLeaguesBySummonerId(summonerId)
+  // League (PUUID → League entries via new by-puuid endpoint)
+  // If stored PUUID is invalid (400), re-fetch from account API
+  let leagues: TftLeagueEntry[]
+  try {
+    leagues = await fetchTftLeaguesByPuuid(puuid!)
+  } catch (e) {
+    if (e instanceof SyncError && e.status === 400) {
+      puuid = await fetchPuuid(member.riot_game_name, member.riot_tagline)
+      leagues = await fetchTftLeaguesByPuuid(puuid)
+    } else {
+      throw e
+    }
+  }
   const solo = leagues.find((e) => e.queueType === 'RANKED_TFT') ?? null
   const doubleUp = leagues.find((e) => e.queueType === 'RANKED_TFT_DOUBLE_UP') ?? null
 
