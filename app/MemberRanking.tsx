@@ -40,7 +40,7 @@ function calcRemainSec(
     cooldownSec: number,
     nowMs: number,
 ) {
-  if (!lastSyncedAt) return 0
+  if (!lastSyncedAt || nowMs === 0) return 0
   const diff = Math.floor((nowMs - new Date(lastSyncedAt).getTime()) / 1000)
   return Math.max(0, cooldownSec - diff)
 }
@@ -327,7 +327,7 @@ function MemberCard({
           {/* 동기화 영역 */}
           <div className="flex items-center justify-between gap-2">
             <div className="text-[11px] text-slate-600 leading-snug">
-              {effectiveLastSyncedAt ? (
+              {effectiveLastSyncedAt && nowMs > 0 ? (
                   <>
                     최근{' '}
                     <span className="text-slate-400 font-semibold">
@@ -335,7 +335,7 @@ function MemberCard({
                 </span>
                   </>
               ) : (
-                  <span>동기화 기록 없음</span>
+                  <span>{nowMs === 0 ? '' : '동기화 기록 없음'}</span>
               )}
               {syncMsg && (
                   <span className="block mt-0.5 text-amber-400">{syncMsg}</span>
@@ -368,9 +368,10 @@ export default function MemberRanking({
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
   const [localLastSynced, setLocalLastSynced] = useState<Record<string, string | null>>({})
-  const [nowMs, setNowMs] = useState(() => Date.now())
+  const [nowMs, setNowMs] = useState(0)
 
   useEffect(() => {
+    setNowMs(Date.now())
     const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
