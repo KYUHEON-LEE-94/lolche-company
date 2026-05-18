@@ -2,12 +2,8 @@
 
 import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
-import { Member, Database } from '@/types/supabase'
+import { Database } from '@/types/supabase'
 import { SupabaseClient } from '@supabase/supabase-js'
-
-// 3) hall_of_fame 테이블에 데이터 삽입 (타입 캐스팅 추가)
-type HallOfFameInsert = Database['public']['Tables']['hall_of_fame']['Insert'];
-
 
 /**
  * 특정 시즌의 현재 랭킹을 스냅샷으로 저장하고 시즌을 마감하는 함수
@@ -62,8 +58,8 @@ export async function archiveSeason(seasonId: number, queueType: 'solo' | 'doubl
         revalidatePath('/hall-of-fame');
         return { ok: true, message: `${queueType} 명예의 전당 등록 완료!` }
 
-    } catch (error: any) {
-        return { ok: false, message: error.message };
+    } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' };
     }
 }
 
@@ -92,9 +88,9 @@ export async function updateSeasonStatusAction(id: number, targetStatus: boolean
         if (error) throw error;
 
         return { ok: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('시즌 상태 변경 에러:', error);
-        return { ok: false, message: error.message };
+        return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' };
     }
 }
 
@@ -111,8 +107,8 @@ export async function deleteSeasonHallOfFameAction(seasonId: number) {
         if (error) throw error;
 
         return { ok: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('시즌 기록 삭제 에러:', error);
-        return { ok: false, message: error.message };
+        return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' };
     }
 }

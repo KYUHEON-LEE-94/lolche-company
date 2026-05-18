@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 const navItems = [
-    { href: '/admin/members/control', label: '멤버 관리',          icon: 'UserPlus' },
-    { href: '/admin/members/sync',          label: '멤버 동기화',         icon: 'Users' },
-    { href: '/admin/seasons',          label: '시즌 관리',           icon: 'Trophy' },
-    { href: '/admin/profile-frames',   label: '프레임 관리',         icon: 'Image' },
+    { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
+    { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
+    { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
+    { href: '/admin/profile-frames',  label: '프레임 관리', icon: 'Image' },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -42,13 +42,7 @@ function NavIcon({ name }: { name: string }) {
 export default function AdminLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname()
 
-    const isActive = (href: string) => {
-        if (href === '/admin/members/register') return pathname === '/admin/members/register'
-        if (href === '/admin/members')
-            return pathname === '/admin/members' ||
-                (pathname.startsWith('/admin/members/') && !pathname.startsWith('/admin/members/register'))
-        return pathname.startsWith(href)
-    }
+    const isActive = (href: string) => pathname.startsWith(href)
 
     return (
         <div

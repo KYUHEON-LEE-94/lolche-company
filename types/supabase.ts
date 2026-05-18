@@ -102,6 +102,67 @@ export type HallOfFame = {
   recorded_at: string | null
 }
 
+// --- 내전 ---
+export type CustomGame = {
+  id: string
+  title: string
+  status: string // 'in_progress' | 'ended'
+  game_type: string // 'solo' | 'team'
+  max_rounds: number
+  created_at: string
+  ended_at: string | null
+}
+
+export type CustomGameTeam = {
+  id: string
+  custom_game_id: string
+  round_number: number
+  team_index: number
+  member_id: string | null
+  guest_id: string | null
+  created_at: string
+}
+
+export type CustomGameParticipant = {
+  id: string
+  custom_game_id: string
+  member_id: string
+  joined_at: string
+}
+
+export type CustomGameRound = {
+  id: string
+  custom_game_id: string
+  round_number: number
+  match_id: string
+  played_at: string | null
+  created_at: string
+}
+
+export type CustomGameResult = {
+  id: string
+  round_id: string
+  member_id: string
+  placement: number
+  points: number
+}
+
+export type CustomGameGuest = {
+  id: string
+  custom_game_id: string
+  display_name: string
+  riot_puuid: string
+  joined_at: string
+}
+
+export type CustomGameGuestResult = {
+  id: string
+  round_id: string
+  guest_id: string
+  placement: number
+  points: number
+}
+
 export type TablesInsert<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Insert']
 
@@ -166,6 +227,57 @@ export interface Database {
           recorded_at?: string
         }
         Update: Optional<HallOfFame>
+      }
+      // --- 내전 테이블 ---
+      custom_games: {
+        Row: CustomGame
+        Insert: Optional<Omit<CustomGame, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<CustomGame>
+      }
+      custom_game_participants: {
+        Row: CustomGameParticipant
+        Insert: Optional<Omit<CustomGameParticipant, 'id' | 'joined_at'>> & {
+          id?: string
+          joined_at?: string
+        }
+        Update: Optional<CustomGameParticipant>
+      }
+      custom_game_rounds: {
+        Row: CustomGameRound
+        Insert: Optional<Omit<CustomGameRound, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<CustomGameRound>
+      }
+      custom_game_results: {
+        Row: CustomGameResult
+        Insert: Optional<Omit<CustomGameResult, 'id'>> & { id?: string }
+        Update: Optional<CustomGameResult>
+      }
+      custom_game_guests: {
+        Row: CustomGameGuest
+        Insert: Optional<Omit<CustomGameGuest, 'id' | 'joined_at'>> & {
+          id?: string
+          joined_at?: string
+        }
+        Update: Optional<CustomGameGuest>
+      }
+      custom_game_guest_results: {
+        Row: CustomGameGuestResult
+        Insert: Optional<Omit<CustomGameGuestResult, 'id'>> & { id?: string }
+        Update: Optional<CustomGameGuestResult>
+      }
+      custom_game_teams: {
+        Row: CustomGameTeam
+        Insert: Optional<Omit<CustomGameTeam, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<CustomGameTeam>
       }
     }
     Views: Record<string, never>

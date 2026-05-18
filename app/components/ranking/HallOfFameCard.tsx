@@ -1,9 +1,15 @@
-// src/components/ranking/HallOfFameCard.tsx
 import Image from 'next/image';
 
+type Ranker = {
+    tier: string | null
+    rank: string | null
+    lp: number | null
+    members: { member_name: string; profile_image_path: string | null } | null
+}
+
 interface RankerProps {
-    ranker: any; // Database['public']['Tables']['hall_of_fame']['Row'] & { members: any }
-    position: number; // 1, 2, 3
+    ranker: Ranker
+    position: number
 }
 
 export default function HallOfFameCard({ ranker, position }: RankerProps) {
@@ -22,7 +28,7 @@ export default function HallOfFameCard({ ranker, position }: RankerProps) {
                 <div className={`relative rounded-full overflow-hidden border-4 ${styles.border} ${styles.size}`}>
                     <Image
                         src={ranker.members?.profile_image_path || '/default-profile.png'}
-                        alt={ranker.members?.member_name}
+                        alt={ranker.members?.member_name ?? ''}
                         fill
                         className="object-cover"
                     />

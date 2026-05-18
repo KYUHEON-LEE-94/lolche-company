@@ -3,11 +3,20 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import Podium from './Podium';
+import Podium, { type HallOfFameRanker } from './Podium';
 import SeasonTab from './SeasonTab';
 
-// ✅ allRankers 프롭을 추가로 받습니다.
-export default function HallOfFameClientPage({ seasons, currentSeason, currentQueue, top3, allRankers = [] }: any) {
+type Season = { id: number; season_name: string; set_number: number }
+
+type Props = {
+    seasons: Season[]
+    currentSeason: Season
+    currentQueue: string
+    top3: HallOfFameRanker[]
+    allRankers?: HallOfFameRanker[]
+}
+
+export default function HallOfFameClientPage({ seasons, currentSeason, currentQueue, top3, allRankers = [] }: Props) {
     const [showIntro, setShowIntro] = useState(true);
 
     // 4위부터의 명단만 추출
@@ -82,7 +91,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                         </div>
 
                         <div className="space-y-3">
-                            {otherRankers.map((ranker: any, idx: number) => (
+                            {otherRankers.map((ranker, idx) => (
                                 <div
                                     key={ranker.id}
                                     className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all group"
@@ -97,7 +106,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-amber-500/80 font-black tracking-tighter">{ranker.lp.toLocaleString()} LP</p>
+                                        <p className="text-amber-500/80 font-black tracking-tighter">{(ranker.lp ?? 0).toLocaleString()} LP</p>
                                     </div>
                                 </div>
                             ))}

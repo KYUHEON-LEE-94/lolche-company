@@ -26,8 +26,16 @@ const inputCls = `
   transition-all duration-200
 `
 
+type MemberListItem = {
+  id: string
+  member_name: string
+  riot_game_name: string
+  riot_tagline: string
+  created_at: string
+}
+
 export default function AdminMemberRegisterPage() {
-  const [members, setMembers] = useState<any[]>([])
+  const [members, setMembers] = useState<MemberListItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
   // 폼 상태 (등록/수정 공용)
@@ -46,9 +54,9 @@ export default function AdminMemberRegisterPage() {
   const loadMembers = useCallback(async () => {
     const { data } = await supabaseClient
         .from('members')
-        .select('*')
+        .select('id, member_name, riot_game_name, riot_tagline, created_at')
         .order('created_at', { ascending: false })
-    if (data) setMembers(data)
+    if (data) setMembers(data as MemberListItem[])
   }, [])
 
   useEffect(() => { loadMembers() }, [loadMembers])
@@ -66,8 +74,11 @@ export default function AdminMemberRegisterPage() {
       if (editingId === id) resetForm()
 
       await loadMembers()
-    } catch { alert('삭제 중 오류가 발생했습니다.') }
-    finally { setDeletingId(null) }
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   // 등록/수정 모드 전환 및 초기화
@@ -79,7 +90,7 @@ export default function AdminMemberRegisterPage() {
   }
 
   // 수정 버튼 클릭 시
-  const handleEditStart = (m: any) => {
+  const handleEditStart = (m: MemberListItem) => {
     setEditingId(m.id)
     setMemberName(m.member_name)
     setRiotGameName(m.riot_game_name)
@@ -115,15 +126,15 @@ export default function AdminMemberRegisterPage() {
       setMessage(editingId ? '정보가 수정되었습니다.' : '멤버가 등록되었습니다.')
       resetForm()
       await loadMembers()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '작업에 실패했습니다.')
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredMembers = members.filter(m =>
-      m.member_name.includes(searchTerm) || m.riot_game_name.includes(searchTerm)
+  const filteredMembers = members.filter((m) =>
+    m.member_name.includes(searchTerm) || m.riot_game_name.includes(searchTerm)
   )
 
   return (

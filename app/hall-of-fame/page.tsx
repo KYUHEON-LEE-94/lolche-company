@@ -54,44 +54,33 @@ export default async function HallOfFamePage({
         .eq('season_id', currentSeasonId)
         .eq('queue_type', currentQueue);
 
-    // 4. 🔥 공동 순위 계산 로직 적용
+    // 4. 공동 순위 계산 로직 적용
     // A. 먼저 티어 > 랭크 > LP 순으로 정렬합니다.
-    const sorted = (rawRankers || []).sort((a: any, b: any) => {
+    const sorted = (rawRankers || []).sort((a, b) => {
         const tierA = TIER_ORDER[a.tier?.toUpperCase()] || 0;
         const tierB = TIER_ORDER[b.tier?.toUpperCase()] || 0;
         if (tierB !== tierA) return tierB - tierA;
 
-        const rankA = RANK_ORDER[a.rank] || 0;
-        const rankB = RANK_ORDER[b.rank] || 0;
+        const rankA = RANK_ORDER[a.rank ?? ''] || 0;
+        const rankB = RANK_ORDER[b.rank ?? ''] || 0;
         if (rankB !== rankA) return rankB - rankA;
 
         return (b.lp || 0) - (a.lp || 0);
     });
 
-    // B. 공동 순위(display_rank) 부여 (1-2-2-4 방식)
-    let currentRank = 1;
-
-    const allRankers = sorted.map((item, index) => {
-        if (index > 0) {
-            const prev = sorted[index - 1];
-
-            // 이전 유저와 티어, 랭크, LP가 모두 같은지 확인
-            const isSameScore =
-                prev.tier === item.tier &&
-                prev.rank === item.rank &&
-                prev.lp === item.lp;
-
-            // 점수가 다를 때만 현재 순위를 (index + 1)로 갱신
-            if (!isSameScore) {
-                currentRank = index + 1;
-            }
-        }
-
-        return {
-            ...item,
-            display_rank: currentRank // ✅ 클라이언트에서 사용할 실제 순위
-        };
-    });
+    // B. 공동 순위(display_rank) 부여 (1-2-2-4 방식) — reduce로 순수 함수적으로 처리
+    type RankerWithRank = (typeof sorted)[0] & { display_rank: number }
+    const allRankers = sorted.reduce<RankerWithRank[]>((acc, item, index) => {
+        const displayRank = index === 0
+            ? 1
+            : (() => {
+                const prev = sorted[index - 1]
+                const prevResult = acc[index - 1]
+                const isSameScore = prev.tier === item.tier && prev.rank === item.rank && prev.lp === item.lp
+                return isSameScore ? prevResult.display_rank : index + 1
+            })()
+        return [...acc, { ...item, display_rank: displayRank }]
+    }, []);
 
     // 상위 3개 요소 추출 (공동 순위여도 포디움에는 상위 3개 데이터가 들어감)
     const top3 = allRankers.slice(0, 3);

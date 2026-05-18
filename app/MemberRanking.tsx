@@ -5,6 +5,7 @@ import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import AuthButtons from '@/app/components/AuthButtons'
 import Image from 'next/image'
+import Link from 'next/link'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -39,7 +40,7 @@ function calcRemainSec(
     cooldownSec: number,
     nowMs: number,
 ) {
-  if (!lastSyncedAt) return 0
+  if (!lastSyncedAt || nowMs === 0) return 0
   const diff = Math.floor((nowMs - new Date(lastSyncedAt).getTime()) / 1000)
   return Math.max(0, cooldownSec - diff)
 }
@@ -143,12 +144,10 @@ function RankBadge({ idx }: { idx: number }) {
 // ─── 동기화 버튼 ─────────────────────────────────────────────────────────────
 
 function SyncButton({
-                      memberId,
                       remainSec,
                       isSyncing,
                       onSync,
                     }: {
-  memberId: string
   remainSec: number
   isSyncing: boolean
   onSync: () => void
@@ -328,7 +327,7 @@ function MemberCard({
           {/* 동기화 영역 */}
           <div className="flex items-center justify-between gap-2">
             <div className="text-[11px] text-slate-600 leading-snug">
-              {effectiveLastSyncedAt ? (
+              {effectiveLastSyncedAt && nowMs > 0 ? (
                   <>
                     최근{' '}
                     <span className="text-slate-400 font-semibold">
@@ -336,7 +335,7 @@ function MemberCard({
                 </span>
                   </>
               ) : (
-                  <span>동기화 기록 없음</span>
+                  <span>{nowMs === 0 ? '' : '동기화 기록 없음'}</span>
               )}
               {syncMsg && (
                   <span className="block mt-0.5 text-amber-400">{syncMsg}</span>
@@ -344,7 +343,6 @@ function MemberCard({
             </div>
 
             <SyncButton
-                memberId={member.id}
                 remainSec={remainSec}
                 isSyncing={isSyncing}
                 onSync={onSync}
@@ -366,57 +364,17 @@ export default function MemberRanking({
 }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
 
-  // auth
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [authError, setAuthError] = useState<string | null>(null)
-
   // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
   const [localLastSynced, setLocalLastSynced] = useState<Record<string, string | null>>({})
-  const [nowMs, setNowMs] = useState(() => Date.now())
+  const [nowMs, setNowMs] = useState(0)
 
   useEffect(() => {
+    setNowMs(Date.now())
     const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
-
-  // auth session
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      const { data } = await supabaseClient.auth.getSession()
-      if (!mounted) return
-      setUserEmail(data.session?.user?.email ?? null)
-      setAuthLoading(false)
-    })()
-    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null)
-    })
-    return () => {
-      mounted = false
-      sub.subscription.unsubscribe()
-    }
-  }, [])
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAuthError(null)
-    setAuthLoading(true)
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
-    if (error) setAuthError(error.message)
-    else { setEmail(''); setPassword('') }
-    setAuthLoading(false)
-  }
-
-  const handleLogout = async () => {
-    setAuthLoading(true)
-    await supabaseClient.auth.signOut()
-    setAuthLoading(false)
-  }
 
   // 동기화
   const handleSyncOne = async (id: string) => {
@@ -482,8 +440,20 @@ export default function MemberRanking({
         <div className="min-h-screen bg-[#07090f]/85 backdrop-blur-sm px-4 py-8">
           <div className="max-w-6xl mx-auto">
 
-            {/* auth 버튼 */}
-            <div className="flex justify-end mb-6">
+            {/* 상단 바: 내전 링크 + auth 버튼 */}
+            <div className="flex items-center justify-between mb-6">
+              <Link
+                href="/custom-games"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold
+                  bg-indigo-500/10 border border-indigo-500/20 text-indigo-400
+                  hover:bg-indigo-500/20 hover:text-indigo-300 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round">
+                  <path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l3.5-3.5M16 16l1.5 1.5M20.5 21l.5-.5-4.5-4.5" />
+                  <path d="M14 14l-9.5 9.5M3.5 14.5L9 9m3-3l.5-.5L9 3l-3 3 3.5 3.5" />
+                </svg>
+                내전
+              </Link>
               <AuthButtons />
             </div>
 
@@ -571,8 +541,7 @@ export default function MemberRanking({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sorted.map((m, idx) => {
-                    const effectiveLastSyncedAt = (localLastSynced[m.id] ?? (m as any).last_synced_at) as
-                        | string | null | undefined
+                    const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
                     return (
                         <MemberCard
                             key={m.id}
