@@ -1,13 +1,12 @@
-// lib/riot/doSyncMember.ts
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import type { Database } from '@/types/supabase'
 import { SyncError } from '@/lib/sync/syncMember'
-
-// env
-const RIOT_API_KEY = process.env.RIOT_API_KEY
-const ACCOUNT_BASE_URL = process.env.RIOT_ACCOUNT_BASE_URL
-const TFT_LEAGUE_BY_PUUID_URL = process.env.RIOT_TFT_LEAGUE_BY_PUUID_URL
-const TFT_MATCH_BASE_URL = process.env.RIOT_TFT_MATCH_BASE_URL
+import {
+  fetchPuuid,
+  fetchTftLeaguesByPuuid,
+  fetchMatchIdsByPuuid,
+  fetchMatchById,
+  RiotApiError,
+} from '@/lib/riot/api'
 
 const RIOT_MATCH_DETAIL_DELAY_MS = Number(process.env.RIOT_MATCH_DETAIL_DELAY_MS ?? '1200')
 
@@ -15,155 +14,60 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function riotFetchOrThrow(url: string) {
-  const res = await fetch(url, { method: 'GET' })
-  if (res.ok) return res
-
-  const retryAfterHeader = res.headers.get('Retry-After')
-  const retryAfterSec = retryAfterHeader ? Number(retryAfterHeader) : undefined
-  const text = await res.text().catch(() => '')
-
-  throw new SyncError(`Riot API error (${res.status}): ${text}`, res.status, retryAfterSec)
-}
-
-// Riot ID → PUUID
-async function fetchPuuid(gameName: string, tagLine: string): Promise<string> {
-  const url = `${ACCOUNT_BASE_URL}/${encodeURIComponent(gameName)}/${encodeURIComponent(
-      tagLine,
-  )}?api_key=${RIOT_API_KEY}`
-
-  const res = await riotFetchOrThrow(url)
-  const data = await res.json()
-  return data.puuid as string
-}
-
-type TftLeagueEntry = {
-  queueType: string
-  tier: string
-  rank: string
-  leaguePoints: number
-  wins: number
-  losses: number
-}
-
-type RiotMatchMetadata = {
-  data_version: string
-  match_id: string
-  participants: string[]
-}
-
-type RiotMatchParticipant = {
-  puuid: string
-  placement: number
-  level: number
-  time_eliminated: number
-  total_damage_to_players: number
-  augments?: unknown[]
-  traits?: unknown[]
-  units?: unknown[]
-}
-
-type RiotMatchInfo = {
-  game_datetime: number
-  game_length: number
-  queue_id: number
-  tft_set_number?: number
-  participants: RiotMatchParticipant[]
-}
-
-type RiotMatchResponse = {
-  metadata: RiotMatchMetadata
-  info: RiotMatchInfo
-}
-
-async function fetchTftLeaguesByPuuid(puuid: string): Promise<TftLeagueEntry[]> {
-  const url = `${TFT_LEAGUE_BY_PUUID_URL}/${encodeURIComponent(puuid)}?api_key=${RIOT_API_KEY}`
-  const res = await riotFetchOrThrow(url)
-  const data = (await res.json()) as TftLeagueEntry[]
-  return data ?? []
-}
-
-async function fetchMatchIdsByPuuid(puuid: string, count = 5): Promise<string[]> {
-  const url = `${TFT_MATCH_BASE_URL}/matches/by-puuid/${encodeURIComponent(
-      puuid,
-  )}/ids?start=0&count=${count}&api_key=${RIOT_API_KEY}`
-
-  const res = await riotFetchOrThrow(url)
-  const data = (await res.json()) as string[]
-  return data ?? []
-}
-
-async function fetchMatchById(matchId: string): Promise<RiotMatchResponse> {
-  const url = `${TFT_MATCH_BASE_URL}/matches/${encodeURIComponent(matchId)}?api_key=${RIOT_API_KEY}`
-  const res = await riotFetchOrThrow(url)
-  return (await res.json()) as RiotMatchResponse
-}
-
-// ✅ 공용 doSync
 export async function doSyncMember(memberId: string) {
-  if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BY_PUUID_URL || !TFT_MATCH_BASE_URL) {
-    throw new SyncError('Riot API env variables are not set', 500)
-  }
+  const { data: member, error: memberError } = await supabaseAdmin
+    .from('members')
+    .select('*')
+    .eq('id', memberId)
+    .single()
 
-  const { data: memberData, error: memberError } = await supabaseAdmin
-  .from('members')
-  .select('*')
-  .eq('id', memberId)
-  .single()
-
-  if (memberError || !memberData) {
+  if (memberError || !member) {
     throw new SyncError('Member not found', 404)
   }
 
-  const member = memberData as Database['public']['Tables']['members']['Row']
-
-  // PUUID
   let puuid = member.riot_puuid
   if (!puuid) {
     puuid = await fetchPuuid(member.riot_game_name, member.riot_tagline)
   }
 
-  // League (PUUID → League entries via new by-puuid endpoint)
-  // If stored PUUID is invalid (400), re-fetch from account API
-  let leagues: TftLeagueEntry[]
+  let leagues: Awaited<ReturnType<typeof fetchTftLeaguesByPuuid>>
   try {
     leagues = await fetchTftLeaguesByPuuid(puuid!)
   } catch (e) {
-    if (e instanceof SyncError && e.status === 400) {
+    if (e instanceof RiotApiError && e.status === 400) {
       puuid = await fetchPuuid(member.riot_game_name, member.riot_tagline)
       leagues = await fetchTftLeaguesByPuuid(puuid)
     } else {
       throw e
     }
   }
+
   const solo = leagues.find((e) => e.queueType === 'RANKED_TFT') ?? null
   const doubleUp = leagues.find((e) => e.queueType === 'RANKED_TFT_DOUBLE_UP') ?? null
 
   const { data: updatedRows, error: updateError } = await supabaseAdmin
-  .from('members')
-  .update({
-    last_synced_at: new Date().toISOString(), // ✅ 추가
-    riot_puuid: puuid ?? null,
-    tft_tier: solo?.tier ?? null,
-    tft_rank: solo?.rank ?? null,
-    tft_league_points: solo?.leaguePoints ?? null,
-    tft_wins: solo?.wins ?? null,
-    tft_losses: solo?.losses ?? null,
-    tft_doubleup_tier: doubleUp?.tier ?? null,
-    tft_doubleup_rank: doubleUp?.rank ?? null,
-    tft_doubleup_league_points: doubleUp?.leaguePoints ?? null,
-    tft_doubleup_wins: doubleUp?.wins ?? null,
-    tft_doubleup_losses: doubleUp?.losses ?? null,
-  })
-  .eq('id', memberId)
-  .select('id')
+    .from('members')
+    .update({
+      riot_puuid: puuid ?? null,
+      tft_tier: solo?.tier ?? null,
+      tft_rank: solo?.rank ?? null,
+      tft_league_points: solo?.leaguePoints ?? null,
+      tft_wins: solo?.wins ?? null,
+      tft_losses: solo?.losses ?? null,
+      tft_doubleup_tier: doubleUp?.tier ?? null,
+      tft_doubleup_rank: doubleUp?.rank ?? null,
+      tft_doubleup_league_points: doubleUp?.leaguePoints ?? null,
+      tft_doubleup_wins: doubleUp?.wins ?? null,
+      tft_doubleup_losses: doubleUp?.losses ?? null,
+    })
+    .eq('id', memberId)
+    .select('id')
 
   if (updateError) throw new SyncError(updateError.message, 500)
   if (!updatedRows || updatedRows.length === 0) {
     throw new SyncError('Update affected 0 rows. (RLS blocked or wrong id?)', 403)
   }
 
-  // Matches (recent 5)
   const matchIds = await fetchMatchIdsByPuuid(puuid!)
   const recentPlacements: number[] = []
 
@@ -183,8 +87,8 @@ export async function doSyncMember(memberId: string) {
     }
 
     const { error: matchUpsertError } = await supabaseAdmin
-    .from('tft_matches')
-    .upsert([matchRow], { onConflict: 'match_id' })
+      .from('tft_matches')
+      .upsert([matchRow], { onConflict: 'match_id' })
 
     if (matchUpsertError) {
       console.error('tft_matches upsert error', matchUpsertError)
@@ -197,27 +101,25 @@ export async function doSyncMember(memberId: string) {
     recentPlacements.push(myPart.placement ?? 8)
 
     await supabaseAdmin
-    .from('tft_match_participants')
-    .delete()
-    .eq('match_id', metadata.match_id)
-    .eq('member_id', memberId)
-
-    const participantRow = {
-      match_id: metadata.match_id,
-      member_id: memberId,
-      puuid: puuid!,
-      placement: myPart.placement ?? null,
-      level: myPart.level ?? null,
-      time_eliminated: myPart.time_eliminated ?? null,
-      total_damage_to_players: myPart.total_damage_to_players ?? null,
-      augments: myPart.augments ?? null,
-      traits: myPart.traits ?? null,
-      units: myPart.units ?? null,
-    }
+      .from('tft_match_participants')
+      .delete()
+      .eq('match_id', metadata.match_id)
+      .eq('member_id', memberId)
 
     const { error: partInsertError } = await supabaseAdmin
-    .from('tft_match_participants')
-    .insert([participantRow])
+      .from('tft_match_participants')
+      .insert([{
+        match_id: metadata.match_id,
+        member_id: memberId,
+        puuid: puuid!,
+        placement: myPart.placement ?? null,
+        level: myPart.level ?? null,
+        time_eliminated: myPart.time_eliminated ?? null,
+        total_damage_to_players: myPart.total_damage_to_players ?? null,
+        augments: myPart.augments ?? null,
+        traits: myPart.traits ?? null,
+        units: myPart.units ?? null,
+      }])
 
     if (partInsertError) console.error('tft_match_participants insert error', partInsertError)
   }
@@ -225,9 +127,9 @@ export async function doSyncMember(memberId: string) {
   if (recentPlacements.length > 0) {
     const recent5 = recentPlacements.slice(0, 5).join(',')
     const { error: recentUpdateError } = await supabaseAdmin
-    .from('members')
-    .update({ tft_recent5: recent5 })
-    .eq('id', memberId)
+      .from('members')
+      .update({ tft_recent5: recent5 })
+      .eq('id', memberId)
 
     if (recentUpdateError) console.error('members.tft_recent5 update error', recentUpdateError)
   }

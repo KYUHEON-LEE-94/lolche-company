@@ -225,6 +225,12 @@ export async function POST(req: Request) {
  * ✅ GET: Vercel Cron 실행
  */
 export async function GET(req: Request) {
+  const authHeader = req.headers.get('authorization')
+  const token = process.env.CRON_SECRET ?? process.env.ADMIN_SYNC_TOKEN
+  if (!token || authHeader !== `Bearer ${token}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const raw = searchParams.get('limit')
   const parsedLimit = raw && Number.isFinite(Number(raw)) ? Number(raw) : undefined
@@ -232,7 +238,7 @@ export async function GET(req: Request) {
     limit: parsedLimit,
     cursorId: searchParams.get('cursorId'),
     trigger: 'cron',
-    doCleanup: true, // ✅ cron 실행 시 로그 TTL 정리까지 같이
+    doCleanup: true,
     req,
   })
 }

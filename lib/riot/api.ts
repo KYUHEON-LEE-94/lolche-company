@@ -4,6 +4,7 @@
 const RIOT_API_KEY = process.env.RIOT_API_KEY
 const ACCOUNT_BASE_URL = process.env.RIOT_ACCOUNT_BASE_URL
 const TFT_MATCH_BASE_URL = process.env.RIOT_TFT_MATCH_BASE_URL
+const TFT_LEAGUE_BASE_URL = process.env.RIOT_TFT_LEAGUE_BASE_URL
 
 export class RiotApiError extends Error {
   constructor(
@@ -77,4 +78,22 @@ export async function fetchMatchById(matchId: string): Promise<RiotMatchResponse
   const url = `${TFT_MATCH_BASE_URL}/matches/${encodeURIComponent(matchId)}?api_key=${RIOT_API_KEY}`
   const res = await riotFetch(url)
   return (await res.json()) as RiotMatchResponse
+}
+
+export type TftLeagueEntry = {
+  queueType: string
+  tier: string
+  rank: string
+  leaguePoints: number
+  wins: number
+  losses: number
+}
+
+export async function fetchTftLeaguesByPuuid(puuid: string): Promise<TftLeagueEntry[]> {
+  if (!RIOT_API_KEY || !TFT_LEAGUE_BASE_URL) {
+    throw new RiotApiError('Riot API 환경 변수가 설정되지 않았습니다', 500)
+  }
+  const url = `${TFT_LEAGUE_BASE_URL}/${encodeURIComponent(puuid)}?api_key=${RIOT_API_KEY}`
+  const res = await riotFetch(url)
+  return ((await res.json()) as TftLeagueEntry[]) ?? []
 }

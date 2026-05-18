@@ -36,6 +36,12 @@ export type Member = {
   created_at: string
   last_synced_at: string | null
   memo: string | null
+
+  sync_status: string | null
+  sync_attempts: number | null
+  last_sync_started_at: string | null
+  last_sync_finished_at: string | null
+  last_sync_error: string | null
 }
 
 export type Admin = {
@@ -100,6 +106,16 @@ export type HallOfFame = {
   lp: number | null
   wins: number | null
   recorded_at: string | null
+}
+
+export type SyncLog = {
+  id: string
+  type: string
+  member_id: string | null
+  status: string
+  message: string | null
+  duration_ms: number | null
+  created_at: string
 }
 
 // --- 내전 ---
@@ -227,6 +243,14 @@ export interface Database {
           recorded_at?: string
         }
         Update: Optional<HallOfFame>
+      }
+      sync_logs: {
+        Row: SyncLog
+        Insert: Optional<Omit<SyncLog, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<SyncLog>
       }
       // --- 내전 테이블 ---
       custom_games: {

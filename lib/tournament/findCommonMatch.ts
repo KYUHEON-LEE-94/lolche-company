@@ -26,10 +26,13 @@ export async function findCommonMatch(
 ): Promise<MatchResult | null> {
   if (puuids.length === 0) return null
 
-  // 모든 참가자의 최근 매치 ID를 병렬로 조회
-  const allMatchIdArrays = await Promise.all(
+  // 모든 참가자의 최근 매치 ID를 병렬로 조회 — 한 명 실패 시 에러 전파
+  const settled = await Promise.allSettled(
     puuids.map((puuid) => fetchMatchIdsByPuuid(puuid, lookback)),
   )
+  const failed = settled.find((r) => r.status === 'rejected')
+  if (failed) throw (failed as PromiseRejectedResult).reason
+  const allMatchIdArrays = (settled as PromiseFulfilledResult<string[]>[]).map((r) => r.value)
 
   // 교집합: 모든 참가자의 히스토리에 존재하는 매치 ID
   const sets = allMatchIdArrays.map((ids) => new Set(ids))
