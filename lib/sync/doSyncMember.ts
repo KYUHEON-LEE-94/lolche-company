@@ -15,10 +15,6 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BASE_URL || !TFT_MATCH_BASE_URL) {
-  throw new Error('Riot API env variables are not set')
-}
-
 async function riotFetchOrThrow(url: string) {
   const res = await fetch(url, { method: 'GET' })
   if (res.ok) return res
@@ -105,6 +101,10 @@ async function fetchMatchById(matchId: string): Promise<RiotMatchResponse> {
 
 // ✅ 공용 doSync
 export async function doSyncMember(memberId: string) {
+  if (!RIOT_API_KEY || !ACCOUNT_BASE_URL || !TFT_LEAGUE_BASE_URL || !TFT_MATCH_BASE_URL) {
+    throw new SyncError('Riot API env variables are not set', 500)
+  }
+
   const { data: memberData, error: memberError } = await supabaseAdmin
   .from('members')
   .select('*')
