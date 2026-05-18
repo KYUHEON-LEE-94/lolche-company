@@ -142,12 +142,12 @@ export default function AdminMemberListPage() {
       let totalProcessed = 0
 
       while (true) {
-        const res = await fetch('/api/admin/sync-all', {
+        const res: Response = await fetch('/api/admin/sync-all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cursorId }),
         })
-        const body = await res.json().catch(() => ({}))
+        const body = await res.json().catch(() => ({})) as { processed?: number; batch?: { done: boolean; nextCursorId?: string }; error?: string }
 
         if (!res.ok) {
           showMsg('error', res.status === 429
