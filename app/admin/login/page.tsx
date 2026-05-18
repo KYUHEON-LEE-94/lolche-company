@@ -30,7 +30,7 @@ export default function LoginPage() {
         }
 
         // 로그인 성공 → /admin으로 이동
-        window.location.href = '/admin/members'
+        window.location.href = '/admin/members/sync'
     }
 
     return (

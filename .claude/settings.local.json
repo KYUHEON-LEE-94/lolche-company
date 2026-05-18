@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\Private\\\\Study\\\\private-project\\\\lolche-comapny\\\\lolche-company\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(ConvertTo-Json)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\Private\\\\Study\\\\private-project\\\\lolche-comapny\\\\lolche-company\" -Depth 2 -Force | Where-Object {$_.FullName -notmatch \"node_modules|\\\\.git\"} | Select-Object Name, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"[DIR]\"}else{\"[FILE]\"}}} | Format-Table -AutoSize)",
+      "Bash(npm run *)",
+      "Bash(ping -n 10 127.0.0.1)",
+      "Bash(sleep 10 && cat \"/c/Users/user/AppData/Local/Temp/claude/C--Users-user-Desktop-Private-Study-private-project-lolche-comapny-lolche-company/abd27ed4-cb78-4f33-bad7-98a068f9c141/tasks/bdcz320jc.output\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(npx next *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"TSC_EXIT:$?\")",
+      "Bash(gh pr create --title 'refactor: 코드 품질 개선 — dead code 제거, any 타입 제거, 오류 패턴 통일' --body ' *)"
+    ]
+  }
+}

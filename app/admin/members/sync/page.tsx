@@ -138,15 +138,32 @@ export default function AdminMemberListPage() {
   const handleSyncAll = async () => {
     setSyncAllLoading(true)
     try {
-      const res  = await fetch('/api/admin/sync-all', { method: 'POST' })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        showMsg('error', res.status === 429
-            ? '라이엇 API 제한 · 전체 동기화가 중단되었습니다.'
-            : `전체 동기화 실패 (${res.status}) ${body.error ?? ''}`)
-        return
+      let cursorId: string | null = null
+      let totalProcessed = 0
+
+      while (true) {
+        const res = await fetch('/api/admin/sync-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cursorId }),
+        })
+        const body = await res.json().catch(() => ({}))
+
+        if (!res.ok) {
+          showMsg('error', res.status === 429
+              ? '라이엇 API 제한 · 전체 동기화가 중단되었습니다.'
+              : `전체 동기화 실패 (${res.status}) ${body.error ?? ''}`)
+          return
+        }
+
+        totalProcessed += body.processed ?? 0
+
+        if (body.batch?.done !== false) break
+        cursorId = body.batch.nextCursorId ?? null
+        if (!cursorId) break
       }
-      showMsg('success', '전체 동기화 완료!')
+
+      showMsg('success', `전체 동기화 완료! (${totalProcessed}명)`)
       await loadMembers()
     } catch { showMsg('error', '전체 동기화 중 오류가 발생했습니다.') }
     finally { setSyncAllLoading(false) }

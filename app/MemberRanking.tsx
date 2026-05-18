@@ -5,6 +5,7 @@ import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import AuthButtons from '@/app/components/AuthButtons'
 import Image from 'next/image'
+import Link from 'next/link'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -438,8 +439,20 @@ export default function MemberRanking({
         <div className="min-h-screen bg-[#07090f]/85 backdrop-blur-sm px-4 py-8">
           <div className="max-w-6xl mx-auto">
 
-            {/* auth 버튼 */}
-            <div className="flex justify-end mb-6">
+            {/* 상단 바: 내전 링크 + auth 버튼 */}
+            <div className="flex items-center justify-between mb-6">
+              <Link
+                href="/custom-games"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold
+                  bg-indigo-500/10 border border-indigo-500/20 text-indigo-400
+                  hover:bg-indigo-500/20 hover:text-indigo-300 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round">
+                  <path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l3.5-3.5M16 16l1.5 1.5M20.5 21l.5-.5-4.5-4.5" />
+                  <path d="M14 14l-9.5 9.5M3.5 14.5L9 9m3-3l.5-.5L9 3l-3 3 3.5 3.5" />
+                </svg>
+                내전
+              </Link>
               <AuthButtons />
             </div>
 
