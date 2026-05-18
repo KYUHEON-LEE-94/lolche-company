@@ -8,7 +8,7 @@ export async function GET(_req: Request, ctx: Ctx) {
 
   const { data: game, error: gameError } = await supabaseAdmin
     .from('custom_games')
-    .select('id, title, status, max_rounds, created_at, ended_at')
+    .select('id, title, status, game_type, max_rounds, created_at, ended_at')
     .eq('id', id)
     .single()
 
@@ -95,7 +95,19 @@ export async function GET(_req: Request, ctx: Ctx) {
     guest_results: guestResultsByRound.get(r.id) ?? [],
   }))
 
-  return NextResponse.json({ game, participants, guests, rounds })
+  // ── 팀 배정 (팀전만 조회) ─────────────────────────────────────────
+  let teams: { round_number: number; team_index: number; member_id: string | null; guest_id: string | null }[] = []
+  if (game.game_type === 'team') {
+    const { data: teamRows } = await supabaseAdmin
+      .from('custom_game_teams')
+      .select('round_number, team_index, member_id, guest_id')
+      .eq('custom_game_id', id)
+      .order('round_number')
+      .order('team_index')
+    teams = teamRows ?? []
+  }
+
+  return NextResponse.json({ game, participants, guests, rounds, teams })
 }
 
 export async function DELETE(_req: Request, ctx: Ctx) {

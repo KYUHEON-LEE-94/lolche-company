@@ -10,6 +10,7 @@ type GameRow = {
   id: string
   title: string
   status: string
+  game_type: string
   max_rounds: number
   created_at: string
   ended_at: string | null
@@ -18,6 +19,12 @@ type GameRow = {
 type MemberOption = {
   id: string
   member_name: string
+  riot_game_name: string
+  riot_tagline: string
+}
+
+type GuestInput = {
+  display_name: string
   riot_game_name: string
   riot_tagline: string
 }
@@ -56,8 +63,15 @@ export default function CustomGamesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [titleInput, setTitleInput] = useState('')
   const [maxRounds, setMaxRounds] = useState(5)
+  const [gameType, setGameType] = useState<'solo' | 'team'>('solo')
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // 게스트 입력 상태
+  const [guestInputs, setGuestInputs] = useState<GuestInput[]>([])
+  const [showGuestForm, setShowGuestForm] = useState(false)
+  const [guestName, setGuestName] = useState('')
+  const [guestRiotId, setGuestRiotId] = useState('')
 
   const showMsg = (type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
@@ -90,6 +104,11 @@ export default function CustomGamesPage() {
     setTitleInput('')
     setSelectedIds(new Set())
     setMaxRounds(5)
+    setGameType('solo')
+    setGuestInputs([])
+    setShowGuestForm(false)
+    setGuestName('')
+    setGuestRiotId('')
     setShowModal(true)
   }
 
@@ -102,9 +121,33 @@ export default function CustomGamesPage() {
     })
   }
 
+  const totalSelected = selectedIds.size + guestInputs.length
+
+  const handleAddGuestToList = () => {
+    if (!guestName.trim()) return
+    const parts = guestRiotId.trim().split('#')
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return
+    if (totalSelected >= 8) return
+    setGuestInputs((prev) => [...prev, {
+      display_name: guestName.trim(),
+      riot_game_name: parts[0].trim(),
+      riot_tagline: parts[1].trim(),
+    }])
+    setGuestName('')
+    setGuestRiotId('')
+    setShowGuestForm(false)
+  }
+
+  const handleRemoveGuest = (idx: number) => {
+    setGuestInputs((prev) => prev.filter((_, i) => i !== idx))
+  }
+
   const handleCreate = async () => {
     if (!titleInput.trim()) { showMsg('error', '제목을 입력하세요'); return }
-    if (selectedIds.size < 2) { showMsg('error', '참가자를 2명 이상 선택하세요'); return }
+    if (gameType === 'team' && totalSelected !== 8) {
+      showMsg('error', '팀전은 정확히 8명을 선택해야 합니다'); return
+    }
+    if (totalSelected < 2) { showMsg('error', '참가자를 2명 이상 선택하세요'); return }
     setCreating(true)
     try {
       const res = await fetch('/api/custom-games', {
@@ -114,6 +157,8 @@ export default function CustomGamesPage() {
           title: titleInput.trim(),
           participant_ids: [...selectedIds],
           max_rounds: maxRounds,
+          game_type: gameType,
+          guests: guestInputs,
         }),
       })
       const body = await res.json()
@@ -236,7 +281,7 @@ export default function CustomGamesPage() {
               <table className="min-w-full border-collapse">
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['내전명', '상태', '최대 판수', '생성일', ''].map((label) => (
+                    {['내전명', '유형', '상태', '최대 판수', '생성일', ''].map((label) => (
                       <th key={label} className="px-4 py-3.5 text-left text-[10px] font-black text-slate-500 tracking-widest uppercase">
                         {label}
                       </th>
@@ -254,6 +299,17 @@ export default function CustomGamesPage() {
                     >
                       <td className="px-4 py-3.5">
                         <span className="font-bold text-white text-sm">{g.title}</span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {g.game_type === 'team' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-violet-500/10 border border-violet-500/20 text-violet-400">
+                            팀전
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                            개인전
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3.5"><StatusBadge status={g.status} /></td>
                       <td className="px-4 py-3.5"><span className="text-sm text-slate-400">{g.max_rounds}판</span></td>
@@ -325,6 +381,32 @@ export default function CustomGamesPage() {
             </div>
 
             <div>
+              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임 유형</label>
+              <div className="flex gap-2">
+                {([['solo', '개인전'], ['team', '팀전 (4팀 × 2인)']] as const).map(([type, label]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => { setGameType(type); setSelectedIds(new Set()) }}
+                    disabled={creating}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+                      gameType === type
+                        ? type === 'team'
+                          ? 'bg-violet-500/25 border border-violet-500/50 text-violet-300'
+                          : 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
+                        : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
+                    } disabled:opacity-50`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {gameType === 'team' && (
+                <p className="mt-1.5 text-xs text-violet-400/70">팀전은 멤버 + 게스트 합산 정확히 8명 필요</p>
+              )}
+            </div>
+
+            <div>
               <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">내전 이름</label>
               <input
                 type="text"
@@ -363,7 +445,7 @@ export default function CustomGamesPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">
-                참가자 선택 ({selectedIds.size}명 / 최대 8명)
+                멤버 선택 ({selectedIds.size}명 {gameType === 'team' ? `/ 합산 정확히 8명` : '/ 최대 8명'})
               </label>
               <div
                 className="rounded-xl border overflow-y-auto max-h-52"
@@ -374,7 +456,7 @@ export default function CustomGamesPage() {
                 ) : (
                   members.map((m) => {
                     const checked = selectedIds.has(m.id)
-                    const disabled = creating || (!checked && selectedIds.size >= 8)
+                    const disabled = creating || (!checked && totalSelected >= 8)
                     return (
                       <label
                         key={m.id}
@@ -407,6 +489,116 @@ export default function CustomGamesPage() {
               </div>
             </div>
 
+            {/* 게스트 섹션 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-slate-400 tracking-widest uppercase">
+                  게스트 ({guestInputs.length}명)
+                </label>
+                {!showGuestForm && totalSelected < 8 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowGuestForm(true)}
+                    disabled={creating}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg
+                      text-xs font-bold transition-all duration-150
+                      bg-amber-500/10 border border-amber-500/20 text-amber-400
+                      hover:bg-amber-500/20 hover:text-amber-300
+                      disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
+                      <path d="M12 4v16m8-8H4" />
+                    </svg>
+                    추가
+                  </button>
+                )}
+              </div>
+
+              {/* 이미 추가된 게스트 목록 */}
+              {guestInputs.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {guestInputs.map((g, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border"
+                      style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span className="text-xs font-bold text-white">{g.display_name}</span>
+                      <span className="text-[10px] text-slate-500">{g.riot_game_name}#{g.riot_tagline}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGuest(i)}
+                        disabled={creating}
+                        className="ml-0.5 text-slate-600 hover:text-red-400 transition-colors disabled:opacity-40"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
+                          <path d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 게스트 입력 폼 */}
+              {showGuestForm && (
+                <div
+                  className="p-3 rounded-xl border flex flex-col gap-2"
+                  style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}
+                >
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="표시 이름 (예: 홍길동 부계)"
+                      disabled={creating}
+                      className="flex-1 px-3 py-2 rounded-lg text-xs text-white
+                        bg-white/[0.04] border border-white/[0.08]
+                        placeholder:text-slate-600
+                        focus:outline-none focus:border-amber-500/40
+                        disabled:opacity-50 transition-colors"
+                    />
+                    <input
+                      type="text"
+                      value={guestRiotId}
+                      onChange={(e) => setGuestRiotId(e.target.value)}
+                      placeholder="닉네임#태그"
+                      disabled={creating}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddGuestToList() }}
+                      className="flex-1 px-3 py-2 rounded-lg text-xs text-white
+                        bg-white/[0.04] border border-white/[0.08]
+                        placeholder:text-slate-600
+                        focus:outline-none focus:border-amber-500/40
+                        disabled:opacity-50 transition-colors"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setShowGuestForm(false); setGuestName(''); setGuestRiotId('') }}
+                      disabled={creating}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddGuestToList}
+                      disabled={creating || !guestName.trim() || !guestRiotId.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold
+                        bg-amber-500/15 border border-amber-500/25 text-amber-400
+                        hover:bg-amber-500/25 hover:text-amber-300
+                        disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      추가
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-1">
               <button
                 type="button"
@@ -422,7 +614,7 @@ export default function CustomGamesPage() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={creating || selectedIds.size < 2 || !titleInput.trim()}
+                disabled={creating || (gameType === 'team' ? totalSelected !== 8 : totalSelected < 2) || !titleInput.trim()}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl
                   text-sm font-bold transition-all duration-200
                   bg-indigo-500/20 border border-indigo-500/40 text-indigo-300

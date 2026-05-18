@@ -9,7 +9,7 @@ export async function POST(_req: Request, ctx: Ctx) {
 
   const { data: game, error: gameError } = await supabaseAdmin
     .from('custom_games')
-    .select('id, status, max_rounds')
+    .select('id, status, game_type, max_rounds')
     .eq('id', gameId)
     .single()
 
@@ -94,8 +94,32 @@ export async function POST(_req: Request, ctx: Ctx) {
     )
   }
 
-  // ── 라운드 생성 ───────────────────────────────────────────────────
   const nextRoundNumber = roundCount + 1
+
+  // ── 팀전: 팀 배정 조회 ────────────────────────────────────────────
+  let teamByParticipant: Map<string, number> | null = null
+  if (game.game_type === 'team') {
+    const { data: teamRows } = await supabaseAdmin
+      .from('custom_game_teams')
+      .select('team_index, member_id, guest_id')
+      .eq('custom_game_id', gameId)
+      .eq('round_number', nextRoundNumber)
+
+    if (!teamRows || teamRows.length === 0) {
+      return NextResponse.json(
+        { error: '팀을 먼저 배정해주세요' },
+        { status: 400 },
+      )
+    }
+
+    teamByParticipant = new Map<string, number>()
+    teamRows.forEach((t) => {
+      const id = t.member_id ?? t.guest_id!
+      teamByParticipant!.set(id, t.team_index)
+    })
+  }
+
+  // ── 라운드 생성 ───────────────────────────────────────────────────
   const { data: round, error: roundError } = await supabaseAdmin
     .from('custom_game_rounds')
     .insert({
@@ -115,11 +139,32 @@ export async function POST(_req: Request, ctx: Ctx) {
   const memberResults: { round_id: string; member_id: string; placement: number; points: number }[] = []
   const guestResults: { round_id: string; guest_id: string; placement: number; points: number }[] = []
 
+  // 팀전: 팀별 합산 점수 계산
+  const teamScores = new Map<number, number>()
+  if (teamByParticipant) {
+    matchResult.placements
+      .filter((p) => participantByPuuid.has(p.puuid))
+      .forEach((p) => {
+        const participant = participantByPuuid.get(p.puuid)!
+        const teamIdx = teamByParticipant!.get(participant.id)
+        if (teamIdx !== undefined) {
+          teamScores.set(teamIdx, (teamScores.get(teamIdx) ?? 0) + (9 - p.placement))
+        }
+      })
+  }
+
   matchResult.placements
     .filter((p) => participantByPuuid.has(p.puuid))
     .forEach((p) => {
       const participant = participantByPuuid.get(p.puuid)!
-      const base = { placement: p.placement, points: 9 - p.placement }
+      let points: number
+      if (teamByParticipant) {
+        const teamIdx = teamByParticipant.get(participant.id)
+        points = teamIdx !== undefined ? (teamScores.get(teamIdx) ?? 0) : 0
+      } else {
+        points = 9 - p.placement
+      }
+      const base = { placement: p.placement, points }
       if (participant.type === 'member') {
         memberResults.push({ round_id: round.id, member_id: participant.id, ...base })
       } else {

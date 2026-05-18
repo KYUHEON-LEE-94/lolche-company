@@ -107,9 +107,20 @@ export type CustomGame = {
   id: string
   title: string
   status: string // 'in_progress' | 'ended'
+  game_type: string // 'solo' | 'team'
   max_rounds: number
   created_at: string
   ended_at: string | null
+}
+
+export type CustomGameTeam = {
+  id: string
+  custom_game_id: string
+  round_number: number
+  team_index: number
+  member_id: string | null
+  guest_id: string | null
+  created_at: string
 }
 
 export type CustomGameParticipant = {
@@ -259,6 +270,14 @@ export interface Database {
         Row: CustomGameGuestResult
         Insert: Optional<Omit<CustomGameGuestResult, 'id'>> & { id?: string }
         Update: Optional<CustomGameGuestResult>
+      }
+      custom_game_teams: {
+        Row: CustomGameTeam
+        Insert: Optional<Omit<CustomGameTeam, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Optional<CustomGameTeam>
       }
     }
     Views: Record<string, never>
