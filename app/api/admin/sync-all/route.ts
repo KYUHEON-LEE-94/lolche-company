@@ -11,7 +11,7 @@ export const maxDuration = 300
 const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '20')
 const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
 const STALE_HOURS = Number(process.env.SYNC_STALE_HOURS ?? '1')
-const INCLUDE_RUNNING = false
+const STUCK_RUNNING_MINUTES = 30
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
@@ -64,16 +64,16 @@ async function runSyncAll(params: {
   const cursorId = params.cursorId ?? null
 
   const staleSince = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString()
+  const stuckSince = new Date(Date.now() - STUCK_RUNNING_MINUTES * 60 * 1000).toISOString()
 
-  // ✅ Vercel 콘솔에서 cron 호출인지 눈으로 바로 확인
-  const vercelCron = params.req?.headers.get('x-vercel-cron') // 있으면 cron 호출일 가능성 높음
+  const vercelCron = params.req?.headers.get('x-vercel-cron')
   console.log('[sync-all] start', {
     trigger: params.trigger,
     vercelCron,
     limit,
     cursorId,
     staleSince,
-    includeRunning: INCLUDE_RUNNING,
+    stuckSince,
   })
 
   // ✅ cron일 때만 TTL 정리 (추가 cron 필요 없음)
@@ -81,15 +81,17 @@ async function runSyncAll(params: {
     await cleanupSyncLogs()
   }
 
+  // stale 조건: last_synced_at 없거나 오래됨
+  // running 조건: running이 아니거나, 30분 이상 stuck된 running은 재시도
   let q = supabaseAdmin
       .from('members')
       .select('id, member_name, last_synced_at, sync_status')
       .or(`last_synced_at.is.null,last_synced_at.lt.${staleSince}`)
+      .or(`sync_status.neq.running,last_sync_started_at.is.null,last_sync_started_at.lt.${stuckSince}`)
       .order('id', { ascending: true })
       .limit(limit)
 
   if (cursorId) q = q.gt('id', cursorId)
-  if (!INCLUDE_RUNNING) q = q.neq('sync_status', 'running')
 
   const { data: members, error } = await q
   if (error) {
