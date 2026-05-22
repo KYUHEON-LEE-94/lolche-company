@@ -10,8 +10,16 @@ type RawUnit = {
   tier?: number
 }
 
-export async function GET(_req: Request, ctx: Ctx) {
+const QUEUE_ID: Record<string, number> = {
+  solo: 1100,
+  doubleup: 1160,
+}
+
+export async function GET(req: Request, ctx: Ctx) {
   const { id: memberId } = await ctx.params
+  const { searchParams } = new URL(req.url)
+  const queueParam = searchParams.get('queue') ?? 'solo'
+  const queueId = QUEUE_ID[queueParam]
 
   // 참가자 결과 조회
   const { data: parts, error: partsError } = await supabaseAdmin
@@ -25,12 +33,18 @@ export async function GET(_req: Request, ctx: Ctx) {
   const matchIds = parts.map((p) => p.match_id)
 
   // 매치 메타데이터를 game_datetime 기준 최신 5개
-  const { data: matchRows, error: matchError } = await supabaseAdmin
+  let matchQuery = supabaseAdmin
     .from('tft_matches')
     .select('match_id, game_datetime, game_length_seconds, queue_id')
     .in('match_id', matchIds)
     .order('game_datetime', { ascending: false })
     .limit(5)
+
+  if (queueId !== undefined) {
+    matchQuery = matchQuery.eq('queue_id', queueId)
+  }
+
+  const { data: matchRows, error: matchError } = await matchQuery
 
   if (matchError) return NextResponse.json({ error: matchError.message }, { status: 500 })
 
