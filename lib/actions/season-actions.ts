@@ -64,10 +64,11 @@ export async function archiveSeason(seasonId: number, queueType: 'solo' | 'doubl
 }
 
 export async function updateSeasonStatusAction(id: number, targetStatus: boolean) {
-    // 여기에 관리자 체크 로직을 넣으면 더 안전합니다. (이미 구현된 requireAdmin 활용 권장)
+    const { ok } = await requireAdmin()
+    if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
 
     try {
-        const { supabaseService } = await import('@/lib/supabase/service'); // 서비스 롤 키를 사용하는 서버용 클라이언트
+        const { supabaseService } = await import('@/lib/supabase/service');
 
         // 1. 만약 활성화(true)하려는 것이라면, 다른 모든 시즌을 비활성화
         if (targetStatus) {
@@ -95,6 +96,9 @@ export async function updateSeasonStatusAction(id: number, targetStatus: boolean
 }
 
 export async function deleteSeasonHallOfFameAction(seasonId: number) {
+    const { ok } = await requireAdmin()
+    if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
+
     try {
         const { supabaseService } = await import('@/lib/supabase/service');
 
