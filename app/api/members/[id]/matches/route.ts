@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { getKrMaps, toKrAugmentName, toKrTraitName } from '@/lib/tft/tftLocale'
+import { getKrMaps, toKrAugmentName, toKrTraitName, toKrChampionName, getUnitImageUrl } from '@/lib/tft/tftLocale'
 
 type Ctx = { params: Promise<{ id: string }> }
+
+type RawUnit = {
+  character_id?: string
+  rarity?: number
+  tier?: number
+}
 
 export async function GET(_req: Request, ctx: Ctx) {
   const { id: memberId } = await ctx.params
@@ -42,11 +48,24 @@ export async function GET(_req: Request, ctx: Ctx) {
       : null
     const translatedTraits = rawTraits?.map((t) => ({ ...t, name: toKrTraitName(t.name, krMaps) })) ?? null
 
+    const rawUnits = Array.isArray(part?.units) ? (part.units as RawUnit[]) : []
+    const translatedUnits = rawUnits
+      .filter((u) => !!u.character_id)
+      .sort((a, b) => (b.rarity ?? 0) - (a.rarity ?? 0) || (b.tier ?? 0) - (a.tier ?? 0))
+      .map((u) => ({
+        character_id: u.character_id!,
+        name: toKrChampionName(u.character_id!, krMaps),
+        rarity: u.rarity ?? 0,
+        tier: u.tier ?? 1,
+        imageUrl: getUnitImageUrl(u.character_id!),
+      }))
+
     return {
       ...m,
       ...part,
       augments: translatedAugments,
       traits: translatedTraits,
+      units: translatedUnits,
     }
   })
 
