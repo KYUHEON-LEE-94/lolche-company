@@ -644,6 +644,7 @@ export default function MemberRanking({
         {selectedMember && (
           <MemberDetailPanel
             member={selectedMember}
+            queue={queueType}
             onClose={() => setSelectedMember(null)}
           />
         )}
