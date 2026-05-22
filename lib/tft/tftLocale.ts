@@ -15,12 +15,18 @@ function cleanName(raw: string): string {
     .trim()
 }
 
+// 일부 챔피언은 characterId와 다른 파일명을 사용 (예: Rhaast = Kayn 변신 형태)
+const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
+  tft17_rhaast: 'tft17_kayn_slay_square',
+}
+
 /** character_id → Community Dragon HUD 스퀘어 이미지 URL (시즌 자동 감지) */
 export function getUnitImageUrl(characterId: string): string {
   const lower = characterId.toLowerCase()
   const setMatch = characterId.match(/^TFT(\d+)_/i)
   const setNum = setMatch?.[1] ?? '17'
-  return `https://raw.communitydragon.org/latest/game/assets/characters/${lower}/hud/${lower}_square.tft_set${setNum}.png`
+  const filename = IMAGE_FILENAME_OVERRIDES[lower] ?? `${lower}_square`
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${lower}/hud/${filename}.tft_set${setNum}.png`
 }
 
 /** rarity(0-4) → 비용 등급 Tailwind border 클래스 */
