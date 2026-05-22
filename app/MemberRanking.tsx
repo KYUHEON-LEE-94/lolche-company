@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
@@ -9,6 +9,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
 import { tierScore } from '@/app/components/ranking/LpSparkline'
+import { TIER_ORDER, RANK_ORDER } from '@/lib/constants/tierOrder'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -107,17 +108,11 @@ function LpDeltaBadge({ delta }: { delta: LpDelta }) {
 // ─── 티어 헬퍼 ───────────────────────────────────────────────────────────────
 
 function rankOrder(rank: string | null): number {
-  const map: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 }
-  return rank ? (map[rank] ?? 999) : 999
+  return rank ? (RANK_ORDER[rank] ?? 999) : 999
 }
 
 function tierOrder(tier: string | null): number {
-  const map: Record<string, number> = {
-    CHALLENGER: 1, GRANDMASTER: 2, MASTER: 3,
-    DIAMOND: 4, EMERALD: 5, PLATINUM: 6,
-    GOLD: 7, SILVER: 8, BRONZE: 9, IRON: 10,
-  }
-  return tier ? (map[tier] ?? 999) : 999
+  return tier ? (TIER_ORDER[tier] ?? 999) : 999
 }
 
 function getQueueTierAndLp(m: Member, queue: QueueType) {
@@ -237,14 +232,13 @@ function SyncButton({
 
 // ─── 멤버 카드 ───────────────────────────────────────────────────────────────
 
-function MemberCard({
+const MemberCard = memo(function MemberCard({
                       member,
                       idx,
                       queue,
                       isSyncing,
                       syncMsg,
                       effectiveLastSyncedAt,
-                      nowMs,
                       onSync,
                       onDetailOpen,
                     }: {
@@ -254,10 +248,14 @@ function MemberCard({
   isSyncing: boolean
   syncMsg: string
   effectiveLastSyncedAt: string | null | undefined
-  nowMs: number
-  onSync: () => void
-  onDetailOpen: () => void
+  onSync: (id: string) => void
+  onDetailOpen: (member: Member) => void
 }) {
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
   const { tier, rank, lp } = getQueueTierAndLp(member, queue)
   const style = getTierStyle(tier)
   const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
@@ -273,7 +271,7 @@ function MemberCard({
 
   return (
       <article
-          onClick={onDetailOpen}
+          onClick={() => onDetailOpen(member)}
           className={`
         group relative flex flex-col rounded-2xl cursor-pointer
         bg-[#0d1117] border border-white/[0.06]
@@ -418,13 +416,13 @@ function MemberCard({
             <SyncButton
                 remainSec={remainSec}
                 isSyncing={isSyncing}
-                onSync={onSync}
+                onSync={() => onSync(member.id)}
             />
           </div>
         </div>
       </article>
   )
-}
+})
 
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
 
@@ -442,16 +440,9 @@ export default function MemberRanking({
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncMsgById, setSyncMsgById] = useState<Record<string, string>>({})
   const [localLastSynced, setLocalLastSynced] = useState<Record<string, string | null>>({})
-  const [nowMs, setNowMs] = useState(0)
-
-  useEffect(() => {
-    setNowMs(Date.now())
-    const t = setInterval(() => setNowMs(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
 
   // 동기화
-  const handleSyncOne = async (id: string) => {
+  const handleSyncOne = useCallback(async (id: string) => {
     if (syncingId) return
     setSyncingId(id)
     setSyncMsgById((prev) => ({ ...prev, [id]: '' }))
@@ -479,7 +470,7 @@ export default function MemberRanking({
     } finally {
       setSyncingId(null)
     }
-  }
+  }, [syncingId])
 
   // 정렬
   const sorted = useMemo(() => {
@@ -626,9 +617,8 @@ export default function MemberRanking({
                             isSyncing={syncingId === m.id}
                             syncMsg={syncMsgById[m.id] ?? ''}
                             effectiveLastSyncedAt={effectiveLastSyncedAt}
-                            nowMs={nowMs}
-                            onSync={() => handleSyncOne(m.id)}
-                            onDetailOpen={() => setSelectedMember(m)}
+                            onSync={handleSyncOne}
+                            onDetailOpen={setSelectedMember}
                         />
                     )
                   })}

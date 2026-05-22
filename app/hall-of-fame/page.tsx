@@ -1,27 +1,7 @@
 import { supabaseService } from '@/lib/supabase/service';
 import HallOfFameClientPage from './_components/HallOfFameClientPage';
 import { unstable_noStore as noStore } from 'next/cache';
-
-// ─── 1. 가중치 설정 ──────────────────────────────────────────────────
-const TIER_ORDER: Record<string, number> = {
-    'CHALLENGER': 100,
-    'GRANDMASTER': 90,
-    'MASTER': 80,
-    'DIAMOND': 70,
-    'EMERALD': 60,
-    'PLATINUM': 50,
-    'GOLD': 40,
-    'SILVER': 30,
-    'BRONZE': 20,
-    'IRON': 10,
-};
-
-const RANK_ORDER: Record<string, number> = {
-    'I': 4,
-    'II': 3,
-    'III': 2,
-    'IV': 1,
-};
+import { TIER_ORDER, RANK_ORDER } from '@/lib/constants/tierOrder';
 
 export default async function HallOfFamePage({
                                                  searchParams,
@@ -57,13 +37,13 @@ export default async function HallOfFamePage({
     // 4. 공동 순위 계산 로직 적용
     // A. 먼저 티어 > 랭크 > LP 순으로 정렬합니다.
     const sorted = (rawRankers || []).sort((a, b) => {
-        const tierA = TIER_ORDER[a.tier?.toUpperCase()] || 0;
-        const tierB = TIER_ORDER[b.tier?.toUpperCase()] || 0;
-        if (tierB !== tierA) return tierB - tierA;
+        const tierA = TIER_ORDER[a.tier?.toUpperCase() ?? ''] ?? 999;
+        const tierB = TIER_ORDER[b.tier?.toUpperCase() ?? ''] ?? 999;
+        if (tierA !== tierB) return tierA - tierB;
 
-        const rankA = RANK_ORDER[a.rank ?? ''] || 0;
-        const rankB = RANK_ORDER[b.rank ?? ''] || 0;
-        if (rankB !== rankA) return rankB - rankA;
+        const rankA = RANK_ORDER[a.rank ?? ''] ?? 999;
+        const rankB = RANK_ORDER[b.rank ?? ''] ?? 999;
+        if (rankA !== rankB) return rankA - rankB;
 
         return (b.lp || 0) - (a.lp || 0);
     });
