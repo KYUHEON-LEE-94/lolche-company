@@ -172,9 +172,11 @@ function MatchCard({ match }: { match: MatchRow }) {
 
 export default function MemberDetailPanel({
   member,
+  queue = 'solo',
   onClose,
 }: {
   member: MemberInfo
+  queue?: 'solo' | 'doubleup'
   onClose: () => void
 }) {
   const [history, setHistory] = useState<HistoryPoint[]>([])
@@ -189,7 +191,7 @@ export default function MemberDetailPanel({
       .catch(() => {})
       .finally(() => setLoadingHistory(false))
 
-    fetch(`/api/members/${member.id}/matches`)
+    fetch(`/api/members/${member.id}/matches?queue=${queue}`)
       .then((r) => r.json())
       .then((d) => setMatches(d.matches ?? []))
       .catch(() => {})
@@ -248,12 +250,12 @@ export default function MemberDetailPanel({
             {/* LP 히스토리 차트 */}
             <section>
               <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
-                LP 히스토리 (솔로)
+                LP 히스토리 ({queue === 'solo' ? '솔로' : '더블업'})
               </h3>
               {loadingHistory ? (
                 <div className="h-20 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
               ) : (
-                <LpSparkline history={history} />
+                <LpSparkline history={history} queue={queue} />
               )}
             </section>
 
