@@ -6,6 +6,9 @@ export type HistoryPoint = {
   tft_tier: string | null
   tft_rank: string | null
   tft_lp: number | null
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_lp: number | null
   recorded_at: string
 }
 
@@ -36,10 +39,19 @@ function tierLabel(tier: string | null, rank: string | null, lp: number | null) 
   return isMaster ? `${tier} ${lp ?? 0}LP` : `${tier} ${rank ?? ''} ${lp ?? 0}LP`
 }
 
-export default function LpSparkline({ history }: { history: HistoryPoint[] }) {
+export default function LpSparkline({
+  history,
+  queue = 'solo',
+}: {
+  history: HistoryPoint[]
+  queue?: 'solo' | 'doubleup'
+}) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
 
-  const valid = history.filter((h) => h.tft_lp !== null)
+  const isDoubleup = queue === 'doubleup'
+  const valid = history.filter((h) =>
+    isDoubleup ? h.tft_doubleup_lp !== null : h.tft_lp !== null,
+  )
   if (valid.length < 2) {
     return (
       <div className="flex items-center justify-center h-20 text-slate-600 text-xs">
@@ -48,7 +60,11 @@ export default function LpSparkline({ history }: { history: HistoryPoint[] }) {
     )
   }
 
-  const scores = valid.map((h) => tierScore(h.tft_tier, h.tft_rank, h.tft_lp))
+  const scores = valid.map((h) =>
+    isDoubleup
+      ? tierScore(h.tft_doubleup_tier, h.tft_doubleup_rank, h.tft_doubleup_lp)
+      : tierScore(h.tft_tier, h.tft_rank, h.tft_lp),
+  )
   const minS = Math.min(...scores)
   const maxS = Math.max(...scores)
   const range = maxS - minS || 100
@@ -133,7 +149,9 @@ export default function LpSparkline({ history }: { history: HistoryPoint[] }) {
         >
           <span className="text-slate-400 mr-1">{formatDate(valid[hoverIdx].recorded_at)}</span>
           <span style={{ color: lineColor }}>
-            {tierLabel(valid[hoverIdx].tft_tier, valid[hoverIdx].tft_rank, valid[hoverIdx].tft_lp)}
+            {isDoubleup
+              ? tierLabel(valid[hoverIdx].tft_doubleup_tier, valid[hoverIdx].tft_doubleup_rank, valid[hoverIdx].tft_doubleup_lp)
+              : tierLabel(valid[hoverIdx].tft_tier, valid[hoverIdx].tft_rank, valid[hoverIdx].tft_lp)}
           </span>
         </div>
       )}
