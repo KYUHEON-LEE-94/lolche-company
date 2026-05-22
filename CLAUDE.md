@@ -63,6 +63,11 @@ lib/
     writeSyncLog.ts             # sync_logs 테이블 감사 로그
   actions/
     season-actions.ts           # 시즌 Server Actions
+  tft/
+    tftLocale.ts                # 기물 이미지 URL 생성, 한국어 이름 변환 (KrMaps 캐시)
+
+app/lib/
+  isAdmin.ts                    # requireAdmin() — 세션 확인 + admins 테이블 체크
 
 types/
   supabase.ts                   # DB 전체 TypeScript 스키마
@@ -136,6 +141,11 @@ NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
   catch (e) { someHandler(e instanceof Error ? e.message : '오류 발생') }
   ```
 - **Server Action:** `lib/actions/` 폴더, 파일 상단에 `'use server'` 선언
+- **Server Action 권한 체크:** 데이터 변경(insert/update/delete) Server Action은 반드시 함수 첫 줄에 `requireAdmin()` 호출. 미체크 시 인증 없이 DB 조작 가능.
+  ```ts
+  const { ok } = await requireAdmin()
+  if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
+  ```
 - **Client Component:** 파일 상단에 `'use client'` 선언
 - **이미지:** `<img>` 대신 `next/image`의 `<Image />` 사용 (외부 URL 허용 도메인: `**.supabase.co`)
 
@@ -176,6 +186,21 @@ EMERALD(5) > PLATINUM(6) > GOLD(7) > SILVER(8) > BRONZE(9) > IRON(10)
 
 `hall-of-fame/page.tsx`에서 `reduce`로 계산 (1-2-2-4 방식):
 같은 티어·랭크·LP면 이전 순위 유지, 다르면 `index + 1`로 갱신.
+
+## 기물 이미지 URL (CommunityDragon)
+
+`lib/tft/tftLocale.ts`의 `getUnitImageUrl(characterId)`가 생성하는 URL 패턴:
+```
+https://raw.communitydragon.org/latest/game/assets/characters/{lower}/hud/{lower}_square.tft_set{N}.png
+```
+
+일부 챔피언은 `{characterId}_square` 가 아닌 다른 파일명 사용. 이 경우 `IMAGE_FILENAME_OVERRIDES` 맵에 추가:
+```ts
+const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
+  tft17_rhaast: 'tft17_kayn_slay_square',  // Rhaast = Kayn 변신 형태
+}
+```
+새 시즌 챔피언 이미지 404 발생 시 CommunityDragon `files.exported.txt`에서 실제 파일명 확인 후 맵에 추가.
 
 ## 주의 사항
 
