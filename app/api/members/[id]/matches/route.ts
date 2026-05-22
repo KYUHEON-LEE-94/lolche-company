@@ -21,22 +21,22 @@ export async function GET(req: Request, ctx: Ctx) {
   const queueParam = searchParams.get('queue') ?? 'solo'
   const queueId = QUEUE_ID[queueParam]
 
-  // 참가자 결과 조회
-  const { data: parts, error: partsError } = await supabaseAdmin
+  // 1) 멤버가 참가한 match_id 목록만 먼저 조회
+  const { data: memberParts, error: memberPartsError } = await supabaseAdmin
     .from('tft_match_participants')
-    .select('match_id, placement, level, augments, traits, units, time_eliminated')
+    .select('match_id')
     .eq('member_id', memberId)
 
-  if (partsError) return NextResponse.json({ error: partsError.message }, { status: 500 })
-  if (!parts || parts.length === 0) return NextResponse.json({ matches: [] })
+  if (memberPartsError) return NextResponse.json({ error: memberPartsError.message }, { status: 500 })
+  if (!memberParts || memberParts.length === 0) return NextResponse.json({ matches: [] })
 
-  const matchIds = parts.map((p) => p.match_id)
+  const allMatchIds = memberParts.map((p) => p.match_id)
 
-  // 매치 메타데이터를 game_datetime 기준 최신 5개
+  // 2) queue + 최신순 limit 5 먼저 적용
   let matchQuery = supabaseAdmin
     .from('tft_matches')
     .select('match_id, game_datetime, game_length_seconds, queue_id')
-    .in('match_id', matchIds)
+    .in('match_id', allMatchIds)
     .order('game_datetime', { ascending: false })
     .limit(5)
 
@@ -47,9 +47,21 @@ export async function GET(req: Request, ctx: Ctx) {
   const { data: matchRows, error: matchError } = await matchQuery
 
   if (matchError) return NextResponse.json({ error: matchError.message }, { status: 500 })
+  if (!matchRows || matchRows.length === 0) return NextResponse.json({ matches: [] })
+
+  // 3) 최종 5개 match_id에 대한 참가자 상세 조회
+  const filteredMatchIds = matchRows.map((m) => m.match_id)
+
+  const { data: parts, error: partsError } = await supabaseAdmin
+    .from('tft_match_participants')
+    .select('match_id, placement, level, augments, traits, units, time_eliminated')
+    .eq('member_id', memberId)
+    .in('match_id', filteredMatchIds)
+
+  if (partsError) return NextResponse.json({ error: partsError.message }, { status: 500 })
 
   const krMaps = await getKrMaps()
-  const partsMap = new Map(parts.map((p) => [p.match_id, p]))
+  const partsMap = new Map((parts ?? []).map((p) => [p.match_id, p]))
 
   const matches = (matchRows ?? []).map((m) => {
     const part = partsMap.get(m.match_id)
