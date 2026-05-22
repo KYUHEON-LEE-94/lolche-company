@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getKrMaps, toKrAugmentName, toKrTraitName } from '@/lib/tft/tftLocale'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -27,12 +28,27 @@ export async function GET(_req: Request, ctx: Ctx) {
 
   if (matchError) return NextResponse.json({ error: matchError.message }, { status: 500 })
 
+  const krMaps = await getKrMaps()
   const partsMap = new Map(parts.map((p) => [p.match_id, p]))
 
-  const matches = (matchRows ?? []).map((m) => ({
-    ...m,
-    ...(partsMap.get(m.match_id) ?? {}),
-  }))
+  const matches = (matchRows ?? []).map((m) => {
+    const part = partsMap.get(m.match_id)
+
+    const rawAugments = Array.isArray(part?.augments) ? (part.augments as string[]) : null
+    const translatedAugments = rawAugments?.map((id) => toKrAugmentName(id, krMaps)) ?? null
+
+    const rawTraits = Array.isArray(part?.traits)
+      ? (part.traits as Array<{ name: string } & Record<string, unknown>>)
+      : null
+    const translatedTraits = rawTraits?.map((t) => ({ ...t, name: toKrTraitName(t.name, krMaps) })) ?? null
+
+    return {
+      ...m,
+      ...part,
+      augments: translatedAugments,
+      traits: translatedTraits,
+    }
+  })
 
   return NextResponse.json({ matches })
 }
