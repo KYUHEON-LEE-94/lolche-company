@@ -1,9 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import LpSparkline, { type HistoryPoint } from './LpSparkline'
 import type { Json } from '@/types/supabase'
+import { rarityBorderClass } from '@/lib/tft/tftLocale'
+
+type ProcessedUnit = {
+  character_id: string
+  name: string
+  rarity: number
+  tier: number
+  imageUrl: string
+}
 
 type MatchRow = {
   match_id: string
@@ -14,6 +24,7 @@ type MatchRow = {
   level: number | null
   augments: Json | null
   traits: Json | null
+  units: ProcessedUnit[] | null
 }
 
 type MemberInfo = {
@@ -70,10 +81,43 @@ function getActiveTraits(traits: Json | null) {
     .map((t) => ({ name: cleanName(t.name), units: t.num_units, style: t.style }))
 }
 
+function UnitIcon({ unit }: { unit: ProcessedUnit }) {
+  const [imgError, setImgError] = useState(false)
+  const border = rarityBorderClass(unit.rarity)
+
+  return (
+    <div className="flex flex-col items-center gap-0.5" title={unit.name}>
+      <div className={`relative w-8 h-8 rounded overflow-hidden border-2 ${border} bg-white/5`}>
+        {!imgError ? (
+          <Image
+            src={unit.imageUrl}
+            alt={unit.name}
+            fill
+            sizes="32px"
+            className="object-cover"
+            onError={() => setImgError(true)}
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-500 leading-none text-center px-0.5">
+            {unit.name}
+          </div>
+        )}
+      </div>
+      {unit.tier >= 2 && (
+        <div className="text-[7px] text-yellow-300 leading-none tracking-[-1px]">
+          {'★'.repeat(unit.tier)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function MatchCard({ match }: { match: MatchRow }) {
   const placement = match.placement ?? 0
   const augments = getAugments(match.augments)
   const traits = getActiveTraits(match.traits)
+  const units = match.units ?? []
 
   return (
     <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3 flex gap-3">
@@ -90,6 +134,15 @@ function MatchCard({ match }: { match: MatchRow }) {
             <span className="text-slate-600">{formatGameLength(match.game_length_seconds)}</span>
           )}
         </div>
+
+        {/* 기물 아이콘 */}
+        {units.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {units.map((u, i) => (
+              <UnitIcon key={i} unit={u} />
+            ))}
+          </div>
+        )}
 
         {/* 증강 */}
         {augments.length > 0 && (
