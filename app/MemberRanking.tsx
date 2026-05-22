@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import AuthButtons from '@/app/components/AuthButtons'
 import Image from 'next/image'
 import Link from 'next/link'
+import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
+import { tierScore } from '@/app/components/ranking/LpSparkline'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -54,6 +57,51 @@ function getProfileImageUrl(path: string | null) {
 function getFramePublicUrl(framePath: string) {
   const { data } = supabaseClient.storage.from('profile-frames').getPublicUrl(framePath)
   return data.publicUrl
+}
+
+// ─── LP 변화 계산 ────────────────────────────────────────────────────────────
+
+type LpDelta = { value: number; tierChanged: boolean; prevLabel: string; currLabel: string }
+
+function calcLpDelta(member: Member): LpDelta | null {
+  const curr = member.tft_league_points
+  const prev = member.tft_lp_prev
+  if (curr === null || prev === null) return null
+
+  const currScore = tierScore(member.tft_tier, member.tft_rank, curr)
+  const prevScore = tierScore(member.tft_tier_prev, member.tft_rank_prev, prev)
+  if (currScore < 0 || prevScore < 0) return null
+
+  const tierChanged = member.tft_tier !== member.tft_tier_prev || member.tft_rank !== member.tft_rank_prev
+
+  const prevLabel = member.tft_tier_prev
+    ? `${member.tft_tier_prev}${member.tft_rank_prev ? ` ${member.tft_rank_prev}` : ''}`
+    : ''
+  const currLabel = member.tft_tier
+    ? `${member.tft_tier}${member.tft_rank ? ` ${member.tft_rank}` : ''}`
+    : ''
+
+  return { value: currScore - prevScore, tierChanged, prevLabel, currLabel }
+}
+
+function LpDeltaBadge({ delta }: { delta: LpDelta }) {
+  const up = delta.value >= 0
+  const color = up ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-red-400 border-red-500/30 bg-red-500/10'
+  const sign = up ? '+' : ''
+
+  if (delta.tierChanged && delta.prevLabel && delta.currLabel) {
+    return (
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${color}`}>
+        {delta.prevLabel} → {delta.currLabel}
+      </span>
+    )
+  }
+
+  return (
+    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${color}`}>
+      {sign}{delta.value} LP
+    </span>
+  )
 }
 
 // ─── 티어 헬퍼 ───────────────────────────────────────────────────────────────
@@ -198,6 +246,7 @@ function MemberCard({
                       effectiveLastSyncedAt,
                       nowMs,
                       onSync,
+                      onDetailOpen,
                     }: {
   member: Member
   idx: number
@@ -207,18 +256,26 @@ function MemberCard({
   effectiveLastSyncedAt: string | null | undefined
   nowMs: number
   onSync: () => void
+  onDetailOpen: () => void
 }) {
   const { tier, rank, lp } = getQueueTierAndLp(member, queue)
   const style = getTierStyle(tier)
   const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
+  const lpDelta = queue === 'solo' ? calcLpDelta(member) : null
 
   const profileUrl = getProfileImageUrl(member.profile_image_path)
   const framePath = member.profile_frame_path
 
+  // 최근 5경기 순위 dots
+  const recent5 = member.tft_recent5
+    ? member.tft_recent5.split(',').map(Number).filter(Boolean)
+    : []
+
   return (
       <article
+          onClick={onDetailOpen}
           className={`
-        group relative flex flex-col rounded-2xl
+        group relative flex flex-col rounded-2xl cursor-pointer
         bg-[#0d1117] border border-white/[0.06]
         overflow-hidden
         transition-all duration-300
@@ -321,11 +378,27 @@ function MemberCard({
             </div>
           </div>
 
+          {/* LP 변화 배지 + 최근 5경기 */}
+          {(lpDelta || recent5.length > 0) && (
+            <div className="flex items-center justify-between gap-2 -mt-1">
+              <div className="flex items-center gap-1.5">
+                {recent5.map((p, i) => (
+                  <span
+                    key={i}
+                    title={`${p}위`}
+                    className={`w-2 h-2 rounded-full ${p === 1 ? 'bg-yellow-400' : p <= 4 ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                  />
+                ))}
+              </div>
+              {lpDelta && <LpDeltaBadge delta={lpDelta} />}
+            </div>
+          )}
+
           {/* 구분선 */}
           <div className="h-px bg-white/[0.05]" />
 
           {/* 동기화 영역 */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
             <div className="text-[11px] text-slate-600 leading-snug">
               {effectiveLastSyncedAt && nowMs > 0 ? (
                   <>
@@ -363,6 +436,7 @@ export default function MemberRanking({
   currentSeason?: Season | null
 }) {
   const [queueType, setQueueType] = useState<QueueType>('solo')
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null)
 
   // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
@@ -426,6 +500,7 @@ export default function MemberRanking({
   // ─── 렌더 ────────────────────────────────────────────────────────────────
 
   return (
+    <>
       <div
           className="min-h-screen"
           style={{
@@ -553,6 +628,7 @@ export default function MemberRanking({
                             effectiveLastSyncedAt={effectiveLastSyncedAt}
                             nowMs={nowMs}
                             onSync={() => handleSyncOne(m.id)}
+                            onDetailOpen={() => setSelectedMember(m)}
                         />
                     )
                   })}
@@ -562,5 +638,16 @@ export default function MemberRanking({
           </div>
         </div>
       </div>
+
+      {/* 멤버 디테일 패널 */}
+      <AnimatePresence>
+        {selectedMember && (
+          <MemberDetailPanel
+            member={selectedMember}
+            onClose={() => setSelectedMember(null)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   )
 }

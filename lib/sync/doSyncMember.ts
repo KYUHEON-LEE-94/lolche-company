@@ -49,6 +49,11 @@ export async function doSyncMember(memberId: string) {
     .from('members')
     .update({
       riot_puuid: puuid ?? null,
+      // 현재값을 prev로 저장 (배지용)
+      tft_tier_prev: member.tft_tier,
+      tft_rank_prev: member.tft_rank,
+      tft_lp_prev: member.tft_league_points,
+      // 새 랭크
       tft_tier: solo?.tier ?? null,
       tft_rank: solo?.rank ?? null,
       tft_league_points: solo?.leaguePoints ?? null,
@@ -66,6 +71,22 @@ export async function doSyncMember(memberId: string) {
   if (updateError) throw new SyncError(updateError.message, 500)
   if (!updatedRows || updatedRows.length === 0) {
     throw new SyncError('Update affected 0 rows. (RLS blocked or wrong id?)', 403)
+  }
+
+  // 랭크 히스토리 스냅샷 기록 (solo 또는 doubleup 중 하나라도 있을 때)
+  if (solo || doubleUp) {
+    const { error: historyError } = await supabaseAdmin
+      .from('member_rank_history')
+      .insert({
+        member_id: memberId,
+        tft_tier: solo?.tier ?? null,
+        tft_rank: solo?.rank ?? null,
+        tft_lp: solo?.leaguePoints ?? null,
+        tft_doubleup_tier: doubleUp?.tier ?? null,
+        tft_doubleup_rank: doubleUp?.rank ?? null,
+        tft_doubleup_lp: doubleUp?.leaguePoints ?? null,
+      })
+    if (historyError) console.error('member_rank_history insert error', historyError)
   }
 
   const matchIds = await fetchMatchIdsByPuuid(puuid!)

@@ -42,6 +42,10 @@ export type Member = {
   last_sync_started_at: string | null
   last_sync_finished_at: string | null
   last_sync_error: string | null
+
+  tft_tier_prev: string | null
+  tft_rank_prev: string | null
+  tft_lp_prev: number | null
 }
 
 export type Admin = {
@@ -106,6 +110,18 @@ export type HallOfFame = {
   lp: number | null
   wins: number | null
   recorded_at: string | null
+}
+
+export type MemberRankHistory = {
+  id: string
+  member_id: string
+  tft_tier: string | null
+  tft_rank: string | null
+  tft_lp: number | null
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_lp: number | null
+  recorded_at: string
 }
 
 export type SyncLog = {
@@ -243,6 +259,14 @@ export interface Database {
           recorded_at?: string
         }
         Update: Optional<HallOfFame>
+      }
+      member_rank_history: {
+        Row: MemberRankHistory
+        Insert: Optional<Omit<MemberRankHistory, 'id' | 'recorded_at'>> & {
+          id?: string
+          recorded_at?: string
+        }
+        Update: Optional<MemberRankHistory>
       }
       sync_logs: {
         Row: SyncLog
