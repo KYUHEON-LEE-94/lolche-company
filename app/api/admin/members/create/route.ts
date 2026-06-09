@@ -15,6 +15,9 @@ export async function POST(req: Request) {
     if (!member_name || !riot_game_name || !riot_tagline) {
         return NextResponse.json({ ok: false, message: 'member_name/riot_game_name/riot_tagline 필요' }, { status: 400 })
     }
+    if (member_name.length > 50 || riot_game_name.length > 30 || riot_tagline.length > 10) {
+        return NextResponse.json({ ok: false, message: '입력값이 너무 깁니다.' }, { status: 400 })
+    }
 
     const { data, error } = await supabase
         .schema('public')

@@ -27,6 +27,9 @@ export async function POST(req: Request) {
             { status: 400 }
         )
     }
+    if (member_name.length > 50 || riot_game_name.length > 30 || riot_tagline.length > 10) {
+        return NextResponse.json({ ok: false, message: '입력값이 너무 깁니다.' }, { status: 400 })
+    }
 
     // 4. 데이터베이스 업데이트 실행
     const { error } = await supabase
