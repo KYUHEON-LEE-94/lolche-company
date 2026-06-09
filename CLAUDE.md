@@ -44,10 +44,13 @@ app/
   login/                        # 사용자 로그인
   profile/                      # 프로필 이미지·프레임 편집
   api/                          # API 라우트
-    members/[id]/sync/route.ts  # 개별 멤버 동기화 (쿨다운 적용)
+    members/[id]/
+      sync/route.ts             # 개별 멤버 동기화 (쿨다운 적용)
+      matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
+      history/route.ts          # 랭크 히스토리 조회
     admin/
-      sync-all/route.ts         # 전체 멤버 동기화 (크론/수동)
-      members/                  # 멤버 CRUD API
+      sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동)
+      members/                  # 멤버 CRUD API (create/update/[id])
       profile-frames/           # 프레임 업로드·삭제 API
     profile/                    # 프로필 이미지·프레임 저장 API
 
@@ -57,6 +60,8 @@ lib/
   supabase/
     service.ts                  # supabaseService (service role, 서버 전용)
     browser.ts                  # createClient factory (브라우저)
+  riot/
+    api.ts                      # Riot API 클라이언트 (X-Riot-Token 헤더 인증)
   sync/
     syncMember.ts               # 재시도 + 지수 백오프 래퍼
     doSyncMember.ts             # Riot API 실제 호출 + DB 업데이트
@@ -83,7 +88,8 @@ RIOT_API_KEY=                       # RGAPI-...
 RIOT_ACCOUNT_BASE_URL=              # https://asia.api.riotgames.com/...
 RIOT_TFT_LEAGUE_BASE_URL=           # https://kr.api.riotgames.com/...
 RIOT_TFT_MATCH_BASE_URL=            # https://asia.api.riotgames.com/...
-ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿
+ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
+CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 ```
@@ -117,21 +123,31 @@ NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
       → writeSyncLog() — sync_logs 테이블 기록
 
 [Vercel Cron 09:30 KST]
-  → POST /api/admin/sync-all (Authorization: Bearer ADMIN_SYNC_TOKEN)
-      → 모든 멤버 순차 동기화
+  → GET /api/admin/sync-all (Authorization: Bearer CRON_SECRET 또는 ADMIN_SYNC_TOKEN)
+      → (stale AND not-running) OR stuck-running 멤버 배치 동기화
+      → doCleanup=true: sync_logs TTL 정리 (success 7일, 나머지 30일)
+
+[관리자 수동 실행]
+  → POST /api/admin/sync-all (requireAdmin() 세션 체크)
+      → 위와 동일한 배치 동기화, doCleanup=false
 ```
 
-## Riot API 에러 처리
+## Riot API 인증 및 에러 처리
 
+**인증:** `lib/riot/api.ts`의 `riotFetch()`가 모든 요청에 `X-Riot-Token: ${RIOT_API_KEY}` 헤더를 추가한다.
+URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그 노출 방지.
+
+**에러 처리:**
 - `429`: `Retry-After` 헤더 존중, 없으면 30초 대기 후 재시도
 - `502/503/504`: 재시도 가능 상태코드
 - 나머지: 즉시 실패 처리
-- `SyncError` 클래스 사용 (`lib/sync/syncMember.ts`)
+- `RiotApiError` 클래스 (`lib/riot/api.ts`), `SyncError` 클래스 (`lib/sync/syncMember.ts`)
 
 ## 코드 규칙
 
 - **타입:** `any` 사용 금지. catch 블록은 `catch (e)` + `e instanceof Error ? e.message : 'fallback'` 패턴 사용
-- **Supabase 쿼리:** 필요한 컬럼만 `select`로 지정 (Server Component에서 `*` 지양)
+- **Supabase 쿼리:** 필요한 컬럼만 `select`로 지정 (Server Component에서 `*` 지양). 관계 테이블 조인은 `!inner` 임베디드 선택 사용 (N+1 방지)
+- **API 입력 검증:** 관리자 API의 문자열 입력은 빈값 체크 + 최대 길이 제한 필수 (`member_name` 50자, `riot_game_name` 30자, `riot_tagline` 10자)
 - **catch 패턴:**
   ```ts
   // ❌ 금지
@@ -205,7 +221,9 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 ## 주의 사항
 
 - `SUPABASE_SERVICE_ROLE_KEY`는 RLS를 우회하므로 서버 사이드에서만 사용
-- 크론 엔드포인트(`/api/admin/sync-all`)는 `Authorization: Bearer ADMIN_SYNC_TOKEN` 헤더 필수
+- 크론 엔드포인트(`GET /api/admin/sync-all`)는 `Authorization: Bearer CRON_SECRET`(또는 `ADMIN_SYNC_TOKEN`) 헤더 필수
+- 수동 동기화(`POST /api/admin/sync-all`)는 Supabase 세션 기반 `requireAdmin()` 체크
+- Riot API 키는 반드시 `X-Riot-Token` 헤더로 전송 — URL 쿼리 파라미터 사용 금지
 - 멤버 동기화는 기본 쿨다운 300초 (프론트: `NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC`, 백: `doSyncMember.ts` 내 10분)
 - 프로필 이미지: Supabase Storage `profile-images` 버킷
 - 프레임 이미지: Supabase Storage `profile-frames` 버킷
