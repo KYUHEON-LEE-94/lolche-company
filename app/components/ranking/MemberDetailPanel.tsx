@@ -188,13 +188,13 @@ export default function MemberDetailPanel({
     fetch(`/api/members/${member.id}/history`)
       .then((r) => r.json())
       .then((d) => setHistory(d.history ?? []))
-      .catch(() => {})
+      .catch((e) => console.error('history fetch 실패:', e instanceof Error ? e.message : '오류 발생'))
       .finally(() => setLoadingHistory(false))
 
     fetch(`/api/members/${member.id}/matches?queue=${queue}`)
       .then((r) => r.json())
       .then((d) => setMatches(d.matches ?? []))
-      .catch(() => {})
+      .catch((e) => console.error('matches fetch 실패:', e instanceof Error ? e.message : '오류 발생'))
       .finally(() => setLoadingMatches(false))
   }, [member.id])
 
