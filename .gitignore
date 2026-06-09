@@ -9,41 +9,41 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-.env.local
 
-# === Next.js ===
-.next/
-out/
-.cache/
+# Next.js
+/.next/
+/out/
+/build
+next-env.d.ts
 
-# === Supabase ===
+# env files
+.env*
+
+# Vercel
+.vercel
+
+# Supabase
 .supabase/
 supabase/.temp/
 supabase/migrations/.temp/
 supabase/config.toml
-.supabase/functions/.env
-.supabase/functions/node_modules/
-.supabase/functions/dist/
 
-# === 로그 및 빌드 파일 ===
-*.log
-*.tsbuildinfo
-trace/
-next-env.d.ts
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
+# Claude Code (agents/ and skills/ are tracked for harness)
+.claude/*
+!.claude/agents/
+!.claude/agents/**
+!.claude/skills/
+!.claude/skills/**
 
 # misc
 .DS_Store
 *.pem
+*.log
+*.tsbuildinfo
+*.code-workspace
+*.swp
+*.local
+*.sqlite
 
 # debug
 npm-debug.log*
@@ -51,20 +51,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# IDE/에디터
-*.code-workspace
-*.swp
-
-# Test artifacts
-coverage/
-test-results/
-
-# === 기타 ===
-*.local
-*.sqlite
+# test artifacts
+/coverage
+/test-results
+trace/

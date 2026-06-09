@@ -227,3 +227,14 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 - 멤버 동기화는 기본 쿨다운 300초 (프론트: `NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC`, 백: `doSyncMember.ts` 내 10분)
 - 프로필 이미지: Supabase Storage `profile-images` 버킷
 - 프레임 이미지: Supabase Storage `profile-frames` 버킷
+
+## 하네스: lolche-dev
+
+**목표:** 코드 변경 작업을 Analyst → Developer → QA 파이프라인으로 안전하게 처리
+
+**트리거:** 기능 추가·버그 수정·리팩토링·보안 개선 등 코드 변경 요청 시 `lolche-dev` 스킬을 사용하라. 단순 코드 설명이나 질문은 직접 응답 가능.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-06-09 | 초기 구성 | 전체 | Analyst→Developer→QA 파이프라인 구성 |
