@@ -81,13 +81,15 @@ async function runSyncAll(params: {
     await cleanupSyncLogs()
   }
 
-  // stale 조건: last_synced_at 없거나 오래됨
-  // running 조건: running이 아니거나, 30분 이상 stuck된 running은 재시도
+  // Case 1: stale(미동기화/오래됨) AND not-actively-running
+  // Case 2: stuck-running(30분 이상 running 상태 — stale 여부 무관하게 재시도)
+  const case1 = `and(or(last_synced_at.is.null,last_synced_at.lt.${staleSince}),or(sync_status.is.null,sync_status.neq.running))`
+  const case2 = `and(sync_status.eq.running,last_sync_started_at.lt.${stuckSince})`
+
   let q = supabaseAdmin
       .from('members')
       .select('id, member_name, last_synced_at, sync_status')
-      .or(`last_synced_at.is.null,last_synced_at.lt.${staleSince}`)
-      .or(`sync_status.neq.running,last_sync_started_at.is.null,last_sync_started_at.lt.${stuckSince}`)
+      .or(`${case1},${case2}`)
       .order('id', { ascending: true })
       .limit(limit)
 
