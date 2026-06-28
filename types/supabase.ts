@@ -121,6 +121,7 @@ export type MemberRankHistory = {
   tft_doubleup_tier: string | null
   tft_doubleup_rank: string | null
   tft_doubleup_lp: number | null
+  season_id: number | null
   recorded_at: string
 }
 

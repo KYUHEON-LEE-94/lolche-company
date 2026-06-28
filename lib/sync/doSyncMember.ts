@@ -75,6 +75,12 @@ export async function doSyncMember(memberId: string) {
 
   // 랭크 히스토리 스냅샷 기록 (solo 또는 doubleup 중 하나라도 있을 때)
   if (solo || doubleUp) {
+    const { data: activeSeason } = await supabaseAdmin
+      .from('seasons')
+      .select('id')
+      .eq('is_active', true)
+      .maybeSingle()
+
     const { error: historyError } = await supabaseAdmin
       .from('member_rank_history')
       .insert({
@@ -85,6 +91,7 @@ export async function doSyncMember(memberId: string) {
         tft_doubleup_tier: doubleUp?.tier ?? null,
         tft_doubleup_rank: doubleUp?.rank ?? null,
         tft_doubleup_lp: doubleUp?.leaguePoints ?? null,
+        season_id: activeSeason?.id ?? null,
       })
     if (historyError) console.error('member_rank_history insert error', historyError)
   }
