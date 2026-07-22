@@ -10,6 +10,8 @@ export default async function HomePage() {
     supabase
       .from('members')
       .select('*')
+      // 승인 대기/거절 상태의 자가 등록 멤버는 랭킹에 노출하지 않는다.
+      .eq('status', 'approved')
       .or('tft_tier.not.is.null,tft_doubleup_tier.not.is.null')
       .order('member_name', { ascending: true }),
     supabaseService

@@ -1,68 +1,44 @@
 // app/profile/page.tsx
 import { redirect } from 'next/navigation'
 import { createRouteClient } from '@/lib/supabase/route'
+import { supabaseService } from '@/lib/supabase/service'
+import { getDiscordId } from '@/lib/auth/discord'
+import type { MemberStatus } from '@/types/supabase'
 import ProfileEditor from './ProfileEditor'
+import MemberSelfForm from './MemberSelfForm'
 
 export const dynamic = 'force-dynamic'
 
-function NotRegisteredNotice() {
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-10">
-            <div className="mx-auto w-full max-w-2xl">
-                <div className="rounded-3xl bg-slate-900/40 ring-1 ring-slate-700/50 p-6 shadow-xl">
-                    <h1 className="text-xl font-extrabold text-slate-100">프로필 관리</h1>
-                    <p className="mt-3 text-sm text-slate-300 leading-relaxed">
-                        현재 로그인된 계정은 <span className="font-semibold text-slate-100">멤버로 등록되어 있지 않아서</span>{' '}
-                        프로필을 설정할 수 없어요.
-                    </p>
-                    <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-                        단톡방 멤버 등록은 관리자만 가능해요. <span className="font-semibold text-slate-100">관리자에게 문의</span>해주세요.
-                    </p>
-
-                    <div className="mt-6 rounded-2xl bg-slate-800/40 ring-1 ring-slate-700/50 p-4">
-                        <div className="text-xs text-slate-400">안내</div>
-                        <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
-                            <li>관리자가 멤버 등록 후 다시 접속하면 프로필 설정이 가능해요.</li>
-                            <li>등록 시 Riot ID(게임이름#태그) 정보가 필요할 수 있어요.</li>
-                        </ul>
-                    </div>
-
-                    <div className="mt-6 text-xs text-slate-500">
-                        (이 화면은 멤버 미등록 상태일 때만 표시됩니다.)
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
+const SELECT_COLUMNS = `
+  id,
+  member_name,
+  riot_game_name,
+  riot_tagline,
+  status,
+  rejected_reason,
+  user_id,
+  profile_image_path,
+  profile_frame_path,
+  profile_updated_at
+`
 
 export default async function ProfilePage() {
     const supabase = await createRouteClient()
 
-    // 1) 로그인 체크
     const {
         data: { user },
         error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (userError || !user) {
         redirect('/login')
     }
 
-    // 2) 내 members row 조회 (user_id로 1:1)
-    const { data: member, error: memberError } = await supabase
+    // RLS의 self-SELECT 정책 유무와 무관하게 동작하도록 service role로 조회한다.
+    const { data: byUserId, error: memberError } = await supabaseService
+        .schema('public')
         .from('members')
-        .select(
-            `
-      id,
-      member_name,
-      riot_game_name,
-      riot_tagline,
-      profile_image_path,
-      profile_frame_path,
-      profile_updated_at
-    `
-        )
+        .select(SELECT_COLUMNS)
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -70,10 +46,26 @@ export default async function ProfilePage() {
         throw new Error(memberError.message)
     }
 
-    // ✅ 멤버 미등록이면 안내 화면 렌더링 (redirect 안 함)
+    let member = byUserId
+
+    // 관리자가 discord_id만 사전 등록한 경우를 위한 fallback
     if (!member) {
-        return <NotRegisteredNotice />
+        const discordId = getDiscordId(user)
+        if (discordId) {
+            const { data: byDiscord } = await supabaseService
+                .schema('public')
+                .from('members')
+                .select(SELECT_COLUMNS)
+                .eq('discord_id', discordId)
+                .maybeSingle()
+
+            if (byDiscord && (!byDiscord.user_id || byDiscord.user_id === user.id)) {
+                member = byDiscord
+            }
+        }
     }
+
+    const status = (member?.status ?? null) as MemberStatus | null
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-10">
@@ -81,21 +73,46 @@ export default async function ProfilePage() {
                 <div className="mb-8">
                     <h1 className="text-2xl font-extrabold text-slate-100">프로필 관리</h1>
                     <p className="mt-2 text-sm text-slate-300">
-                        프로필 이미지는 선택 사항이며, 프레임/이미지는 각각 없어도 괜찮아요.
+                        라이엇 계정을 직접 등록하고, 승인 후 프로필 이미지·프레임을 설정할 수 있어요.
                     </p>
                 </div>
 
-                <ProfileEditor
-                    userId={user.id}
-                    member={{
-                        id: member.id,
-                        member_name: member.member_name,
-                        riot_id: `${member.riot_game_name}#${member.riot_tagline}`,
-                        profile_image_path: member.profile_image_path,
-                        profile_frame_path: member.profile_frame_path,
-                        profile_updated_at: member.profile_updated_at,
-                    }}
-                />
+                <div className="grid gap-6">
+                    <MemberSelfForm
+                        initial={
+                            member
+                                ? {
+                                      member_name: member.member_name,
+                                      riot_game_name: member.riot_game_name,
+                                      riot_tagline: member.riot_tagline,
+                                  }
+                                : null
+                        }
+                        status={status}
+                        rejectedReason={member?.rejected_reason ?? null}
+                    />
+
+                    {member && status === 'approved' ? (
+                        <ProfileEditor
+                            userId={user.id}
+                            member={{
+                                id: member.id,
+                                member_name: member.member_name,
+                                riot_id: `${member.riot_game_name}#${member.riot_tagline}`,
+                                profile_image_path: member.profile_image_path,
+                                profile_frame_path: member.profile_frame_path,
+                                profile_updated_at: member.profile_updated_at,
+                            }}
+                        />
+                    ) : (
+                        <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
+                            <div className="text-slate-100 font-extrabold">프로필 이미지 · 프레임</div>
+                            <p className="mt-2 text-sm text-slate-400">
+                                관리자 승인이 완료되면 이곳에서 프로필 이미지와 프레임을 설정할 수 있어요.
+                            </p>
+                        </section>
+                    )}
+                </div>
             </div>
         </div>
     )

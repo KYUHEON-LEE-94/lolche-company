@@ -94,6 +94,7 @@ export default function CustomGamesPage() {
     const { data } = await supabaseClient
       .from('members')
       .select('id, member_name, riot_game_name, riot_tagline')
+      .eq('status', 'approved')
       .order('member_name')
     setMembers((data ?? []) as MemberOption[])
   }, [])

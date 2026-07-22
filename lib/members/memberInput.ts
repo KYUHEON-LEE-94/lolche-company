@@ -1,0 +1,56 @@
+export const MEMBER_NAME_MAX = 50
+export const RIOT_GAME_NAME_MAX = 30
+export const RIOT_TAGLINE_MAX = 10
+export const REJECTED_REASON_MAX = 200
+
+export type MemberInput = {
+  member_name: string
+  riot_game_name: string
+  riot_tagline: string
+}
+
+type ParseResult =
+  | { ok: true; value: MemberInput }
+  | { ok: false; message: string }
+
+/**
+ * 자가 등록/관리자 등록 공용 입력 파서.
+ * 화이트리스트 3개 컬럼만 뽑아내므로 status·approved_by 등 권한 컬럼이
+ * 페이로드에 섞여 들어와도 이 함수를 통과한 값에는 절대 포함되지 않는다.
+ */
+export function parseMemberInput(body: unknown): ParseResult {
+  const source = (body ?? {}) as Record<string, unknown>
+
+  // 문자열이 아닌 값(객체·배열·숫자)이 String()으로 조용히 강제 변환되어
+  // "[object Object]" 같은 값이 통과하지 않도록 타입 자체를 거른다.
+  const asString = (v: unknown) => (typeof v === 'string' ? v : '')
+
+  const member_name = asString(source.member_name).trim()
+  const riot_game_name = asString(source.riot_game_name).trim()
+  const riot_tagline = asString(source.riot_tagline).trim().replace(/^#/, '')
+
+  if (!member_name || !riot_game_name || !riot_tagline) {
+    return { ok: false, message: '단톡방 아이디, 라이엇 게임명, 태그라인을 모두 입력해주세요.' }
+  }
+  if (member_name.length > MEMBER_NAME_MAX) {
+    return { ok: false, message: `단톡방 아이디는 ${MEMBER_NAME_MAX}자 이하여야 합니다.` }
+  }
+  if (riot_game_name.length > RIOT_GAME_NAME_MAX) {
+    return { ok: false, message: `라이엇 게임명은 ${RIOT_GAME_NAME_MAX}자 이하여야 합니다.` }
+  }
+  if (riot_tagline.length > RIOT_TAGLINE_MAX) {
+    return { ok: false, message: `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.` }
+  }
+  if (!/^[A-Za-z0-9]{2,10}$/.test(riot_tagline)) {
+    return { ok: false, message: '태그라인은 영문/숫자 2~10자여야 합니다.' }
+  }
+
+  return { ok: true, value: { member_name, riot_game_name, riot_tagline } }
+}
+
+export function isSameRiotId(a: MemberInput, b: { riot_game_name: string; riot_tagline: string }) {
+  return (
+    a.riot_game_name.toLowerCase() === b.riot_game_name.toLowerCase() &&
+    a.riot_tagline.toLowerCase() === b.riot_tagline.toLowerCase()
+  )
+}

@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type MemberStatus = 'pending' | 'approved' | 'rejected'
+
 export type Member = {
   id: string
   user_id: string | null
@@ -48,6 +50,13 @@ export type Member = {
   tft_tier_prev: string | null
   tft_rank_prev: string | null
   tft_lp_prev: number | null
+
+  // 자가 등록 승인 워크플로 (20260723_member_self_registration.sql)
+  status: MemberStatus
+  requested_at: string | null
+  approved_at: string | null
+  approved_by: string | null
+  rejected_reason: string | null
 }
 
 export type Admin = {
@@ -110,11 +119,15 @@ export type HallOfFame = {
   id: string
   season_id: number | null
   member_id: string | null
+  queue_type: string | null
   tier: string | null
   rank: string | null
   lp: number | null
   wins: number | null
   recorded_at: string | null
+  // 멤버 추방 후에도 기록이 남도록 아카이브 시점의 이름/이미지를 보존한다.
+  member_name_snapshot: string | null
+  profile_image_snapshot: string | null
 }
 
 export type MemberRankHistory = {

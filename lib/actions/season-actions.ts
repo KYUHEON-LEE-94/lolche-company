@@ -33,6 +33,9 @@ export async function archiveSeason(seasonId: number, queueType: 'solo' | 'doubl
                 season_id: seasonId,
                 member_id: m.id,
                 queue_type: queueType, // ✅ 새로 추가된 컬럼
+                // 멤버가 추방돼도 기록이 남도록 아카이브 시점의 이름/이미지를 함께 박제한다.
+                member_name_snapshot: m.member_name,
+                profile_image_snapshot: m.profile_image_path,
                 tier: queueType === 'solo' ? m.tft_tier : m.tft_doubleup_tier,
                 rank: queueType === 'solo' ? m.tft_rank : m.tft_doubleup_rank,
                 lp: queueType === 'solo' ? m.tft_league_points : m.tft_doubleup_league_points,

@@ -36,12 +36,6 @@ export default function ProfileEditor({ userId, member }: Props) {
 
     const supabase = useMemo(() => createClient(), [])
 
-    useEffect(() => {
-        supabase.auth.getUser().then(({ data, error }) => {
-            console.log('client getUser error=', error?.message)
-            console.log('client auth.uid=', data.user?.id)
-        })
-    }, [supabase])
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
     const [imagePath, setImagePath] = useState<string | null>(member.profile_image_path)
     const [framePath, setFramePath] = useState<string | null>(member.profile_frame_path)
@@ -124,12 +118,6 @@ export default function ProfileEditor({ userId, member }: Props) {
         setToast(msg)
         setTimeout(() => setToast(null), 2500)
     }
-    useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => {
-            console.log('auth.uid =', data.user?.id)
-            console.log('prop userId =', userId)
-        })
-    }, [userId])
     // -----------------------
     // 프레임 이미지
     // -----------------------

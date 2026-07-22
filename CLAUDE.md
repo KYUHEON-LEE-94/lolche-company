@@ -43,17 +43,21 @@ app/
   hall-of-fame/                 # 명예의 전당 (시즌 기록)
   login/                        # 사용자 로그인 (Discord OAuth 버튼)
   auth/callback/route.ts        # OAuth 코드 교환 + discord_id ↔ user_id 연결
-  profile/                      # 프로필 이미지·프레임 편집
+  profile/                      # 프로필 이미지·프레임 편집 + 라이엇 ID 자가 등록
+    MemberSelfForm.tsx          # 라이엇 ID 등록/수정 폼 (항상 pending으로 신청)
   api/                          # API 라우트
+    me/member/route.ts          # 내 멤버 조회(GET) / 자가 등록·수정(POST, 세션 소유권 기반)
     members/[id]/
-      sync/route.ts             # 개별 멤버 동기화 (쿨다운 적용)
+      sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 관리자/본인 인증)
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
       history/route.ts          # 랭크 히스토리 조회
     admin/
       sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동)
-      members/                  # 멤버 CRUD API (create/update/[id])
+      members/                  # 멤버 CRUD API (route=목록, create/update/[id])
+        [id]/approve/route.ts   # 승인 + 즉시 동기화
+        [id]/reject/route.ts    # 거절 + 사유
       profile-frames/           # 프레임 업로드·삭제 API
-    profile/                    # 프로필 이미지·프레임 저장 API
+    profile/                    # 프로필 이미지·프레임 저장 API (service role 경유)
 
 lib/
   supabase.ts                   # anon 클라이언트 + 브라우저 클라이언트
@@ -69,6 +73,8 @@ lib/
     writeSyncLog.ts             # sync_logs 테이블 감사 로그
   actions/
     season-actions.ts           # 시즌 Server Actions
+  members/
+    memberInput.ts              # 멤버 입력 화이트리스트 파서 + 길이/포맷 검증 상수
   tft/
     tftLocale.ts                # 기물 이미지 URL 생성, 한국어 이름 변환 (KrMaps 캐시)
 
@@ -112,6 +118,7 @@ NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 ```
 [프론트 동기화 버튼]
   → POST /api/members/[id]/sync
+      → 인증 체크 (로그인 필수 + 본인 소유 멤버 또는 requireAdmin())
       → 쿨다운 체크 (MIN_SYNC_INTERVAL_SEC)
       → syncOneMember() — 재시도 래퍼 (최대 5회, 지수 백오프)
           → doSyncMember()
@@ -131,6 +138,11 @@ NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 [관리자 수동 실행]
   → POST /api/admin/sync-all (requireAdmin() 세션 체크)
       → 위와 동일한 배치 동기화, doCleanup=false
+
+[관리자 승인]
+  → POST /api/admin/members/[id]/approve
+      → status='approved' 확정 후 syncOneMember() 직접 호출
+      → 동기화 실패는 롤백하지 않고 syncWarning으로만 반환
 ```
 
 ## Riot API 인증 및 에러 처리
@@ -170,18 +182,47 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 
 | 테이블 | 설명 |
 |---|---|
-| `members` | 멤버 정보 + TFT 랭크 + 동기화 상태 (`discord_id`/`user_id`로 로그인 계정 연결) |
+| `members` | 멤버 정보 + TFT 랭크 + 동기화 상태 (`discord_id`/`user_id`로 로그인 계정 연결, `status`로 승인 워크플로) |
 | `admins` | 관리자 계정 (`discord_id` 사전 등록, 첫 로그인 시 `user_id` 자동 연결) |
 | `seasons` | 시즌 목록 (`is_active` 하나만 true 가능) |
-| `hall_of_fame` | 시즌 마감 시점의 랭크 스냅샷 |
+| `hall_of_fame` | 시즌 마감 시점의 랭크 스냅샷 (+`member_name_snapshot`으로 추방 후에도 이름 보존) |
 | `profile_frames` | 프로필 프레임 메타데이터 |
 | `tft_matches` | 매치 메타데이터 |
 | `tft_match_participants` | 멤버별 매치 결과 |
 | `sync_logs` | 동기화 감사 로그 |
 
+## 멤버 자가 등록 / 승인 워크플로
+
+`members.status`는 `'pending' | 'approved' | 'rejected'` 세 값만 가진다 (`MemberStatus`).
+
+```
+[사용자] /profile → MemberSelfForm → POST /api/me/member
+    → 대상 행은 오직 세션 user_id로 특정 (body의 id는 절대 신뢰하지 않음)
+    → member_name / riot_game_name / riot_tagline 3개 컬럼만 화이트리스트로 수용
+    → 항상 status='pending'. 승인된 멤버가 Riot ID를 바꿔도 pending 복귀
+       (REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE 상수로 제어 — 랭킹 조작 방지)
+
+[관리자] /admin/members/control
+    → GET  /api/admin/members[?status=pending]  대기/전체 탭, 로그인 연결 배지
+    → POST /api/admin/members/[id]/approve      승인 + 즉시 동기화
+    → POST /api/admin/members/[id]/reject       거절 + 사유(≤200자)
+    → DELETE /api/admin/members/[id]            추방 (body.confirmName === member_name 필수)
+```
+
+**노출 필터:** `app/page.tsx`와 `app/custom-games/page.tsx`에서 `.eq('status','approved')`.
+이 두 지점이 미승인 멤버 차단의 핵심이므로 members를 조회하는 공개 화면을 추가할 때 반드시 함께 적용한다.
+
+**추방(완전 삭제):** FK의 `ON DELETE` 설정에 의존하지 않고
+`app/api/admin/members/[id]/route.ts`에서 자식 테이블을 명시적으로 정리한 뒤 members를 삭제한다.
+`hall_of_fame`만 예외로 삭제하지 않고 `member_id=null` + 이름 스냅샷을 남긴다.
+
+**RLS 주의:** `members`에는 self-UPDATE 정책을 두지 않는다. RLS는 행 단위라 컬럼을 제한할 수 없어,
+정책이 있으면 사용자가 콘솔에서 자기 `status`를 `approved`로 바꿀 수 있다.
+정당한 self-UPDATE(프로필 이미지/프레임, Riot ID 신청)는 전부 서버 라우트에서 service role로 수행한다.
+
 ## 관리자 기능
 
-- `/admin/members/control` — 멤버 CRUD (Riot ID 수정 시 자동 재동기화)
+- `/admin/members/control` — 멤버 CRUD + 승인/거절/추방, 로그인 연결 현황 (Riot ID 수정 시 자동 재동기화)
 - `/admin/members/sync` — 개별/전체 동기화, 동기화 현황 테이블
 - `/admin/seasons` — 시즌 생성·활성화·종료, 명예의 전당 마감
 - `/admin/profile-frames` — 프레임 이미지 업로드·삭제
@@ -229,6 +270,9 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 - 멤버 동기화는 기본 쿨다운 300초 (프론트: `NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC`, 백: `doSyncMember.ts` 내 10분)
 - 프로필 이미지: Supabase Storage `profile-images` 버킷
 - 프레임 이미지: Supabase Storage `profile-frames` 버킷
+- `/api/members/[id]/sync`는 로그인 + (본인 소유 멤버 또는 관리자)만 호출 가능 — 무인증 호출은 Riot 레이트리밋 고갈 벡터
+- DB 마이그레이션은 `scripts/sql/`에 파일로만 작성하고 Supabase SQL Editor에서 직접 실행한다.
+  **SQL 먼저 → 배포 나중** 순서를 지킬 것 (`members.status`, `hall_of_fame.member_name_snapshot`을 코드가 참조함)
 
 ## 하네스: lolche-dev
 

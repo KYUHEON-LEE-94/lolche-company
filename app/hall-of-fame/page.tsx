@@ -30,13 +30,36 @@ export default async function HallOfFamePage({
     const { data: rawRankers } = await supabaseService
         .schema("public")
         .from('hall_of_fame')
-        .select(`*, members(member_name, profile_image_path)`)
+        .select(
+            `id, tier, rank, lp, member_name_snapshot, profile_image_snapshot, members(member_name, profile_image_path)`,
+        )
         .eq('season_id', currentSeasonId)
         .eq('queue_type', currentQueue);
 
+    // 임베디드 조인은 타입상 배열로 추론되므로 단일 객체로 정규화한다.
+    // (멤버가 추방된 기록은 members가 비어 있고 스냅샷만 남는다)
+    const rankers = (rawRankers ?? []).map((r) => {
+        const joined = r.members
+        const member = Array.isArray(joined) ? (joined[0] ?? null) : joined
+        return {
+            id: r.id,
+            tier: r.tier,
+            rank: r.rank,
+            lp: r.lp,
+            member_name_snapshot: r.member_name_snapshot,
+            profile_image_snapshot: r.profile_image_snapshot,
+            members: member
+                ? {
+                      member_name: member.member_name as string,
+                      profile_image_path: member.profile_image_path as string | null,
+                  }
+                : null,
+        }
+    })
+
     // 4. 공동 순위 계산 로직 적용
     // A. 먼저 티어 > 랭크 > LP 순으로 정렬합니다.
-    const sorted = (rawRankers || []).sort((a, b) => {
+    const sorted = rankers.sort((a, b) => {
         const tierA = TIER_ORDER[a.tier?.toUpperCase() ?? ''] ?? 999;
         const tierB = TIER_ORDER[b.tier?.toUpperCase() ?? ''] ?? 999;
         if (tierA !== tierB) return tierA - tierB;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
+import { supabaseService } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
@@ -24,7 +25,10 @@ export async function POST(req: Request) {
         }
     }
 
-    const { error: updateError } = await supabase
+    // members의 self-UPDATE RLS 정책을 제거했으므로(20260723 마이그레이션 STEP 5)
+    // 정당한 프로필 변경은 서버에서 service role로, user_id 범위를 못 박아 수행한다.
+    const { error: updateError } = await supabaseService
+        .schema('public')
         .from('members')
         .update({ profile_image_path: imagePath ?? null })
         .eq('user_id', user.id)

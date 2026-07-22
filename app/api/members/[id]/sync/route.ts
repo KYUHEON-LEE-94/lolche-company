@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { createRouteClient } from '@/lib/supabase/route'
+import { requireAdmin } from '@/app/lib/isAdmin'
 import { syncOneMember } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
@@ -13,14 +15,27 @@ export async function POST(
   const t0 = Date.now()
   const { id: memberId } = await ctx.params
 
+  // 무인증 호출은 Riot 레이트리밋을 고갈시킬 수 있으므로 관리자 또는 본인만 허용한다.
+  const { data: { user } } = await (await createRouteClient()).auth.getUser()
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { data: member, error: mErr } = await supabaseAdmin
     .from('members')
-    .select('id, last_synced_at')
+    .select('id, last_synced_at, user_id')
     .eq('id', memberId)
     .single()
 
   if (mErr || !member) {
     return NextResponse.json({ ok: false, error: 'member not found' }, { status: 404 })
+  }
+
+  if (member.user_id !== user.id) {
+    const { ok: isAdmin } = await requireAdmin()
+    if (!isAdmin) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   const now = Date.now()

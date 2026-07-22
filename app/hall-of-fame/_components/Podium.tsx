@@ -10,7 +10,20 @@ export type HallOfFameRanker = {
     rank: string | null
     lp: number | null
     display_rank: number
+    member_name_snapshot: string | null
+    profile_image_snapshot: string | null
     members: { member_name: string; profile_image_path: string | null } | null
+}
+
+/** 멤버가 추방되면 members 조인이 null이 되므로 아카이브 시점 스냅샷으로 대체한다. */
+export function rankerName(r: Pick<HallOfFameRanker, 'members' | 'member_name_snapshot'>) {
+    return r.members?.member_name ?? r.member_name_snapshot ?? '탈퇴한 멤버'
+}
+
+export function rankerImagePath(
+    r: Pick<HallOfFameRanker, 'members' | 'profile_image_snapshot'>,
+) {
+    return r.members?.profile_image_path ?? r.profile_image_snapshot ?? null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,8 +67,10 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
     const configRank = Math.min(displayRank, 3) as 1 | 2 | 3;
     const cfg = RANK_CONFIG[configRank];
 
-    const profileImg = data.members?.profile_image_path
-        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${data.members.profile_image_path}`
+    const imagePath = rankerImagePath(data);
+    const displayName = rankerName(data);
+    const profileImg = imagePath
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${imagePath}`
         : '/images/logo.png';
 
     // 단상 높이 조절 (실제 순위가 아닌 포디움의 시각적 위치에 따름)
@@ -77,7 +92,7 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
                 <div className={`absolute ${cfg.profilePos} rounded-full overflow-hidden z-0`}>
                     <img
                         src={profileImg}
-                        alt={data.members?.member_name}
+                        alt={displayName}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                 </div>
@@ -90,7 +105,7 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
             {/* ── 이름 + 정보 ── */}
             <div className="flex flex-col items-center gap-1 text-center px-4 mb-6 z-30">
                 <h3 className="text-xl font-black text-white line-clamp-2 break-keep min-h-[3rem] flex items-center justify-center drop-shadow-lg">
-                    {data.members?.member_name}
+                    {displayName}
                 </h3>
                 <span className={`text-[10px] font-black px-3 py-1 rounded-lg bg-black/60 border border-white/10 uppercase tracking-widest ${cfg.tierColor}`}>
                     {data.tier} {data.rank}

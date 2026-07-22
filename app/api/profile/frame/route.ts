@@ -1,6 +1,7 @@
 // app/api/profile/frame/route.ts
 import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
+import { supabaseService } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
@@ -16,7 +17,9 @@ export async function POST(req: Request) {
 
     // ✅ 1) null이면 해제 허용
     if (framePath === null || framePath === undefined) {
-        const { error } = await supabase
+        // members self-UPDATE RLS 정책 제거(20260723 STEP 5)에 따라 service role 경유
+        const { error } = await supabaseService
+            .schema('public')
             .from('members')
             .update({ profile_frame_path: null })
             .eq('user_id', user.id)
@@ -51,7 +54,8 @@ export async function POST(req: Request) {
     }
 
     // ✅ 4) members에 저장
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseService
+        .schema('public')
         .from('members')
         .update({ profile_frame_path: framePath })
         .eq('user_id', user.id)

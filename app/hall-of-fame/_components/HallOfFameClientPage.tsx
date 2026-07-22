@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import Podium, { type HallOfFameRanker } from './Podium';
+import Podium, { rankerName, type HallOfFameRanker } from './Podium';
 import SeasonTab from './SeasonTab';
 
 type Season = { id: number; season_name: string; set_number: number }
@@ -101,7 +101,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                         {idx + 4}
                       </span>
                                         <div>
-                                            <p className="text-lg font-bold text-slate-200">{ranker.members?.member_name}</p>
+                                            <p className="text-lg font-bold text-slate-200">{rankerName(ranker)}</p>
                                             <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">{ranker.tier} {ranker.rank}</p>
                                         </div>
                                     </div>
