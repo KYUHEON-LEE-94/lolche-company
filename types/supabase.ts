@@ -8,6 +8,8 @@ export type Json =
 
 export type Member = {
   id: string
+  user_id: string | null
+  discord_id: string | null
   member_name: string
   riot_game_name: string
   riot_tagline: string
@@ -49,7 +51,10 @@ export type Member = {
 }
 
 export type Admin = {
-  user_id: string
+  // (A)안 마이그레이션 적용 시 대리 PK. 미적용 스키마에서도 select 대상이 아니면 무해하다.
+  id: string
+  user_id: string | null
+  discord_id: string | null
   display_name: string | null
   is_super_admin: boolean | null
   created_at: string
@@ -217,7 +222,8 @@ export interface Database {
       admins: {
         Row: Admin
         Insert: Optional<Admin> & {
-          user_id?: string
+          id?: string
+          user_id?: string | null
           created_at?: string
         }
         Update: Optional<Admin>

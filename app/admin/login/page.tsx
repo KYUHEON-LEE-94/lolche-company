@@ -1,65 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabaseClient } from '@/lib/supabase'
 
-const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-)
-
-export default function LoginPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+export default function AdminLoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleDiscordLogin = async () => {
         setLoading(true)
         setError(null)
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        })
-        setLoading(false)
 
-        if (error) {
-            setError(error.message)
-            return
+        try {
+            const { error: oauthError } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'discord',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/admin/members/sync')}`,
+                },
+            })
+
+            if (oauthError) {
+                setError(oauthError.message)
+                setLoading(false)
+            }
+        } catch (e) {
+            setError(e instanceof Error ? e.message : '로그인 중 오류 발생')
+            setLoading(false)
         }
-
-        // 로그인 성공 → /admin으로 이동
-        window.location.href = '/admin/members/sync'
     }
 
     return (
         <main className="max-w-sm mx-auto p-4">
             <h1 className="text-xl font-bold mb-4">관리자 로그인</h1>
-            <form onSubmit={handleLogin} className="space-y-3">
-                <input
-                    type="email"
-                    placeholder="이메일"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="비밀번호"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+            <div className="space-y-3">
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button
-                    type="submit"
+                    type="button"
+                    onClick={handleDiscordLogin}
                     disabled={loading}
-                    className="w-full rounded bg-blue-600 py-2 text-sm font-medium text-white disabled:opacity-60"
+                    className="w-full rounded bg-[#5865F2] py-2 text-sm font-medium text-white hover:bg-[#4752c4] disabled:opacity-60"
                 >
-                    {loading ? '로그인 중…' : '로그인'}
+                    {loading ? '디스코드로 이동 중…' : '디스코드로 로그인'}
                 </button>
-            </form>
+            </div>
         </main>
     )
 }

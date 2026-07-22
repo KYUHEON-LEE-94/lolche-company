@@ -2,61 +2,71 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabaseClient } from '@/lib/supabase' // 너가 쓰는 클라이언트 인스턴스로 맞춰
+import { supabaseClient } from '@/lib/supabase'
+import { getDiscordDisplayName, getDiscordId } from '@/lib/auth/discord'
+import type { User } from '@supabase/supabase-js'
 
 export default function AuthButtons() {
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  // Discord 계정은 email이 없을 수 있으므로 로그인 여부는 user 존재로 판별한다.
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     let mounted = true
 
+    async function checkAdmin(user: User) {
+      const { data: byUserId } = await supabaseClient
+          .from('admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+      if (byUserId) return true
+
+      // user_id 백필 전(첫 로그인 직후 등) 대비 fallback
+      const discordId = getDiscordId(user)
+      if (!discordId) return false
+
+      const { data: byDiscordId } = await supabaseClient
+          .from('admins')
+          .select('user_id')
+          .eq('discord_id', discordId)
+          .maybeSingle()
+
+      return !!byDiscordId
+    }
+
+    async function applyUser(user: User | null) {
+      setIsLoggedIn(!!user)
+      setDisplayName(getDiscordDisplayName(user))
+
+      if (!user) {
+        setIsAdmin(false)
+        return
+      }
+
+      const admin = await checkAdmin(user)
+      if (!mounted) return
+      setIsAdmin(admin)
+    }
+
     async function load() {
       setLoading(true)
       const { data } = await supabaseClient.auth.getSession()
-      const user = data.session?.user ?? null
       if (!mounted) return
-
-      setUserEmail(user?.email ?? null)
-
-      if (user) {
-        // ✅ 관리자 체크 (admins 테이블)
-        const { data: adminRow } = await supabaseClient
-            .from('admins')
-            .select('user_id')
-            .eq('user_id', user.id)
-            .maybeSingle()
-
-        if (!mounted) return
-        setIsAdmin(!!adminRow)
-      } else {
-        setIsAdmin(false)
-      }
-
+      await applyUser(data.session?.user ?? null)
+      if (!mounted) return
       setLoading(false)
     }
 
     load()
 
     const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null)
-      // 로그인/로그아웃 시 관리자 여부 재조회
-      ;(async () => {
-        const u = session?.user
-        if (!u) {
-          setIsAdmin(false)
-          return
-        }
-        const { data: adminRow } = await supabaseClient
-            .from('admins')
-            .select('user_id')
-            .eq('user_id', u.id)
-            .maybeSingle()
-        setIsAdmin(!!adminRow)
-      })()
+      void applyUser(session?.user ?? null)
     })
 
     return () => {
@@ -77,7 +87,7 @@ export default function AuthButtons() {
   }
 
   // ✅ 비로그인: 로그인 버튼만
-  if (!userEmail) {
+  if (!isLoggedIn) {
     return (
         <button
             onClick={() => router.push('/login')}
@@ -91,6 +101,12 @@ export default function AuthButtons() {
   // ✅ 로그인: 프로필 관리 + (관리자면) 관리페이지 + 로그아웃
   return (
       <div className="flex items-center gap-2">
+        {displayName && (
+            <span className="hidden sm:inline text-xs font-semibold text-slate-300 max-w-[10rem] truncate">
+              {displayName}
+            </span>
+        )}
+
         <button
             onClick={() => router.push('/profile')}
             className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
