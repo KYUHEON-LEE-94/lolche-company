@@ -1,6 +1,7 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isMissingColumnError } from '@/lib/db/pgErrors'
 import type { RiotAccount } from '@/types/supabase'
 
 /**
@@ -20,12 +21,18 @@ export const REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE = true
  */
 export const REQUIRE_REAPPROVAL_ON_PRIMARY_SWITCH = false
 
-export const RIOT_ACCOUNT_COLUMNS =
+const RIOT_ACCOUNT_COLUMNS_BASE =
   'id, member_id, account_no, is_primary, riot_game_name, riot_tagline, riot_puuid, ' +
   'tft_tier, tft_rank, tft_league_points, tft_wins, tft_losses, ' +
   'tft_doubleup_tier, tft_doubleup_rank, tft_doubleup_league_points, tft_doubleup_wins, tft_doubleup_losses, ' +
   'lol_tier, lol_rank, lol_league_points, lol_wins, lol_losses, lol_synced_at, ' +
   'last_synced_at, created_at'
+
+/**
+ * ★ `lol_puuid` 를 빼먹으면 listRiotAccounts 가 값을 안 가져와 매 동기화마다
+ * account-v1 을 재호출한다(lint 로 안 잡히는 조용한 회귀 + rate limit 소모).
+ */
+export const RIOT_ACCOUNT_COLUMNS = `${RIOT_ACCOUNT_COLUMNS_BASE}, lol_puuid`
 
 export const RIOT_ACCOUNTS_MIGRATION_MESSAGE =
   '다중 라이엇 계정 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. (scripts/sql/20260726_riot_accounts.sql 미적용)'
@@ -58,18 +65,28 @@ export type ListAccountsResult =
 
 /** 대표 파생 정렬(is_primary desc, account_no asc)로 정렬된 계정 목록. */
 export async function listRiotAccounts(memberId: string): Promise<ListAccountsResult> {
-  const { data, error } = await supabaseAdmin
-    .from('riot_accounts')
-    .select(RIOT_ACCOUNT_COLUMNS)
-    .eq('member_id', memberId)
-    .order('account_no', { ascending: true })
+  const query = (columns: string) =>
+    supabaseAdmin
+      .from('riot_accounts')
+      .select(columns)
+      .eq('member_id', memberId)
+      .order('account_no', { ascending: true })
+
+  let { data, error } = await query(RIOT_ACCOUNT_COLUMNS)
+
+  // 20260729_lol_puuid.sql 미적용이면 42703. 여기서 죽으면 크론 전체가 멈추므로
+  // lol_puuid 없이 다시 읽고 null 로 채운다(LoL 단계만 캐시 없이 degrade).
+  if (error && isMissingColumnError(error)) {
+    ;({ data, error } = await query(RIOT_ACCOUNT_COLUMNS_BASE))
+  }
 
   if (error) {
     return { ok: false, missingTable: isMissingTableError(error), message: error.message }
   }
 
   // 컬럼 목록이 문자열 결합이라 PostgREST 타입 추론이 걸리지 않는다.
-  return { ok: true, accounts: (data ?? []) as unknown as RiotAccount[] }
+  const rows = (data ?? []) as unknown as Array<Omit<RiotAccount, 'lol_puuid'> & { lol_puuid?: string | null }>
+  return { ok: true, accounts: rows.map((row) => ({ ...row, lol_puuid: row.lol_puuid ?? null })) }
 }
 
 /**
@@ -95,8 +112,8 @@ export function nextAccountNo(accounts: { account_no: number }[]): number | null
   return null
 }
 
-/** Riot ID가 다른 계정으로 바뀌었을 때 무효화해야 하는 랭크 컬럼 일괄. */
-export const CLEARED_RANK_COLUMNS = {
+/** 20260729_lol_puuid.sql 미적용 환경용. `lol_puuid`가 없으면 update 전체가 42703으로 죽는다. */
+export const CLEARED_RANK_COLUMNS_LEGACY = {
   tft_tier: null,
   tft_rank: null,
   tft_league_points: null,
@@ -114,6 +131,17 @@ export const CLEARED_RANK_COLUMNS = {
   lol_losses: null,
   lol_synced_at: null,
   last_synced_at: null,
+} as const
+
+/**
+ * Riot ID가 다른 계정으로 바뀌었을 때 무효화해야 하는 랭크 컬럼 일괄.
+ *
+ * ★ `lol_puuid: null` 은 보안상 필수다. 빼먹으면 Riot ID 를 다른 계정으로 바꿔도
+ * 옛 lol_puuid 가 남아 다음 동기화에서 **남의 LoL 랭크가 내 랭킹에 표시**된다.
+ */
+export const CLEARED_RANK_COLUMNS = {
+  ...CLEARED_RANK_COLUMNS_LEGACY,
+  lol_puuid: null,
 } as const
 
 type MirrorOptions = {
@@ -234,17 +262,24 @@ export async function ensurePrimaryAccount(
       primary.riot_tagline.toLowerCase() !== riotId.riot_tagline.toLowerCase()
     if (!changed) return { ok: true }
 
-    const { error } = await supabaseAdmin
-      .from('riot_accounts')
-      .update({
-        riot_game_name: riotId.riot_game_name,
-        riot_tagline: riotId.riot_tagline,
-        // Riot ID가 바뀌면 puuid·랭크는 다른 계정의 값이므로 다음 동기화까지 신뢰할 수 없다.
-        riot_puuid: null,
-        ...CLEARED_RANK_COLUMNS,
-      })
-      .eq('id', primary.id)
-      .eq('member_id', memberId)
+    // Riot ID가 바뀌면 puuid·랭크는 다른 계정의 값이므로 다음 동기화까지 신뢰할 수 없다.
+    const clearRiotId = (cleared: Record<string, null>) =>
+      supabaseAdmin
+        .from('riot_accounts')
+        .update({
+          riot_game_name: riotId.riot_game_name,
+          riot_tagline: riotId.riot_tagline,
+          riot_puuid: null,
+          ...cleared,
+        })
+        .eq('id', primary.id)
+        .eq('member_id', memberId)
+
+    let { error } = await clearRiotId(CLEARED_RANK_COLUMNS)
+    // 20260729 미적용이면 lol_puuid 가 없어 42703. 무효화 자체를 포기하면 안 되므로 나머지만 지운다.
+    if (error && isMissingColumnError(error)) {
+      ;({ error } = await clearRiotId(CLEARED_RANK_COLUMNS_LEGACY))
+    }
 
     if (error) {
       return { ok: false, conflict: isUniqueViolation(error), message: error.message }

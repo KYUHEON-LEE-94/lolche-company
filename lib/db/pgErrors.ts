@@ -4,9 +4,16 @@
  */
 export type PgErrorLike = { code?: string | null } | null | undefined
 
-/** 42703 = undefined_column */
+/**
+ * 컬럼 부재.
+ *
+ * ★ 코드가 두 개다. SELECT 는 쿼리가 Postgres 까지 도달해 42703(undefined_column)이 나지만,
+ * INSERT/UPDATE 의 **payload 키**는 PostgREST 가 스키마 캐시에서 먼저 걸러 PGRST204 를 돌려준다.
+ * 42703 만 보면 쓰기 경로의 degrade 가 통째로 발동하지 않는다(실측 확인).
+ * `isMissingFunctionError` 가 PGRST202/42883 둘 다 보는 것과 같은 이유다.
+ */
 export function isMissingColumnError(error: PgErrorLike): boolean {
-  return error?.code === '42703'
+  return error?.code === '42703' || error?.code === 'PGRST204'
 }
 
 /** 23505 = unique_violation */

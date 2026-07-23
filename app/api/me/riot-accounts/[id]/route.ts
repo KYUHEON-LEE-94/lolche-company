@@ -3,8 +3,10 @@ import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getMyMember } from '@/lib/members/myMember'
 import { isSameRiotId, parseRiotAccountInput } from '@/lib/members/memberInput'
+import { isMissingColumnError } from '@/lib/db/pgErrors'
 import {
   CLEARED_RANK_COLUMNS,
+  CLEARED_RANK_COLUMNS_LEGACY,
   REQUIRE_REAPPROVAL_ON_PRIMARY_SWITCH,
   REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE,
   isUniqueViolation,
@@ -66,16 +68,23 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   // 다른 사람의 계정으로 바뀌었으므로 puuid·랭크는 전부 무효다.
   // 남겨 두면 다음 동기화 전까지 옛 계정의 티어가 랭킹에 남는다.
-  const { error } = await supabaseAdmin
-    .from('riot_accounts')
-    .update({
-      riot_game_name: parsed.value.riot_game_name,
-      riot_tagline: parsed.value.riot_tagline,
-      riot_puuid: null,
-      ...CLEARED_RANK_COLUMNS,
-    })
-    .eq('id', accountId)
-    .eq('member_id', memberId)
+  const clearRiotId = (cleared: Record<string, null>) =>
+    supabaseAdmin
+      .from('riot_accounts')
+      .update({
+        riot_game_name: parsed.value.riot_game_name,
+        riot_tagline: parsed.value.riot_tagline,
+        riot_puuid: null,
+        ...cleared,
+      })
+      .eq('id', accountId)
+      .eq('member_id', memberId)
+
+  let { error } = await clearRiotId(CLEARED_RANK_COLUMNS)
+  // 20260729_lol_puuid.sql 미적용이면 42703. 무효화를 통째로 포기하면 옛 티어가 남으므로 나머지만 지운다.
+  if (error && isMissingColumnError(error)) {
+    ;({ error } = await clearRiotId(CLEARED_RANK_COLUMNS_LEGACY))
+  }
 
   if (error) {
     if (isUniqueViolation(error)) {

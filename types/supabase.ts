@@ -95,6 +95,13 @@ export type RiotAccount = {
   riot_game_name: string
   riot_tagline: string
   riot_puuid: string | null
+  /**
+   * LoL 전용 키(RIOT_LOL_API_KEY)로 발급받은 PUUID (20260729_lol_puuid.sql).
+   * PUUID 는 API 키에 종속된 암호문이라 riot_puuid(TFT 키 기준)와 값이 다르고,
+   * 교차 사용하면 400 이 반환된다. 대표 계정만 lazy 로 채운다.
+   * 컬럼 미적용 환경에서는 listRiotAccounts 가 null 로 채워 넣는다.
+   */
+  lol_puuid: string | null
 
   tft_tier: string | null
   tft_rank: string | null
