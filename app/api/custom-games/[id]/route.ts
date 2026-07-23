@@ -204,6 +204,25 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (!kind.ok) return NextResponse.json({ error: kind.message }, { status: 400 })
 
   if (body.game_kind !== undefined || body.game_kind_label !== undefined) {
+    // 롤체 → 비롤체 전환 시, 이미 수집된 라운드/팀/게스트는 비롤체 화면에서
+    // 렌더되지도 삭제되지도 않아 관리 불가 상태로 남는다. 기록이 있으면 전환을 막는다.
+    if (game.game_kind === 'tft' && kind.value.game_kind !== 'tft') {
+      const { count, error: roundCountError } = await supabaseAdmin
+        .from('custom_game_results')
+        .select('id', { count: 'exact', head: true })
+        .eq('custom_game_id', id)
+
+      if (roundCountError) {
+        return NextResponse.json({ error: roundCountError.message }, { status: 500 })
+      }
+      if ((count ?? 0) > 0) {
+        return NextResponse.json(
+          { error: '이미 기록된 라운드가 있어 게임 종류를 바꿀 수 없습니다.' },
+          { status: 400 },
+        )
+      }
+    }
+
     patch.game_kind = kind.value.game_kind
     patch.game_kind_label = kind.value.game_kind_label
   }

@@ -32,10 +32,15 @@ export async function POST(req: Request, ctx: Ctx) {
   const closed = rejectClosedGame(game)
   if (closed) return closed
 
-  const body = (await req.json()) as {
-    display_name: string
-    riot_game_name: string
-    riot_tagline: string
+  // 깨진 JSON 이 500 이 되지 않도록 파싱 실패를 400 으로 흘린다.
+  const body = (await req.json().catch(() => null)) as {
+    display_name?: string
+    riot_game_name?: string
+    riot_tagline?: string
+  } | null
+
+  if (!body) {
+    return NextResponse.json({ error: '요청 형식이 올바르지 않습니다' }, { status: 400 })
   }
   const { display_name, riot_game_name, riot_tagline } = body
 

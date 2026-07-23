@@ -36,10 +36,15 @@ export async function POST(req: Request, ctx: Ctx) {
   if (closed) return closed
   if (game.game_type !== 'team') return NextResponse.json({ error: '팀전이 아닙니다' }, { status: 400 })
 
-  const body = (await req.json()) as {
-    round_number: number
+  // 깨진 JSON 이 500 이 되지 않도록 파싱 실패를 400 으로 흘린다.
+  const body = (await req.json().catch(() => null)) as {
+    round_number?: number
     assignments?: { team_index: number; member_id?: string; guest_id?: string }[]
     random?: boolean
+  } | null
+
+  if (!body) {
+    return NextResponse.json({ error: '요청 형식이 올바르지 않습니다' }, { status: 400 })
   }
   const { round_number, random = false } = body
 
