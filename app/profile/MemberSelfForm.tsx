@@ -155,6 +155,12 @@ export default function MemberSelfForm({ initial, status, rejectedReason }: Prop
                     <p className="text-[11px] text-slate-600">영문/숫자 2~10자</p>
                 </div>
 
+                {!initial && (
+                    <p className="text-[11px] text-slate-500">
+                        이미 등록된 멤버라면 기존과 같은 라이엇 ID를 입력하세요. 기존 랭킹·전적 기록에 그대로 연결됩니다.
+                    </p>
+                )}
+
                 <button
                     type="submit"
                     disabled={loading}

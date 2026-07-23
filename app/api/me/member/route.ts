@@ -17,6 +17,51 @@ const REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE = true
 const SELECT_COLUMNS =
   'id, member_name, riot_game_name, riot_tagline, status, rejected_reason, requested_at, approved_at, user_id, discord_id'
 
+type ClaimableRow = { id: string; user_id: string | null; discord_id: string | null }
+
+type ClaimLookup =
+  | { ok: true; row: ClaimableRow | null }
+  | { ok: false; status: number; message: string }
+
+/**
+ * 와일드카드 없는 ilike는 대소문자 무시 동등 비교로 동작하지만, 사용자 입력에
+ * `%`/`_`/`*`가 섞이면 패턴이 되어 버린다. 그래서 조회 결과를 소문자 정확 일치로
+ * 한 번 더 거른다.
+ */
+async function findClaimableRow(gameName: string, tagline: string): Promise<ClaimLookup> {
+  const { data, error } = await supabaseService
+    .schema('public')
+    .from('members')
+    .select('id, user_id, discord_id, riot_game_name, riot_tagline')
+    .ilike('riot_game_name', gameName)
+    .ilike('riot_tagline', tagline)
+
+  if (error) {
+    return { ok: false, status: 500, message: error.message }
+  }
+
+  const matches = (data ?? []).filter(
+    (row) =>
+      (row.riot_game_name ?? '').toLowerCase() === gameName.toLowerCase() &&
+      (row.riot_tagline ?? '').toLowerCase() === tagline.toLowerCase(),
+  )
+  if (matches.length === 0) return { ok: true, row: null }
+
+  const claimable = matches.find((row) => !row.user_id)
+  if (!claimable) {
+    return {
+      ok: false,
+      status: 409,
+      message: '이미 다른 계정에 연결된 라이엇 ID입니다. 관리자에게 문의해주세요.',
+    }
+  }
+
+  return {
+    ok: true,
+    row: { id: claimable.id, user_id: claimable.user_id, discord_id: claimable.discord_id },
+  }
+}
+
 async function getSessionUser() {
   const supabase = await createRouteClient()
   const { data: { user }, error } = await supabase.auth.getUser()
@@ -179,6 +224,63 @@ export async function POST(req: Request) {
       revalidatePath('/profile')
       return NextResponse.json({ ok: true, status: 'pending', message: '신청이 접수되었습니다.' })
     }
+  }
+
+  // Discord OAuth 전환 이전에 관리자가 만들어 둔 행(discord_id/user_id 모두 null)을
+  // 같은 Riot ID로 신청한 본인에게 인계한다. 인계하지 않으면 같은 사람이 두 행으로
+  // 쪼개져 기존 랭크·매치 기록이 새 행에 붙지 않는다.
+  const takeover = await findClaimableRow(input.riot_game_name, input.riot_tagline)
+  if (!takeover.ok) {
+    return NextResponse.json({ ok: false, message: takeover.message }, { status: takeover.status })
+  }
+
+  if (takeover.row) {
+    if (takeover.row.discord_id && discordId && takeover.row.discord_id !== discordId) {
+      return NextResponse.json(
+        { ok: false, message: '이미 다른 Discord 계정에 연결된 라이엇 ID입니다. 관리자에게 문의해주세요.' },
+        { status: 409 },
+      )
+    }
+
+    // .is('user_id', null) 가드로 동시 인계 경합(TOCTOU)을 막는다.
+    const { data: claimed, error: claimError } = await supabaseService
+      .schema('public')
+      .from('members')
+      .update({
+        user_id: user.id,
+        discord_id: discordId,
+        member_name: input.member_name,
+        riot_game_name: input.riot_game_name,
+        riot_tagline: input.riot_tagline,
+        status: 'pending',
+        requested_at: nowIso,
+        approved_at: null,
+        approved_by: null,
+        rejected_reason: null,
+      })
+      .eq('id', takeover.row.id)
+      .is('user_id', null)
+      .select('id')
+
+    if (claimError) {
+      return NextResponse.json({ ok: false, message: claimError.message }, { status: 400 })
+    }
+    if (!claimed || claimed.length === 0) {
+      return NextResponse.json(
+        { ok: false, message: '이미 다른 계정에 연결된 라이엇 ID입니다. 관리자에게 문의해주세요.' },
+        { status: 409 },
+      )
+    }
+
+    revalidatePath('/')
+    revalidatePath('/profile')
+
+    return NextResponse.json({
+      ok: true,
+      status: 'pending',
+      linked: true,
+      message: '기존 멤버 정보에 연결했습니다. 관리자 승인 후 랭킹에 표시돼요.',
+    })
   }
 
   const { data: created, error: insertError } = await supabaseService
