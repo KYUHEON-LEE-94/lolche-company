@@ -68,9 +68,15 @@ export default function ProfileChecklist() {
   useEffect(() => {
     let alive = true
     fetch('/api/me/profile-status')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((r) => {
+        // 401은 비로그인 = 정상 상황이다. 에러로 찍으면 콘솔이 오염되고
+        // 진짜 장애가 묻힌다. 체크리스트를 렌더하지 않는 것으로 충분하다.
+        if (r.status === 401) return null
+        if (!r.ok) return Promise.reject(new Error(`HTTP ${r.status}`))
+        return r.json()
+      })
       .then((d) => {
-        if (alive) setStatus(d as ProfileStatus)
+        if (alive && d) setStatus(d as ProfileStatus)
       })
       .catch((e) => {
         // 체크리스트는 부가 안내다. 실패해도 화면을 깨뜨리지 않고 조용히 숨긴다.

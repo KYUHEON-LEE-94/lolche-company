@@ -163,7 +163,7 @@ P3 (독립)   P4 (독립)
 
 1. `SiteNav.tsx`
    - 상단: 모바일에서 링크 행 `hidden md:flex`
-   - 하단: `fixed bottom-0 md:hidden`, `bg-canvas/95 backdrop-blur border-t border-line`, `pb-[env(safe-area-inset-bottom)]`, 아이템 `min-h-[56px]`
+   - 하단: `fixed bottom-0 md:hidden`, `bg-canvas/95 backdrop-blur border-t border-line`, `pb-[env(safe-area-inset-bottom)—인용`, 아이템 `min-h-[56px]`
    - 인라인 SVG 아이콘 4개(`currentColor` 상속)
 2. `app/page.tsx` 요약 화면
    - `Promise.all` 병렬화

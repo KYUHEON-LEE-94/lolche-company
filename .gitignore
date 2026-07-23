@@ -55,3 +55,7 @@ yarn-error.log*
 /coverage
 /test-results
 trace/
+
+# 하네스 작업 산출물 (Tailwind 소스 스캔에서도 제외됨)
+_workspace/
+_workspace_prev*/

@@ -19,7 +19,7 @@
 
 ### 1. SiteNav — 상단 유지 + 하단 탭바 추가
 - 375px 가로 스크롤의 직접 원인이던 `overflow-x-auto` 링크 행을 `hidden md:flex`로 전환. 모바일 상단에는 로고 텍스트 + AuthButtons만 남는다.
-- 하단 탭바: `md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]`, 항목 `min-h-[56px]`, `grid-cols-4`.
+- 하단 탭바: `md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)—인용`, 항목 `min-h-[56px]`, `grid-cols-4`.
 - 탭 항목 4개 고정: **홈 / 롤체 / 내전 / 스팀**. `명예의 전당`·`롤`은 `inTabBar:false`로 상단 + 대시보드 카드에서만 진입.
 - `HIDDEN_PREFIXES = ['/admin','/login','/auth']`는 컴포넌트 최상단 early-return이라 **상·하단 모두** 동시에 미노출.
 - `LOL_ENABLED` 분기 보존: false면 `NAV_ITEMS`에 `/lol` 자체가 들어가지 않아 상단·하단·대시보드 카드 어디에도 없다. (데스크톱 실측 링크 목록: 홈/롤체 랭킹/내전/스팀/명예의 전당 — 롤 없음)
@@ -54,7 +54,7 @@
 - `SHELL` 미사용 페이지 2곳(`/tft`, `/hall-of-fame`)에 `TABBAR_SAFE_PB = 'pb-28 md:pb-0'` 1클래스만 추가
 
 ### ⚠ 구현 중 발견·수정한 실제 버그
-`SiteNav`의 JSX 주석에 `pb-[env(...)]`라고 적었더니 **Tailwind v4 스캐너가 이를 후보 클래스로 인식**해
+`SiteNav`의 JSX 주석에 `pb-[env(…)]`라고 적었더니 **Tailwind v4 스캐너가 이를 후보 클래스로 인식**해
 `.pb-\[env\(\.\.\.\)\] { padding-bottom: env(...) }`를 생성 → `Parsing CSS source code failed`로 **globals.css 전체가 깨졌다.**
 주석 문구를 자연어로 바꿔 해결. 교훈: 주석에도 Tailwind 유틸리티 형태의 문자열을 쓰면 안 된다.
 
