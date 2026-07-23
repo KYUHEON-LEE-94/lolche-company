@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Podium, { rankerName, type HallOfFameRanker } from './Podium';
 import SeasonTab from './SeasonTab';
@@ -17,42 +16,22 @@ type Props = {
 }
 
 export default function HallOfFameClientPage({ seasons, currentSeason, currentQueue, top3, allRankers = [] }: Props) {
-    const [showIntro, setShowIntro] = useState(true);
-
     // 4위부터의 명단만 추출
     const otherRankers = allRankers.slice(3);
 
     return (
         <div className="bg-[#050505] min-h-screen text-white overflow-x-hidden">
-            {/* 🎬 웅장한 인트로 레이어 (기존과 동일) */}
-            <AnimatePresence>
-                {showIntro && (
-                    <motion.div
-                        initial={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 1.1, filter: 'blur(20px)' }}
-                        transition={{ duration: 1.2, ease: 'easeInOut' }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
-                    >
-                        <div className="absolute inset-0 opacity-40">
-                            <img src="/images/hall-of-fame/hall-of-fame-intro.png" className="w-full h-full object-cover" alt="Intro" />
-                        </div>
-                        <div className="relative z-10 text-center">
-                            <motion.h2 className="text-amber-500 font-bold tracking-[0.4em] mb-4">롤체 컴퍼니</motion.h2>
-                            <motion.h1 className="text-7xl md:text-9xl font-black italic mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">명예의 전당</motion.h1>
-                            <motion.button onClick={() => setShowIntro(false)} className="px-12 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black rounded-full shadow-[0_0_20px_rgba(245,158,11,0.4)]">기록 확인하기</motion.button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* 🏛️ 실제 컨텐츠 영역 */}
+            {/* 🏛️ 실제 컨텐츠 영역 — 진입 즉시 기록을 보여준다 (인트로 없음) */}
             <motion.main
                 initial={{ opacity: 0 }}
-                animate={{ opacity: showIntro ? 0 : 1 }}
-                transition={{ duration: 1 }}
-                className="max-w-6xl mx-auto px-4 py-16"
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-6xl mx-auto px-4 pt-12 pb-16"
             >
                 <header className="text-center mb-16">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.4em] text-amber-500/70">
+                        Hall of Fame
+                    </p>
                     <h1 className="text-5xl font-black italic tracking-tighter mb-2 bg-gradient-to-b from-amber-200 to-amber-700 bg-clip-text text-transparent uppercase">
                         {currentSeason.season_name}
                     </h1>
