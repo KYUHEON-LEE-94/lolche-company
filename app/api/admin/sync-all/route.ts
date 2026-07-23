@@ -8,7 +8,8 @@ import { requireAdmin } from '@/app/lib/isAdmin'
 
 export const maxDuration = 300
 
-const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '20')
+// 멤버당 최대 3개 계정의 리그를 조회하므로 배치 20이면 maxDuration(300s)을 넘길 수 있다.
+const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '10')
 const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
 const STALE_HOURS = Number(process.env.SYNC_STALE_HOURS ?? '1')
 const STUCK_RUNNING_MINUTES = 30

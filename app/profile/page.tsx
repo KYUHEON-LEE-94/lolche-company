@@ -4,8 +4,9 @@ import { createRouteClient } from '@/lib/supabase/route'
 import { supabaseService } from '@/lib/supabase/service'
 import { getDiscordId } from '@/lib/auth/discord'
 import type { MemberStatus } from '@/types/supabase'
+import { listRiotAccounts, pickPrimaryAccount } from '@/lib/members/primaryAccount'
 import ProfileEditor from './ProfileEditor'
-import MemberSelfForm from './MemberSelfForm'
+import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +68,34 @@ export default async function ProfilePage() {
 
     const status = (member?.status ?? null) as MemberStatus | null
 
+    // 마이그레이션 미적용(테이블 부재)은 500이 아니라 빈 목록 + 안내로 degrade한다.
+    let accounts: RiotAccountView[] = []
+    let migrationRequired = false
+    if (member) {
+        const listed = await listRiotAccounts(member.id)
+        if (listed.ok) {
+            const primary = pickPrimaryAccount(listed.accounts)
+            accounts = [...listed.accounts]
+                .sort((a, b) => {
+                    if (a.id === primary?.id) return -1
+                    if (b.id === primary?.id) return 1
+                    return a.account_no - b.account_no
+                })
+                .map((a) => ({
+                    id: a.id,
+                    account_no: a.account_no,
+                    // "대표 없음"은 관측되지 않는다 — 파생 결과를 그대로 표시한다.
+                    is_primary: a.id === primary?.id,
+                    riot_game_name: a.riot_game_name,
+                    riot_tagline: a.riot_tagline,
+                }))
+        } else if (listed.missingTable) {
+            migrationRequired = true
+        } else {
+            throw new Error(listed.message)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-10">
             <div className="mx-auto w-full max-w-4xl">
@@ -90,6 +119,8 @@ export default async function ProfilePage() {
                         }
                         status={status}
                         rejectedReason={member?.rejected_reason ?? null}
+                        accounts={accounts}
+                        migrationRequired={migrationRequired}
                     />
 
                     {member && status === 'approved' ? (

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
 import { parseMemberInput } from '@/lib/members/memberInput'
+import { ensurePrimaryAccount } from '@/lib/members/primaryAccount'
 
 export async function POST(req: Request) {
     const { ok, user, supabase } = await requireAdmin()
@@ -29,6 +30,21 @@ export async function POST(req: Request) {
 
     if (error || !data) {
         return NextResponse.json({ ok: false, message: error?.message ?? 'insert failed' }, { status: 400 })
+    }
+
+    // 계정 축(riot_accounts)에도 slot1 대표 계정을 만든다. 실패하면 계정 없는 멤버가 남으므로 보상 삭제.
+    const ensured = await ensurePrimaryAccount(data.id, parsed.value)
+    if (!ensured.ok) {
+        await supabase.schema('public').from('members').delete().eq('id', data.id)
+        return NextResponse.json(
+            {
+                ok: false,
+                message: ensured.conflict
+                    ? '이미 다른 멤버가 등록한 라이엇 ID입니다.'
+                    : ensured.message,
+            },
+            { status: ensured.conflict ? 409 : 400 },
+        )
     }
 
     // 랭킹/관리자 목록 갱신

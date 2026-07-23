@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic'
  * 순서: 리프 → 루트.
  */
 const CHILD_TABLES = [
+  'riot_accounts',
   'custom_game_results',
   'custom_game_teams',
   'custom_game_participants',

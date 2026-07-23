@@ -3,15 +3,52 @@ export const RIOT_GAME_NAME_MAX = 30
 export const RIOT_TAGLINE_MAX = 10
 export const REJECTED_REASON_MAX = 200
 
-export type MemberInput = {
-  member_name: string
+/** 멤버당 등록 가능한 라이엇 계정 수. DB의 account_no CHECK(1~3)와 반드시 같아야 한다. */
+export const MAX_RIOT_ACCOUNTS = 3
+
+export type RiotIdInput = {
   riot_game_name: string
   riot_tagline: string
+}
+
+export type MemberInput = RiotIdInput & {
+  member_name: string
 }
 
 type ParseResult =
   | { ok: true; value: MemberInput }
   | { ok: false; message: string }
+
+type RiotIdParseResult =
+  | { ok: true; value: RiotIdInput }
+  | { ok: false; message: string }
+
+/**
+ * 라이엇 ID(게임명+태그라인)만 받는 파서. riot_accounts 라우트 전용.
+ * member_name 은 사람 축(members)이라 계정 추가/수정으로는 바뀌지 않는다.
+ */
+export function parseRiotAccountInput(body: unknown): RiotIdParseResult {
+  const source = (body ?? {}) as Record<string, unknown>
+  const asString = (v: unknown) => (typeof v === 'string' ? v : '')
+
+  const riot_game_name = asString(source.riot_game_name).trim()
+  const riot_tagline = asString(source.riot_tagline).trim().replace(/^#/, '')
+
+  if (!riot_game_name || !riot_tagline) {
+    return { ok: false, message: '라이엇 게임명과 태그라인을 모두 입력해주세요.' }
+  }
+  if (riot_game_name.length > RIOT_GAME_NAME_MAX) {
+    return { ok: false, message: `라이엇 게임명은 ${RIOT_GAME_NAME_MAX}자 이하여야 합니다.` }
+  }
+  if (riot_tagline.length > RIOT_TAGLINE_MAX) {
+    return { ok: false, message: `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.` }
+  }
+  if (!/^[A-Za-z0-9]{2,10}$/.test(riot_tagline)) {
+    return { ok: false, message: '태그라인은 영문/숫자 2~10자여야 합니다.' }
+  }
+
+  return { ok: true, value: { riot_game_name, riot_tagline } }
+}
 
 /**
  * 자가 등록/관리자 등록 공용 입력 파서.
@@ -48,7 +85,7 @@ export function parseMemberInput(body: unknown): ParseResult {
   return { ok: true, value: { member_name, riot_game_name, riot_tagline } }
 }
 
-export function isSameRiotId(a: MemberInput, b: { riot_game_name: string; riot_tagline: string }) {
+export function isSameRiotId(a: RiotIdInput, b: RiotIdInput) {
   return (
     a.riot_game_name.toLowerCase() === b.riot_game_name.toLowerCase() &&
     a.riot_tagline.toLowerCase() === b.riot_tagline.toLowerCase()

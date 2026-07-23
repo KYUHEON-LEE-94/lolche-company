@@ -34,7 +34,8 @@ export type Member = {
   tft_doubleup_losses: number | null
 
   // LoL 솔로랭크 (20260724_lol_rank.sql)
-  // ⚠ Phase 2(riot_accounts)에서 tft_* 와 함께 대표 계정 값의 비정규화 캐시로 미러링될 예정
+  // ⚠ riot_accounts 도입(20260726) 이후 tft_* / lol_* / riot_* 는 전부
+  //    "대표 계정 값의 비정규화 캐시"다. 갱신은 lib/members/primaryAccount.ts 한 곳에서만 한다.
   lol_tier: string | null
   lol_rank: string | null
   lol_league_points: number | null
@@ -76,6 +77,45 @@ export type Member = {
   approved_at: string | null
   approved_by: string | null
   rejected_reason: string | null
+}
+
+/**
+ * 라이엇 계정 (20260726_riot_accounts.sql) — 멤버당 최대 3행.
+ * `members`는 "사람" 단위 1행을 유지하고, 이 테이블이 "계정" 축을 담당한다.
+ * 대표 계정은 `is_primary desc, account_no asc` 정렬의 첫 행으로 파생한다
+ * (`is_primary`가 전부 false여도 대표 없음 상태가 관측되지 않는다).
+ */
+export type RiotAccount = {
+  id: string
+  member_id: string
+  /** 1~3. 최대 개수를 물리적으로 강제하는 슬롯 번호 (unique(member_id, account_no)) */
+  account_no: number
+  is_primary: boolean
+
+  riot_game_name: string
+  riot_tagline: string
+  riot_puuid: string | null
+
+  tft_tier: string | null
+  tft_rank: string | null
+  tft_league_points: number | null
+  tft_wins: number | null
+  tft_losses: number | null
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_league_points: number | null
+  tft_doubleup_wins: number | null
+  tft_doubleup_losses: number | null
+
+  lol_tier: string | null
+  lol_rank: string | null
+  lol_league_points: number | null
+  lol_wins: number | null
+  lol_losses: number | null
+  lol_synced_at: string | null
+
+  last_synced_at: string | null
+  created_at: string
 }
 
 export type Admin = {
@@ -281,6 +321,18 @@ export interface Database {
         }
         Update: Optional<Member>
       }
+      riot_accounts: {
+        Row: RiotAccount
+        Insert: Optional<Omit<RiotAccount, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+          member_id: string
+          account_no: number
+          riot_game_name: string
+          riot_tagline: string
+        }
+        Update: Optional<RiotAccount>
+      }
       admins: {
         Row: Admin
         Insert: Optional<Admin> & {
@@ -414,8 +466,19 @@ export interface Database {
         Update: Optional<CustomGameTeam>
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
+    Views: {
+      /** distinct on (member_id) — is_primary desc, account_no asc */
+      member_primary_account: {
+        Row: RiotAccount
+      }
+    }
+    Functions: {
+      /** 대표 계정 전환. p_member_id 가드가 있어 타인 계정은 전환되지 않는다. */
+      set_primary_riot_account: {
+        Args: { p_member_id: string; p_account_id: string }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

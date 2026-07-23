@@ -72,12 +72,33 @@ export async function POST(_req: Request, ctx: Ctx) {
   ;(memberRows ?? []).forEach((m) => {
     if (m.riot_puuid) participantByPuuid.set(m.riot_puuid, { type: 'member', id: m.id })
   })
+
+  // 부계정으로 플레이한 참가자도 같은 member_id로 귀속시킨다.
+  // 한 매치에 같은 사람의 계정이 둘 이상 들어갈 수는 없으므로 중복 집계 위험은 없다.
+  // (테이블 미적용 환경에서는 error만 나고 대표 계정 매핑으로 degrade)
+  if (memberIds.length > 0) {
+    const { data: accountRows } = await supabaseAdmin
+      .from('riot_accounts')
+      .select('member_id, riot_puuid')
+      .in('member_id', memberIds)
+
+    ;(accountRows ?? []).forEach((a) => {
+      if (a.riot_puuid) participantByPuuid.set(a.riot_puuid, { type: 'member', id: a.member_id })
+    })
+  }
+
   ;(guestRows ?? []).forEach((g) => {
     participantByPuuid.set(g.riot_puuid, { type: 'guest', id: g.id })
   })
 
-  const allPuuids = [...participantByPuuid.keys()]
-  if (allPuuids.length === 0) {
+  // ⚠ findCommonMatch()는 넘긴 PUUID **전원**이 함께한 매치를 찾는다(교집합).
+  //   부계정 PUUID까지 넣으면 교집합이 항상 비므로, 탐색에는 참가자 1인당
+  //   대표 계정 PUUID 1개만 넘긴다. 부계정은 결과 귀속(위 맵)에만 사용한다.
+  const searchPuuids = [
+    ...(memberRows ?? []).map((m) => m.riot_puuid).filter((p): p is string => !!p),
+    ...(guestRows ?? []).map((g) => g.riot_puuid),
+  ]
+  if (searchPuuids.length === 0) {
     return NextResponse.json({ error: '참가자 정보를 찾을 수 없습니다' }, { status: 400 })
   }
 
@@ -86,7 +107,7 @@ export async function POST(_req: Request, ctx: Ctx) {
   // ── 공통 매치 탐색 ───────────────────────────────────────────────
   let matchResult
   try {
-    matchResult = await findCommonMatch(allPuuids, excludeMatchIds, 30)
+    matchResult = await findCommonMatch(searchPuuids, excludeMatchIds, 30)
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Riot API 오류가 발생했습니다' },

@@ -3,16 +3,37 @@ import { revalidatePath } from 'next/cache'
 import { createRouteClient } from '@/lib/supabase/route'
 import { supabaseService } from '@/lib/supabase/service'
 import { getDiscordId } from '@/lib/auth/discord'
-import { isSameRiotId, parseMemberInput } from '@/lib/members/memberInput'
+import { isSameRiotId, parseMemberInput, type MemberInput } from '@/lib/members/memberInput'
+import {
+  REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE,
+  ensurePrimaryAccount,
+  mirrorPrimaryToMember,
+} from '@/lib/members/primaryAccount'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * 승인된 멤버가 Riot ID를 바꾸면 다시 심사를 받게 할지 여부.
- * true(기본)인 이유: 검증 없이 Riot ID를 갈아끼우면 타인의 상위 티어 계정으로
- * 바꿔치기해 랭킹을 조작할 수 있다.
+ * members(사람)와 riot_accounts(계정) 양쪽을 정합화한다.
+ * 이 라우트가 다루는 것은 항상 **대표 계정**이다(부계정은 /api/me/riot-accounts 담당).
+ * 마이그레이션 미적용 환경에서는 ensurePrimaryAccount가 무해하게 통과한다.
  */
-const REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE = true
+async function syncPrimaryAccount(
+  memberId: string,
+  input: MemberInput,
+): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  const ensured = await ensurePrimaryAccount(memberId, input)
+  if (!ensured.ok) {
+    return {
+      ok: false,
+      status: ensured.conflict ? 409 : 400,
+      message: ensured.conflict
+        ? '이미 다른 멤버가 등록한 라이엇 ID입니다. 관리자에게 문의해주세요.'
+        : ensured.message,
+    }
+  }
+  await mirrorPrimaryToMember(memberId)
+  return { ok: true }
+}
 
 const SELECT_COLUMNS =
   'id, member_name, riot_game_name, riot_tagline, status, rejected_reason, requested_at, approved_at, user_id, discord_id'
@@ -181,6 +202,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: updateError.message }, { status: 400 })
     }
 
+    const synced = await syncPrimaryAccount(existing.id, input)
+    if (!synced.ok) {
+      return NextResponse.json({ ok: false, message: synced.message }, { status: synced.status })
+    }
+
     revalidatePath('/tft')
     revalidatePath('/')
     revalidatePath('/profile')
@@ -229,6 +255,14 @@ export async function POST(req: Request) {
 
       if (linkError) {
         return NextResponse.json({ ok: false, message: linkError.message }, { status: 400 })
+      }
+
+      const linkedSync = await syncPrimaryAccount(discordRow.id, input)
+      if (!linkedSync.ok) {
+        return NextResponse.json(
+          { ok: false, message: linkedSync.message },
+          { status: linkedSync.status },
+        )
       }
 
       revalidatePath('/tft')
@@ -294,6 +328,14 @@ export async function POST(req: Request) {
       )
     }
 
+    const claimedSync = await syncPrimaryAccount(takeover.row.id, input)
+    if (!claimedSync.ok) {
+      return NextResponse.json(
+        { ok: false, message: claimedSync.message },
+        { status: claimedSync.status },
+      )
+    }
+
     revalidatePath('/tft')
     revalidatePath('/')
     revalidatePath('/profile')
@@ -327,6 +369,16 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { ok: false, message: insertError?.message ?? '신청에 실패했습니다.' },
       { status: 400 },
+    )
+  }
+
+  const createdSync = await syncPrimaryAccount(created.id, input)
+  if (!createdSync.ok) {
+    // riot_accounts 생성이 실패하면 members만 남아 계정 없는 멤버가 된다. 보상 삭제.
+    await supabaseService.schema('public').from('members').delete().eq('id', created.id)
+    return NextResponse.json(
+      { ok: false, message: createdSync.message },
+      { status: createdSync.status },
     )
   }
 

@@ -47,9 +47,13 @@ app/
   login/                        # 사용자 로그인 (Discord OAuth 버튼)
   auth/callback/route.ts        # OAuth 코드 교환 + discord_id ↔ user_id 연결
   profile/                      # 프로필 이미지·프레임 편집 + 라이엇 ID 자가 등록
-    MemberSelfForm.tsx          # 라이엇 ID 등록/수정 폼 (항상 pending으로 신청)
+    MemberSelfForm.tsx          # 라이엇 ID 등록/수정 폼 + 계정 목록(최대 3, 추가/수정/삭제/대표지정)
   api/                          # API 라우트
     me/member/route.ts          # 내 멤버 조회(GET) / 자가 등록·수정(POST, 세션 소유권 기반)
+    me/riot-accounts/           # 내 라이엇 계정(최대 3) — 전부 세션 user_id로만 소유권 판정
+      route.ts                  #   GET 목록 / POST 추가(빈 슬롯 최솟값, 23505→409)
+      [id]/route.ts             #   PATCH 수정 / DELETE 삭제(마지막 1개는 409)
+      [id]/primary/route.ts     #   POST 대표 지정 (set_primary_riot_account RPC)
     me/steam/route.ts           # 내 스팀 연결 조회(GET)/등록(POST)/해제(DELETE) — 세션 소유권 기반
     members/[id]/
       sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 관리자/본인 인증)
@@ -84,7 +88,9 @@ lib/
   actions/
     season-actions.ts           # 시즌 Server Actions
   members/
-    memberInput.ts              # 멤버 입력 화이트리스트 파서 + 길이/포맷 검증 상수
+    memberInput.ts              # 멤버 입력 화이트리스트 파서 + 길이/포맷 검증 상수 (+ parseRiotAccountInput)
+    primaryAccount.ts           # ★ 대표 계정 파생 + members 캐시 미러링 단일 지점 + 재승인 정책 상수
+    myMember.ts                 # 세션 → 내 members 행 해석 (body의 member 식별자 불신)
   tft/
     tftLocale.ts                # 기물 이미지 URL 생성, 한국어 이름 변환 (KrMaps 캐시)
 
@@ -115,6 +121,8 @@ STEAM_APP_DETAIL_DELAY_MS=1500      # 비공식 store API 호출 간격(ms)
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
+RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
+SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 ```
 
@@ -226,7 +234,8 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 
 | 테이블 | 설명 |
 |---|---|
-| `members` | 멤버 정보 + TFT 랭크 + 동기화 상태 (`discord_id`/`user_id`로 로그인 계정 연결, `status`로 승인 워크플로) |
+| `members` | **사람** 1행. 로그인 연결(`discord_id`/`user_id`) + `status` 승인 워크플로 + **대표 계정 랭크 캐시**(`riot_*`/`tft_*`/`lol_*`) |
+| `riot_accounts` | **계정** 1~3행 (`account_no` 1~3 슬롯 유니크). `is_primary`로 대표 지정. 계정별 실제 랭크값 보관 |
 | `admins` | 관리자 계정 (`discord_id` 사전 등록, 첫 로그인 시 `user_id` 자동 연결) |
 | `seasons` | 시즌 목록 (`is_active` 하나만 true 가능) |
 | `hall_of_fame` | 시즌 마감 시점의 랭크 스냅샷 (+`member_name_snapshot`으로 추방 후에도 이름 보존) |
@@ -254,6 +263,9 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
     → member_name / riot_game_name / riot_tagline 3개 컬럼만 화이트리스트로 수용
     → 항상 status='pending'. 승인된 멤버가 Riot ID를 바꿔도 pending 복귀
        (REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE 상수로 제어 — 랭킹 조작 방지)
+    → 이 폼이 다루는 Riot ID는 항상 **대표 계정**이다. ensurePrimaryAccount()로
+       riot_accounts slot1을 함께 정합화하고 mirrorPrimaryToMember()로 캐시를 재기록한다
+       (부계정은 /api/me/riot-accounts 담당)
 
 [관리자] /admin/members/control
     → GET  /api/admin/members[?status=pending]  대기/전체 탭, 로그인 연결 배지
@@ -262,13 +274,79 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
     → DELETE /api/admin/members/[id]            추방 (body.confirmName === member_name 필수)
 ```
 
+## 다중 라이엇 계정 · 대표 계정 (`riot_accounts`)
+
+`scripts/sql/20260726_riot_accounts.sql`. 멤버당 라이엇 계정 최대 3개, 그중 **대표 1개만** 공개 랭킹에 노출된다.
+
+### members는 계속 1인 1행이다 ★
+
+`members`가 사람 축을 유지하므로 `getViewerMember()`·`findMyMember()`의 `.maybeSingle()`,
+`unique(custom_game_id, member_id)`, `members.steam_id64` 유니크가 전부 무변경으로 유효하다.
+`members.riot_*`/`tft_*`/`lol_*`는 **대표 계정 값의 비정규화 캐시**다.
+덕분에 `/`, `/tft`, `/lol`, `/steam`, `/hall-of-fame`, 내전의 공개 쿼리에 대표 계정 필터를 한 줄도 추가하지 않는다.
+
+> 불변식이 코드가 아니라 **데이터**에 걸린다: `members.tft_* == 대표 riot_accounts.tft_*`.
+> **캐시 갱신은 `lib/members/primaryAccount.ts`의 `mirrorPrimaryToMember()` 한 곳에서만 한다.**
+> 다른 곳에서 `members.tft_*`를 직접 쓰면 랭킹에 옛 값이 남는다.
+
+### 제약은 전부 DB가 강제한다
+
+| 규칙 | 방어선 |
+|---|---|
+| 최대 3개 | `unique (member_id, account_no)` + `check (account_no between 1 and 3)`. 앱의 select→insert는 동시요청에 반드시 뚫린다 |
+| 대표 ≤1 | `unique (member_id) where is_primary` |
+| 타인 계정 선점 | `unique (riot_puuid)`, `unique (lower(game_name), lower(tagline))` |
+| 대표 ≥1 | **강제하지 않는다.** 아래 파생 규칙으로 "대표 없음"을 관측 불가능하게 만든다 |
+
+전부 `23505` → **409** 매핑.
+
+### 대표는 파생한다 — 자동 승격 UPDATE를 만들지 않는다 ★
+
+`is_primary desc, account_no asc` 정렬의 첫 행이 대표다 (`pickPrimaryAccount()` / 뷰 `member_primary_account`).
+`is_primary`가 전부 false여도 `account_no` 최솟값이 대표가 되므로 대표 삭제 시 승격 UPDATE가 필요 없고,
+따라서 승격 경합도 존재하지 않는다(내전 대기열과 같은 철학).
+대표 **전환**만은 파생 불가라 `is_primary` 플래그가 필요하며,
+부분 유니크 인덱스가 비지연이라 해제→지정 2문장을 `set_primary_riot_account()` RPC 한 트랜잭션으로 처리한다.
+
+### 재승인 정책
+
+| 행위 | `members.status` |
+|---|---|
+| 부계정 추가 / 부계정 수정 / 부계정 삭제 | **불변** (공개 노출값이 안 바뀐다) |
+| 대표 계정의 Riot ID **문자열** 수정 | `REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE = true` → **pending 복귀** |
+| 대표 계정 **전환**(다른 계정을 대표로) | `REQUIRE_REAPPROVAL_ON_PRIMARY_SWITCH = false` → **불변**(운영 결정) |
+| 대표 계정 삭제(파생 대표 교체) | 위 상수를 공유 |
+
+두 상수 모두 `lib/members/primaryAccount.ts`에 있다. 정책 반전은 상수 1개 변경으로 끝난다.
+`PRIMARY_SWITCH`를 `true`로 올리면 "부계정 추가 → 대표 전환"으로 심사를 우회하는 경로가 닫힌다.
+**pending 복귀는 반드시 캐시 갱신과 짝으로 수행한다** — 옛 값을 남기면 승인 순간 "심사한 계정 ≠ 표시되는 값"이 된다.
+
+**마지막 1개 계정은 삭제 거부(409).** 0개가 되면 캐시를 갱신할 근거가 사라져 랭킹에 옛 값이 영구히 남는다.
+
+**RLS:** `riot_accounts`는 **select 정책만** 둔다. self-UPDATE 정책이 있으면 사용자가 콘솔에서
+`is_primary`/`tft_tier`를 직접 바꿔 위 재승인 규칙을 통째로 우회한다.
+
+### 동기화 부하
+
+- 리그 조회(`fetchTftLeaguesByPuuid`)만 계정 수에 비례 (계정 간 `RIOT_MEMBER_DELAY_MS` 대기)
+- **매치 상세(건당 1200ms)·LoL·`member_rank_history`는 대표 계정만** — 비용의 대부분이 매치 상세다
+- `SYNC_ALL_BATCH` 기본값 **10** (계정 3배를 감안해 20에서 하향)
+- 개별 동기화 쿨다운은 계정 수와 무관하게 `members.last_synced_at`(사람 단위) 기준 유지
+
+### 마이그레이션 미적용 시 degrade
+
+테이블 부재는 Postgres `42P01` / PostgREST `PGRST205`로 나타난다.
+`isMissingTableError()`가 이를 잡아
+`/profile`·`GET /api/me/riot-accounts`는 500이 아니라 "마이그레이션 필요" 안내,
+쓰기 라우트는 503, **`doSyncMember()`는 기존 단일 계정 경로로 폴백**한다(크론이 죽으면 안 된다).
+
 **노출 필터:** `app/tft/page.tsx`, `app/lol/page.tsx`, `app/steam/page.tsx`,
 그리고 `lib/sync/syncSteamMember.ts`의 `listSteamMembers()`에서 `.eq('status','approved')`.
 이 지점들이 미승인 멤버 차단의 핵심이므로 members를 조회하는 공개 화면·집계를 추가할 때 반드시 함께 적용한다.
 내전은 화면에서 members를 직접 조회하지 않고 서버가 `isApprovedMember()`로 강제한다(아래 참조).
 
 **추방(완전 삭제):** FK의 `ON DELETE` 설정에 의존하지 않고
-`app/api/admin/members/[id]/route.ts`에서 자식 테이블을 명시적으로 정리한 뒤 members를 삭제한다.
+`app/api/admin/members/[id]/route.ts`의 `CHILD_TABLES`(`riot_accounts` 포함)를 명시적으로 정리한 뒤 members를 삭제한다.
 `hall_of_fame`만 예외로 삭제하지 않고 `member_id=null` + 이름 스냅샷을 남긴다.
 
 **RLS 주의:** `members`에는 self-UPDATE 정책을 두지 않는다. RLS는 행 단위라 컬럼을 제한할 수 없어,

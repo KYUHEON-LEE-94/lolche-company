@@ -44,6 +44,14 @@ type MemberListItem = {
   last_synced_at: string | null
   login_linked: boolean
   discord_registered: boolean
+  /** 마이그레이션 미적용 환경에서는 빈 배열. 대표 계정이 항상 첫 번째. */
+  riot_accounts: {
+    id: string
+    account_no: number
+    is_primary: boolean
+    riot_game_name: string
+    riot_tagline: string
+  }[]
 }
 
 type Tab = 'pending' | 'all'
@@ -332,9 +340,28 @@ export default function AdminMemberControlPage() {
                             </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5 truncate">
-                        {m.riot_game_name} <span className="text-slate-700">#{m.riot_tagline}</span>
-                      </div>
+                      {m.riot_accounts.length > 0 ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {m.riot_accounts.map((a, i) => (
+                                <span
+                                    key={a.id}
+                                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+                                        i === 0
+                                            ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
+                                            : 'bg-slate-700/20 text-slate-400 border-slate-600/30'
+                                    }`}
+                                >
+                                  {i === 0 && <span className="mr-1 text-[10px] font-black">대표</span>}
+                                  {a.riot_game_name}
+                                  <span className="opacity-60">#{a.riot_tagline}</span>
+                                </span>
+                            ))}
+                          </div>
+                      ) : (
+                          <div className="text-xs text-slate-500 mt-0.5 truncate">
+                            {m.riot_game_name} <span className="text-slate-700">#{m.riot_tagline}</span>
+                          </div>
+                      )}
                       {m.status === 'rejected' && m.rejected_reason && (
                           <div className="text-[11px] text-red-400/80 mt-0.5 truncate">거절 사유: {m.rejected_reason}</div>
                       )}
