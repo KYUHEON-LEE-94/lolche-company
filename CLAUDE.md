@@ -579,7 +579,8 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 
 - `SUPABASE_SERVICE_ROLE_KEY`는 RLS를 우회하므로 서버 사이드에서만 사용
 - 크론 엔드포인트(`GET /api/admin/sync-all`, `GET /api/admin/sync-steam`)는 `Authorization: Bearer CRON_SECRET`(또는 `ADMIN_SYNC_TOKEN`) 헤더 필수
-  (두 경로 모두 `middleware.ts`의 `BYPASS_PATHS`에 등록되어 있어야 한다)
+  (두 경로 모두 `proxy.ts`의 `BYPASS_PATHS`에 등록되어 있어야 한다.
+  Next 16에서 `middleware.ts` 규약이 `proxy.ts`로 이름이 바뀌었고 export 함수명도 `proxy`다)
 - **`STEAM_API_KEY`는 서버 전용.** Steam Web API는 헤더 인증을 지원하지 않아 키를 쿼리 파라미터로 보내므로,
   `lib/steam/*`는 전부 `import 'server-only'`이고 에러 메시지·로그에 URL을 절대 싣지 않는다.
 - 스팀 계정은 **소유권을 증명하지 않는다**(사용자 입력). `members_steam_id64_uidx` 유니크로 선점만 막고 중복 시 409.

@@ -4,14 +4,14 @@ import { createServerClient } from '@supabase/ssr'
 /** 로그인 없이 접근 가능한 경로 (prefix 매칭) */
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm']
 
-/** 미들웨어 자체를 건너뛰는 경로 (Vercel 크론은 Bearer 토큰으로 인증) */
+/** 프록시 자체를 건너뛰는 경로 (Vercel 크론은 Bearer 토큰으로 인증) */
 const BYPASS_PATHS = ['/api/admin/sync-all', '/api/admin/sync-steam']
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
   if (BYPASS_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
     const { data } = await supabase.auth.getUser()
     user = data.user
   } catch (e) {
-    console.error('[middleware] auth.getUser 실패', e instanceof Error ? e.message : '오류 발생')
+    console.error('[proxy] auth.getUser 실패', e instanceof Error ? e.message : '오류 발생')
   }
 
   // API 라우트는 각자 401/403 JSON을 반환한다. 리다이렉트하면 fetch가 HTML을 받아 파싱 에러가 난다.
