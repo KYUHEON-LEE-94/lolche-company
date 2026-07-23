@@ -17,7 +17,12 @@ const REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE = true
 const SELECT_COLUMNS =
   'id, member_name, riot_game_name, riot_tagline, status, rejected_reason, requested_at, approved_at, user_id, discord_id'
 
-type ClaimableRow = { id: string; user_id: string | null; discord_id: string | null }
+type ClaimableRow = {
+  id: string
+  user_id: string | null
+  discord_id: string | null
+  status: string | null
+}
 
 type ClaimLookup =
   | { ok: true; row: ClaimableRow | null }
@@ -32,7 +37,7 @@ async function findClaimableRow(gameName: string, tagline: string): Promise<Clai
   const { data, error } = await supabaseService
     .schema('public')
     .from('members')
-    .select('id, user_id, discord_id, riot_game_name, riot_tagline')
+    .select('id, user_id, discord_id, status, riot_game_name, riot_tagline')
     .ilike('riot_game_name', gameName)
     .ilike('riot_tagline', tagline)
 
@@ -58,7 +63,12 @@ async function findClaimableRow(gameName: string, tagline: string): Promise<Clai
 
   return {
     ok: true,
-    row: { id: claimable.id, user_id: claimable.user_id, discord_id: claimable.discord_id },
+    row: {
+      id: claimable.id,
+      user_id: claimable.user_id,
+      discord_id: claimable.discord_id,
+      status: claimable.status,
+    },
   }
 }
 
@@ -242,7 +252,12 @@ export async function POST(req: Request) {
       )
     }
 
-    // .is('user_id', null) 가드로 동시 인계 경합(TOCTOU)을 막는다.
+    // 이미 승인되어 랭킹에 올라와 있던 기존 멤버는 인계 후에도 approved를 유지한다.
+    // (Discord 전환 전부터 관리자가 등록해 둔 사람들이므로 재승인을 요구하면
+    //  로그인할 때마다 랭킹에서 사라졌다 돌아오는 혼란이 생긴다)
+    // 그 외(pending·rejected·신규)는 종전대로 관리자 승인을 거친다.
+    const keepApproved = takeover.row.status === 'approved'
+
     const { data: claimed, error: claimError } = await supabaseService
       .schema('public')
       .from('members')
@@ -252,13 +267,18 @@ export async function POST(req: Request) {
         member_name: input.member_name,
         riot_game_name: input.riot_game_name,
         riot_tagline: input.riot_tagline,
-        status: 'pending',
-        requested_at: nowIso,
-        approved_at: null,
-        approved_by: null,
-        rejected_reason: null,
+        ...(keepApproved
+          ? {}
+          : {
+              status: 'pending' as const,
+              requested_at: nowIso,
+              approved_at: null,
+              approved_by: null,
+              rejected_reason: null,
+            }),
       })
       .eq('id', takeover.row.id)
+      // .is('user_id', null) 가드로 동시 인계 경합(TOCTOU)을 막는다.
       .is('user_id', null)
       .select('id')
 
@@ -277,9 +297,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      status: 'pending',
+      status: keepApproved ? 'approved' : 'pending',
       linked: true,
-      message: '기존 멤버 정보에 연결했습니다. 관리자 승인 후 랭킹에 표시돼요.',
+      message: keepApproved
+        ? '기존 멤버 정보에 연결했습니다. 바로 랭킹에 반영돼요.'
+        : '기존 멤버 정보에 연결했습니다. 관리자 승인 후 랭킹에 표시돼요.',
     })
   }
 
