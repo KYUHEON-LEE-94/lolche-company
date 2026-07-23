@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
         // ✅ 캐시 무효화
         revalidatePath('/profile')
-        revalidatePath('/')
+        revalidatePath('/tft')
 
         return NextResponse.json({ ok: true })
     }
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
     // ✅ 캐시 무효화
     revalidatePath('/profile')
-    revalidatePath('/')
+    revalidatePath('/tft')
 
     return NextResponse.json({ ok: true })
 }

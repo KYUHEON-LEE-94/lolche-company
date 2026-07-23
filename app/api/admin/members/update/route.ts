@@ -39,6 +39,7 @@ export async function POST(req: Request) {
         )
     }
 
+    revalidatePath('/tft')
     revalidatePath('/')
     revalidatePath('/admin/members/control')
 

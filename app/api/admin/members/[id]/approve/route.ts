@@ -47,6 +47,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ ok: false, message: updateError.message }, { status: 400 })
   }
 
+  revalidatePath('/tft')
   revalidatePath('/')
   revalidatePath('/admin/members/control')
 
@@ -69,7 +70,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     syncWarning = e instanceof Error ? e.message : '동기화 중 오류가 발생했습니다.'
   }
 
-  if (!syncWarning) revalidatePath('/')
+  if (!syncWarning) {
+    revalidatePath('/tft')
+    revalidatePath('/')
+  }
 
   return NextResponse.json({
     ok: true,

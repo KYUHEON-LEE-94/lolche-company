@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     // ✅ 3) 캐시 무효화 (프레임 목록/프로필/랭킹 반영)
     revalidatePath('/profile')
     revalidatePath('/admin/profile-frames')
-    revalidatePath('/') // 랭킹 홈
+    revalidatePath('/tft')
 
     return NextResponse.json({ ok: true })
 }

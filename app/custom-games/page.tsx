@@ -199,13 +199,13 @@ export default function CustomGamesPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              href="/"
+              href="/tft"
               className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-white transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
                 <path d="M15 19l-7-7 7-7" />
               </svg>
-              홈
+              롤체 랭킹
             </Link>
             <span className="text-slate-700">·</span>
             <span className="text-sm font-black text-white">내전</span>

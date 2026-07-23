@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // ✅ 변경 즉시 반영 (Vercel ISR/캐시 무효화)
     revalidatePath('/profile')
-    revalidatePath('/') // 랭킹 홈
+    revalidatePath('/tft')
     // 필요하면 멤버 상세 페이지가 있다면 그것도 추가:
     // revalidatePath('/members') or revalidatePath(`/members/${...}`)
 
