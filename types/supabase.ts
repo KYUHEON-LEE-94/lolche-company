@@ -244,7 +244,8 @@ export type CustomGame = {
   status: string // CustomGameStatus
   game_type: string // 'solo' | 'team' — game_kind='tft'일 때만 의미가 있다
   game_kind: string // CustomGameKind
-  game_kind_label: string | null // game_kind='etc'일 때만 값이 있다
+  game_kind_label: string | null // 'etc'는 필수, 'steam'은 선택. 그 외는 항상 null
+  steam_app_id: number | null // game_kind='steam' 전용. 캡슐 이미지 표시용 스냅샷 (FK 없음)
   host_member_id: string | null // 주최자 추방 시 null (FK on delete set null)
   scheduled_at: string | null
   capacity: number

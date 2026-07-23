@@ -81,9 +81,20 @@ export function parseScheduledAt(dateRaw: unknown, timeRaw: unknown): ParseResul
   return { ok: true, value: parsed.toISOString() }
 }
 
-export type GameKindInput = { game_kind: GameKind; game_kind_label: string | null }
+export type GameKindInput = {
+  game_kind: GameKind
+  game_kind_label: string | null
+  steam_app_id: number | null
+}
 
-export function parseGameKind(kindRaw: unknown, labelRaw: unknown): ParseResult<GameKindInput> {
+/** appid는 표시(캡슐 이미지)용 스냅샷이라 FK가 없다. 형식만 검증한다. */
+const STEAM_APP_ID_MAX = 2147483647
+
+export function parseGameKind(
+  kindRaw: unknown,
+  labelRaw: unknown,
+  steamAppIdRaw?: unknown,
+): ParseResult<GameKindInput> {
   if (!isGameKind(kindRaw)) {
     return { ok: false, message: `게임 종류는 ${GAME_KINDS.join(', ')} 중 하나여야 합니다` }
   }
@@ -95,11 +106,38 @@ export function parseGameKind(kindRaw: unknown, labelRaw: unknown): ParseResult<
     if (label.length > GAME_KIND_LABEL_MAX) {
       return { ok: false, message: `게임 종류 이름은 ${GAME_KIND_LABEL_MAX}자 이하여야 합니다` }
     }
-    return { ok: true, value: { game_kind: kindRaw, game_kind_label: label } }
+    return { ok: true, value: { game_kind: kindRaw, game_kind_label: label, steam_app_id: null } }
   }
 
-  // CHECK 제약이 game_kind <> 'etc' 일 때 라벨 null을 강제하므로 조용히 버린다.
-  return { ok: true, value: { game_kind: kindRaw, game_kind_label: null } }
+  if (kindRaw === 'steam') {
+    // 스팀은 "게임 미정" 모집을 허용하므로 라벨이 선택적이다.
+    if (label.length > GAME_KIND_LABEL_MAX) {
+      return { ok: false, message: `게임 이름은 ${GAME_KIND_LABEL_MAX}자 이하여야 합니다` }
+    }
+    const appId = parseSteamAppId(steamAppIdRaw)
+    if (!appId.ok) return { ok: false, message: appId.message }
+    // 이름 없이 appid만 남으면 표시할 것이 없다.
+    return {
+      ok: true,
+      value: {
+        game_kind: kindRaw,
+        game_kind_label: label || null,
+        steam_app_id: label ? appId.value : null,
+      },
+    }
+  }
+
+  // CHECK 제약이 game_kind not in ('etc','steam') 일 때 라벨/appid null을 강제한다.
+  return { ok: true, value: { game_kind: kindRaw, game_kind_label: null, steam_app_id: null } }
+}
+
+function parseSteamAppId(raw: unknown): ParseResult<number | null> {
+  if (raw === undefined || raw === null || raw === '') return { ok: true, value: null }
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isInteger(value) || value <= 0 || value > STEAM_APP_ID_MAX) {
+    return { ok: false, message: '스팀 앱 ID가 올바르지 않습니다' }
+  }
+  return { ok: true, value }
 }
 
 export function parseTitle(raw: unknown): ParseResult<string> {

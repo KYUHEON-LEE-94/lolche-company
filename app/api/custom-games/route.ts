@@ -3,8 +3,12 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, canManageGame, isApprovedMember } from '@/lib/customGames/authorize'
 import {
   GAME_COLUMNS,
+  LEGACY_GAME_COLUMNS,
+  PRE_RECRUIT_GAME_COLUMNS,
+  isCheckViolation,
   isMissingColumnError,
   migrationRequiredResponse,
+  steamMigrationRequiredResponse,
   type GameRow,
 } from '@/lib/customGames/game'
 import { splitParticipants, effectiveMemberCapacity } from '@/lib/customGames/waitlist'
@@ -27,25 +31,45 @@ export async function GET() {
   const viewer = await getViewerMember()
   const viewerMemberId = viewer?.member?.id ?? null
 
-  const { data: gameRows, error } = await supabaseAdmin
+  // 마이그레이션 미적용 환경에서도 목록 화면이 죽지 않도록 구 컬럼으로 단계적 degrade한다.
+  let migrationRequired = false
+  let gameRows: unknown[] | null = null
+
+  const primary = await supabaseAdmin
     .from('custom_games')
     .select(GAME_COLUMNS)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    // 마이그레이션 미적용 환경에서도 목록 화면이 죽지 않도록 구 컬럼만으로 degrade한다.
-    if (isMissingColumnError(error)) {
-      const { data: legacyRows, error: legacyError } = await supabaseAdmin
+  if (primary.error) {
+    if (!isMissingColumnError(primary.error)) {
+      return NextResponse.json({ error: primary.error.message }, { status: 500 })
+    }
+    migrationRequired = true
+
+    const legacy = await supabaseAdmin
+      .from('custom_games')
+      .select(LEGACY_GAME_COLUMNS)
+      .order('created_at', { ascending: false })
+
+    if (legacy.error) {
+      if (!isMissingColumnError(legacy.error)) {
+        return NextResponse.json({ error: legacy.error.message }, { status: 500 })
+      }
+      // 20260725 자체가 미적용 — 모집 컬럼이 없어 집계를 만들 수 없다.
+      const preRecruit = await supabaseAdmin
         .from('custom_games')
-        .select('id, title, status, game_type, max_rounds, created_at, ended_at')
+        .select(PRE_RECRUIT_GAME_COLUMNS)
         .order('created_at', { ascending: false })
 
-      if (legacyError) {
-        return NextResponse.json({ error: legacyError.message }, { status: 500 })
+      if (preRecruit.error) {
+        return NextResponse.json({ error: preRecruit.error.message }, { status: 500 })
       }
-      return NextResponse.json({ games: legacyRows ?? [], migration_required: true })
+      return NextResponse.json({ games: preRecruit.data ?? [], migration_required: true })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+
+    gameRows = (legacy.data ?? []).map((row) => ({ ...row, steam_app_id: null }))
+  } else {
+    gameRows = primary.data ?? []
   }
 
   const games = (gameRows ?? []) as unknown as GameRow[]
@@ -109,7 +133,9 @@ export async function GET() {
     }
   })
 
-  return NextResponse.json({ games: enriched })
+  return migrationRequired
+    ? NextResponse.json({ games: enriched, migration_required: true })
+    : NextResponse.json({ games: enriched })
 }
 
 export async function POST(req: Request) {
@@ -130,7 +156,7 @@ export async function POST(req: Request) {
   const title = parseTitle(body.title)
   if (!title.ok) return NextResponse.json({ error: title.message }, { status: 400 })
 
-  const kind = parseGameKind(body.game_kind ?? 'tft', body.game_kind_label)
+  const kind = parseGameKind(body.game_kind ?? 'tft', body.game_kind_label, body.steam_app_id)
   if (!kind.ok) return NextResponse.json({ error: kind.message }, { status: 400 })
 
   // 팀전·라운드 기록은 TFT 매치 조회를 전제하므로 다른 종류에서는 방식을 solo로 고정한다.
@@ -163,6 +189,8 @@ export async function POST(req: Request) {
     )
   }
 
+  // ⚠ steam_app_id 는 20260727 이후에만 존재한다. null이면 아예 보내지 않아
+  //   미적용 환경의 기존 흐름(스팀 게임 미선택)이 그대로 동작하게 둔다.
   const { data: game, error: gameError } = await supabaseAdmin
     .from('custom_games')
     .insert({
@@ -175,11 +203,16 @@ export async function POST(req: Request) {
       max_rounds: maxRounds.value,
       scheduled_at: scheduledAt.value,
       host_member_id: viewer.member.id,
+      ...(kind.value.steam_app_id !== null ? { steam_app_id: kind.value.steam_app_id } : {}),
     })
     .select('id')
     .single()
 
   if (gameError || !game) {
+    // 스팀 게임명/appid는 CHECK 완화(20260727)가 선행되어야 한다. 위반은 500이 아니라 안내다.
+    if (kind.value.game_kind === 'steam' && (isMissingColumnError(gameError) || isCheckViolation(gameError))) {
+      return steamMigrationRequiredResponse()
+    }
     if (isMissingColumnError(gameError)) return migrationRequiredResponse()
     return NextResponse.json({ error: gameError?.message ?? '생성 실패' }, { status: 500 })
   }

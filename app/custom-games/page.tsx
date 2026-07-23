@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
+import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import { TFT_TEAM_CAPACITY, type GameKind } from '@/lib/customGames/constants'
 import {
   GAME_KIND_OPTIONS,
@@ -12,6 +14,7 @@ import {
   gameKindLabel,
   statusBadgeClass,
   statusLabel,
+  steamCapsuleUrl,
   todayKstDate,
 } from '@/lib/customGames/display'
 
@@ -26,6 +29,7 @@ type GameRow = {
   ended_at: string | null
   game_kind?: string
   game_kind_label?: string | null
+  steam_app_id?: number | null
   capacity?: number
   scheduled_at?: string | null
   host_member_id?: string | null
@@ -62,6 +66,7 @@ export default function CustomGamesPage() {
   const [capacityInput, setCapacityInput] = useState(8)
   const [gameKind, setGameKind] = useState<GameKind>('tft')
   const [kindLabel, setKindLabel] = useState('')
+  const [steamGame, setSteamGame] = useState<SteamGameSelection>({ label: '', appId: null })
   const [gameType, setGameType] = useState<'solo' | 'team'>('solo')
   const [maxRounds, setMaxRounds] = useState(5)
   const [creating, setCreating] = useState(false)
@@ -98,6 +103,7 @@ export default function CustomGamesPage() {
     setCapacityInput(8)
     setGameKind('tft')
     setKindLabel('')
+    setSteamGame({ label: '', appId: null })
     setGameType('solo')
     setMaxRounds(5)
     setShowModal(true)
@@ -121,7 +127,13 @@ export default function CustomGamesPage() {
           scheduled_time: timeInput,
           capacity: effectiveCapacity,
           game_kind: gameKind,
-          game_kind_label: gameKind === 'etc' ? kindLabel.trim() : null,
+          game_kind_label:
+            gameKind === 'etc'
+              ? kindLabel.trim()
+              : gameKind === 'steam'
+                ? steamGame.label.trim() || null
+                : null,
+          ...(gameKind === 'steam' ? { steam_app_id: steamGame.appId } : {}),
           ...(gameKind === 'tft' ? { game_type: gameType, max_rounds: maxRounds } : {}),
         }),
       })
@@ -281,6 +293,19 @@ export default function CustomGamesPage() {
                       <h2 className="text-base font-black text-white leading-snug break-all">{g.title}</h2>
                       <Badge className={statusBadgeClass(g.status)}>{statusLabel(g.status)}</Badge>
                     </div>
+
+                    {g.game_kind === 'steam' && g.steam_app_id != null && (
+                      <div className="relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+                        <Image
+                          src={steamCapsuleUrl(g.steam_app_id)}
+                          alt=""
+                          fill
+                          sizes="110px"
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge className={gameKindBadgeClass(g.game_kind)}>
@@ -479,6 +504,9 @@ export default function CustomGamesPage() {
                     placeholder:text-slate-600
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
+              )}
+              {gameKind === 'steam' && !migrationRequired && (
+                <SteamGamePicker value={steamGame} onChange={setSteamGame} disabled={creating} />
               )}
               {gameKind !== 'tft' && (
                 <p className="mt-1.5 text-xs text-slate-600">

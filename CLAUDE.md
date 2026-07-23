@@ -40,10 +40,14 @@ app/
       sync/page.tsx             # 멤버 동기화 현황
     seasons/page.tsx            # 시즌 관리
     profile-frames/             # 프로필 프레임 관리
-  steam/                        # 스팀 (함께 할 수 있는 게임·최근 플레이·보유/플레이타임 랭킹)
+  steam/                        # 스팀 (나와 같은 게임·함께 할 수 있는 게임·최근 2주 플레이)
     page.tsx                    # Server Component, revalidate 300s. **DB만 조회 — Steam API 호출 0건**
+                                # ⚠ 세션 접근 금지 (아래 "ISR × 개인화 분리" 참조)
     SteamLinkForm.tsx           # 스팀 ID 등록/해제 폼 (Client Component)
-  hall-of-fame/                 # 명예의 전당 (시즌 기록)
+    SharedWithMe.tsx            # "나와 같은 게임을 가진 사람들" (Client Component, 개인화)
+  custom-games/                 # 내전 (목록·모집 폼 / [id] 상세)
+    _components/SteamGamePicker.tsx  # 스팀 게임 선택(보유 게임 목록) + 직접 입력 폴백 (Client)
+  hall-of-fame/                 # 명예의 전당 (시즌 기록, 진입 즉시 표시 — 인트로 없음)
   login/                        # 사용자 로그인 (Discord OAuth 버튼)
   auth/callback/route.ts        # OAuth 코드 교환 + discord_id ↔ user_id 연결
   profile/                      # 프로필 이미지·프레임 편집 + 라이엇 ID 자가 등록
@@ -55,6 +59,10 @@ app/
       [id]/route.ts             #   PATCH 수정 / DELETE 삭제(마지막 1개는 409)
       [id]/primary/route.ts     #   POST 대표 지정 (set_primary_riot_account RPC)
     me/steam/route.ts           # 내 스팀 연결 조회(GET)/등록(POST)/해제(DELETE) — 세션 소유권 기반
+    steam/                      # ⚠ 전부 force-dynamic + **DB만 조회**. `lib/steam/*` import 금지
+      game-options/route.ts     #   내전 스팀 게임 후보 (steam_game_options RPC, 로그인+approved)
+      shared-with-me/route.ts   #   "나와 같은 게임을 가진 사람들" 요약 (steam_shared_with_member RPC)
+      shared-with-me/[memberId]/route.ts  # 상대 1명과 겹치는 전체 게임 (지연 로딩)
     members/[id]/
       sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 관리자/본인 인증)
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
@@ -69,6 +77,8 @@ app/
     profile/                    # 프로필 이미지·프레임 저장 API (service role 경유)
 
 lib/
+  db/
+    pgErrors.ts                 # 42703/23505/23514/PGRST202·42883 판별 (마이그레이션 degrade 단일 지점)
   supabase.ts                   # anon 클라이언트 + 브라우저 클라이언트
   supabaseAdmin.ts              # service role 클라이언트 (서버 전용)
   supabase/
@@ -91,6 +101,7 @@ lib/
     memberInput.ts              # 멤버 입력 화이트리스트 파서 + 길이/포맷 검증 상수 (+ parseRiotAccountInput)
     primaryAccount.ts           # ★ 대표 계정 파생 + members 캐시 미러링 단일 지점 + 재승인 정책 상수
     myMember.ts                 # 세션 → 내 members 행 해석 (body의 member 식별자 불신)
+    steamViewer.ts              # 개인화 스팀 섹션의 요청자 상태 해석 (approved/스팀등록/공개 여부)
   tft/
     tftLocale.ts                # 기물 이미지 URL 생성, 한국어 이름 변환 (KrMaps 캐시)
 
@@ -243,12 +254,24 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 | `tft_matches` | 매치 메타데이터 |
 | `tft_match_participants` | 멤버별 매치 결과 |
 | `sync_logs` | 동기화 감사 로그 |
-| `custom_games` | 내전 모집글 (`host_member_id`, `game_kind`, `capacity`, `scheduled_at`, `status`) |
+| `custom_games` | 내전 모집글 (`host_member_id`, `game_kind`, `game_kind_label`, `steam_app_id`, `capacity`, `scheduled_at`, `status`) |
 | `custom_game_participants` | 참가 신청. **확정/대기 컬럼 없음** — `(joined_at, id)` 순번에서 파생 |
 | `custom_game_guests` | 내전 게스트 (`riot_puuid` 보유 → TFT 전용 개념) |
 | `custom_game_rounds` / `_results` / `_guest_results` / `_teams` | TFT 내전 라운드·결과·팀 배정 |
 | `steam_apps` | 스팀 앱 메타 + `is_multiplayer` 3-값 캐시 (true/false/null=분류 미확인). 앱당 1회 조회 후 영구 보관 |
 | `steam_owned_games` | 멤버별 보유 게임 + `playtime_forever`/`playtime_2weeks`(분). `/steam`이 읽는 유일한 소스 |
+
+**스팀 RPC (전부 `security definer` + `revoke ... from public, anon, authenticated` — 서버 라우트 전용):**
+
+| 함수 | 파일 | 용도 |
+|---|---|---|
+| `steam_game_options(q, mp_only, limit)` | `20260727_custom_game_steam.sql` | 내전 스팀 게임 후보 (보유자 수 desc) |
+| `steam_shared_with_member(member_id, mp_only)` | `20260728_steam_shared_games.sql` | 나와 겹치는 사람 요약 + 미리보기 3개 |
+| `steam_shared_games_detail(member_id, other_id, mp_only, limit)` | 〃 | 상대 1명과 겹치는 전체 게임 |
+
+세 함수 모두 `where m.status='approved' and m.steam_id64 is not null`을 내장하고,
+`mp_only=true`는 `is_multiplayer = false`만 제외한다(`null`=분류 미확인은 남긴다).
+`authenticated`에 실행권을 남기면 브라우저에서 임의의 `p_member_id`로 남의 목록을 조회할 수 있다.
 
 `members.steam_*` (20260724_steam.sql): `steam_id64`(유니크), `steam_persona`, `steam_avatar_url`,
 `steam_visibility`(=`communityvisibilitystate`, 3이면 공개), `steam_linked_at`, `steam_synced_at`, `steam_sync_error`.
@@ -353,6 +376,40 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 정책이 있으면 사용자가 콘솔에서 자기 `status`를 `approved`로 바꿀 수 있다.
 정당한 self-UPDATE(프로필 이미지/프레임, Riot ID 신청)는 전부 서버 라우트에서 service role로 수행한다.
 
+## 스팀 페이지 (`/steam`)
+
+**섹션 구성:** 헤더 → `SteamLinkForm` → **나와 같은 게임을 가진 사람들**(개인화) →
+함께 할 수 있는 게임(2명 이상 보유) → 최근 2주 플레이 → 비공개 멤버 안내 → 마지막 동기화 시각.
+
+> "보유 게임 수 랭킹" / "총 플레이타임 랭킹"은 **제거되었다.** `RankList` 컴포넌트와
+> `MemberStat`의 `gameCount`/`totalMinutes`도 함께 삭제됐다.
+> `formatHours()`는 "최근 2주 플레이"가 계속 쓰므로 **삭제하지 않는다.**
+
+### ★ ISR × 개인화 분리 (위반 금지)
+
+`app/steam/page.tsx`는 `revalidate = 300`이고 이는 **경로 단위 공유 캐시**다.
+여기서 세션을 읽어 개인화하면 **A가 처음 만든 HTML이 B에게 서빙된다** — 사용자 간 데이터 유출이다.
+
+- `app/steam/page.tsx`에서 `cookies()` / `createRouteClient()` / `auth.getUser()`를 **절대 호출하지 않는다**
+- 개인화는 오직 `SharedWithMe.tsx`(Client) → `/api/steam/shared-with-me*`(`force-dynamic`) 경로로만 흐른다
+- 페이지 전체를 `force-dynamic`으로 바꾸지 않는다. 공통 섹션(함께 할 수 있는 게임 / 최근 2주)은
+  전원 동일한 데이터라 캐시가 정당하고, 매 요청마다 최대 20페이지 × 1000행을 재조회하게 된다
+- 개인화 섹션이 실패해도 나머지 섹션은 정상 동작해야 한다 (Client Component라 구조적으로 격리됨)
+
+### 개인화 섹션 상태별 표시 (`lib/members/steamViewer.ts`)
+
+| 뷰어 상태 | API | 표시 |
+|---|---|---|
+| 미로그인 | 401 | 로그인 안내 (`/login`) |
+| 멤버 행 없음 | 200 `state='no_member'` | 멤버 등록 안내 (`/profile`) |
+| `status ≠ approved` | **403** | 승인 후 이용 안내 |
+| 스팀 미등록 | 200 `state='no_steam'` | 스팀 ID 등록 안내 |
+| `steam_visibility ≠ 3` | 200 `state='private'` | 비공개라 불러올 수 없다고 **이유를 명시** |
+| RPC 미적용 | 200 `migration_required` | "기능 준비 중" |
+
+상세 라우트(`/[memberId]`)의 path param은 **상대방 id 뿐**이다. 내 `member_id`는 항상 세션에서 유도하므로
+제3자가 남의 조합(A↔B)을 조회할 수 없다.
+
 ## 내전 (custom games)
 
 ### `game_kind` vs `game_type` — 절대 합치지 말 것
@@ -360,7 +417,8 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 | 컬럼 | 값 | 의미 |
 |---|---|---|
 | `game_kind` | `'tft' \| 'lol' \| 'steam' \| 'etc'` | **어떤 게임**인가. 신규 컬럼 |
-| `game_kind_label` | text ≤30자 | `game_kind='etc'`일 때만 값 존재. CHECK로 상호 강제 |
+| `game_kind_label` | text ≤30자 | `'etc'`=**필수**, `'steam'`=**선택**(게임 미정 모집 허용), 그 외=반드시 null. CHECK로 상호 강제 |
+| `steam_app_id` | int | `game_kind='steam'` 전용. 캡슐 이미지 표시용 스냅샷. **`steam_apps(appid)`로 FK를 걸지 않는다**(백필 전 앱 때문에 내전 생성이 실패하면 안 된다). 이름은 `game_kind_label`에 별도 스냅샷 |
 | `game_type` | `'solo' \| 'team'` | TFT **경기 방식**(개인전/2인 팀전). `game_kind='tft'`일 때만 의미 |
 
 `game_type`은 팀 배정·라운드 결과 코드가 이미 점유한 컬럼이다. 여기에 게임 종류를 넣으면
@@ -417,9 +475,26 @@ self-INSERT/DELETE 정책을 만들면 사용자가 콘솔에서 `joined_at`을 
 | DELETE | `/api/custom-games/[id]/participants/[participantId]` | 강퇴 |
 | POST | `/api/custom-games/[id]/end` | 종료 |
 | POST | `/api/custom-games/[id]/rounds\|teams\|guests` | TFT 전용 |
+| GET | `/api/steam/game-options?q=&multiplayer_only=` | 스팀 게임 후보 (로그인 + approved, DB만 조회) |
 
 **생성/수정 요청 형식:**
-`{ title, scheduled_date: "YYYY-MM-DD", scheduled_time: "HH:mm", capacity, game_kind, game_kind_label?, game_type?, max_rounds? }`
+`{ title, scheduled_date: "YYYY-MM-DD", scheduled_time: "HH:mm", capacity, game_kind, game_kind_label?, steam_app_id?, game_type?, max_rounds? }`
+
+### 스팀 내전 게임 선택
+
+`game_kind='steam'`이면 `steam_owned_games ⋈ steam_apps` 기반 후보 목록에서 고르거나
+**직접 타이핑**할 수 있다(폴백은 항상 제공). **Steam Web API 호출 0건 — DB만 읽는다.**
+
+| 경로 | `game_kind_label` | `steam_app_id` |
+|---|---|---|
+| 목록에서 선택 | 앱 이름 스냅샷 | `appid` |
+| 직접 입력 | 입력한 이름 | `null` |
+| 게임 미정 | `null` | `null` |
+
+이름을 함께 스냅샷으로 저장하므로 렌더에 `steam_apps` 조인이 필요 없다.
+`steam_app_id`의 유일한 용도는 캡슐 이미지(`steamCapsuleUrl()` in `lib/customGames/display.ts`)다.
+`game_kind`를 steam 이외로 바꾸면 `parseGameKind()`가 라벨·appid를 null로 만들고,
+DB CHECK(`custom_games_steam_app_id_chk`)가 23514로 최종 차단한다.
 
 ### 타임존 — 클라이언트에서 절대 `new Date()`로 변환하지 않는다
 
@@ -447,6 +522,17 @@ self-INSERT/DELETE 정책을 만들면 사용자가 콘솔에서 `joined_at`을 
 `scripts/sql/20260725_custom_game_recruit.sql` 미실행 상태에서 신규 컬럼 부재는 Postgres `42703`으로
 나타난다. `isMissingColumnError()`가 이를 잡아 **500이 아니라** 목록 GET은 구 컬럼 fallback +
 `migration_required: true`, 나머지는 503 안내로 degrade한다. UI도 이 플래그로 배너를 띄운다.
+
+**★ `GAME_COLUMNS`에 컬럼을 추가할 때는 반드시 fallback을 함께 넣는다.**
+컬럼 하나만 추가해도 미적용 환경의 목록·상세 GET이 **전부 42703으로 죽는다.**
+`lib/customGames/game.ts`는 3단계로 내려간다:
+`GAME_COLUMNS` → `LEGACY_GAME_COLUMNS`(20260727 미적용) → `PRE_RECRUIT_GAME_COLUMNS`(20260725 미적용).
+`fetchGame()`도 같은 fallback을 쓰고 `steam_app_id`를 `null`로 채운 뒤 `migrationRequired`를 함께 돌려준다.
+
+스팀 관련 쓰기(라벨/appid)는 CHECK 완화(20260727)가 선행되어야 하므로
+`isCheckViolation()`(23514) / `isMissingColumnError()`(42703)를 잡아 **503 안내**로 돌린다(500 금지).
+RPC 부재(`PGRST202`/`42883`)는 `isMissingFunctionError()`가 잡아 **200 + `migration_required: true` + 빈 목록**이다.
+판별 함수는 전부 `lib/db/pgErrors.ts` 한 곳에 있다.
 
 ## 관리자 기능
 
@@ -518,3 +604,4 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 | 날짜 | 변경 내용 | 대상 | 사유 |
 |------|----------|------|------|
 | 2026-06-09 | 초기 구성 | 전체 | Analyst→Developer→QA 파이프라인 구성 |
+| 2026-07-23 | 스팀 3건 | `/steam`, 내전, 명예의 전당 | 개인화 섹션 추가(ISR 분리), 내전 스팀 게임 선택, 인트로 제거 |

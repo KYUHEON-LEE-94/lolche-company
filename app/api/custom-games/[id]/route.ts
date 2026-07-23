@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { authorizeGameManage, canManageGame, getViewerMember } from '@/lib/customGames/authorize'
-import { fetchGame, isMissingColumnError, migrationRequiredResponse } from '@/lib/customGames/game'
+import {
+  fetchGame,
+  isCheckViolation,
+  isMissingColumnError,
+  migrationRequiredResponse,
+  steamMigrationRequiredResponse,
+} from '@/lib/customGames/game'
 import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
 import {
   parseCapacity,
@@ -159,6 +165,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     my_participation: mine
       ? { id: mine.id, position: mine.position, confirmed: mine.confirmed }
       : null,
+    ...(fetched.migrationRequired ? { migration_required: true } : {}),
   })
 }
 
@@ -185,6 +192,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     title?: string
     game_kind?: GameKind
     game_kind_label?: string | null
+    steam_app_id?: number | null
     game_type?: string
     capacity?: number
     max_rounds?: number
@@ -200,10 +208,15 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const kind = parseGameKind(
     body.game_kind !== undefined ? body.game_kind : game.game_kind,
     body.game_kind_label !== undefined ? body.game_kind_label : game.game_kind_label,
+    body.steam_app_id !== undefined ? body.steam_app_id : game.steam_app_id,
   )
   if (!kind.ok) return NextResponse.json({ error: kind.message }, { status: 400 })
 
-  if (body.game_kind !== undefined || body.game_kind_label !== undefined) {
+  if (
+    body.game_kind !== undefined ||
+    body.game_kind_label !== undefined ||
+    body.steam_app_id !== undefined
+  ) {
     // 롤체 → 비롤체 전환 시, 이미 수집된 라운드/팀/게스트는 비롤체 화면에서
     // 렌더되지도 삭제되지도 않아 관리 불가 상태로 남는다. 기록이 있으면 전환을 막는다.
     if (game.game_kind === 'tft' && kind.value.game_kind !== 'tft') {
@@ -225,6 +238,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     patch.game_kind = kind.value.game_kind
     patch.game_kind_label = kind.value.game_kind_label
+    // ⚠ kind가 steam이 아니게 되면 appid를 반드시 함께 비운다.
+    //   앱이 빠뜨려도 DB CHECK(20260727 STEP 3)가 23514로 최종 차단한다.
+    if (kind.value.steam_app_id !== game.steam_app_id) {
+      patch.steam_app_id = kind.value.steam_app_id
+    }
   }
 
   const gameType = parseGameType(
@@ -263,6 +281,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   const { error } = await supabaseAdmin.from('custom_games').update(patch).eq('id', id)
   if (error) {
+    if (patch.steam_app_id !== undefined || kind.value.game_kind === 'steam') {
+      if (isMissingColumnError(error) || isCheckViolation(error)) {
+        return steamMigrationRequiredResponse()
+      }
+    }
     if (isMissingColumnError(error)) return migrationRequiredResponse()
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

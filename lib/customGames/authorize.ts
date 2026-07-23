@@ -77,7 +77,7 @@ export function canManageGame(
 }
 
 export type GameManageResult =
-  | { ok: true; viewer: Viewer; game: GameRow }
+  | { ok: true; viewer: Viewer; game: GameRow; migrationRequired: boolean }
   | { ok: false; response: NextResponse }
 
 /**
@@ -103,5 +103,5 @@ export async function authorizeGameManage(gameId: string): Promise<GameManageRes
     }
   }
 
-  return { ok: true, viewer, game: fetched.game }
+  return { ok: true, viewer, game: fetched.game, migrationRequired: fetched.migrationRequired }
 }

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
+import Image from 'next/image'
+import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import { TFT_TEAM_CAPACITY } from '@/lib/customGames/constants'
 import { effectiveMemberCapacity } from '@/lib/customGames/waitlist'
 import {
@@ -13,6 +15,7 @@ import {
   gameKindLabel,
   statusBadgeClass,
   statusLabel,
+  steamCapsuleUrl,
   toKstDateInput,
   toKstTimeInput,
 } from '@/lib/customGames/display'
@@ -26,6 +29,7 @@ type GameDetail = {
   game_type: string
   game_kind: string
   game_kind_label: string | null
+  steam_app_id: number | null
   max_rounds: number
   capacity: number
   scheduled_at: string | null
@@ -307,7 +311,9 @@ export default function CustomGameDetailPage() {
   const [editTime, setEditTime] = useState('')
   const [editCapacity, setEditCapacity] = useState(8)
   const [editMaxRounds, setEditMaxRounds] = useState(5)
+  const [editSteamGame, setEditSteamGame] = useState<SteamGameSelection>({ label: '', appId: null })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [migrationRequired, setMigrationRequired] = useState(false)
 
   // 팀 배정 상태
   const [teamDraft, setTeamDraft] = useState<TeamDraft>(EMPTY_DRAFT)
@@ -335,6 +341,7 @@ export default function CustomGameDetailPage() {
       setTeams(body.teams ?? [])
       setCanManage(Boolean(body.can_manage))
       setMyParticipation(body.my_participation ?? null)
+      setMigrationRequired(Boolean(body.migration_required))
     } catch { setLoadError('알 수 없는 오류가 발생했습니다') }
     finally { setLoading(false) }
   }, [gameId])
@@ -433,6 +440,7 @@ export default function CustomGameDetailPage() {
     setEditTime(toKstTimeInput(game.scheduled_at))
     setEditCapacity(game.capacity)
     setEditMaxRounds(game.max_rounds)
+    setEditSteamGame({ label: game.game_kind_label ?? '', appId: game.steam_app_id })
     setShowEdit(true)
   }
 
@@ -450,6 +458,12 @@ export default function CustomGameDetailPage() {
           scheduled_time: editTime,
           capacity: editCapacity,
           ...(isTft ? { max_rounds: editMaxRounds } : {}),
+          ...(game.game_kind === 'steam'
+            ? {
+                game_kind_label: editSteamGame.label.trim() || null,
+                steam_app_id: editSteamGame.appId,
+              }
+            : {}),
         }),
       })
       const body = await res.json()
@@ -815,6 +829,18 @@ export default function CustomGameDetailPage() {
             <>
               {/* 타이틀 */}
               <div className="mb-8">
+                {game.game_kind === 'steam' && game.steam_app_id != null && (
+                  <div className="relative mb-3 h-[42px] w-[110px] overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+                    <Image
+                      src={steamCapsuleUrl(game.steam_app_id)}
+                      alt=""
+                      fill
+                      sizes="110px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h1 className="text-2xl font-black text-white tracking-tight">{game.title}</h1>
                   <Badge className={gameKindBadgeClass(game.game_kind)}>
@@ -1233,6 +1259,17 @@ export default function CustomGameDetailPage() {
                 />
               </div>
             </div>
+
+            {game.game_kind === 'steam' && !migrationRequired && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임</label>
+                <SteamGamePicker
+                  value={editSteamGame}
+                  onChange={setEditSteamGame}
+                  disabled={savingEdit}
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">정원</label>

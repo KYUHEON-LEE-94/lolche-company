@@ -19,8 +19,15 @@ export const GAME_KIND_OPTIONS: { value: GameKind; label: string }[] = GAME_KIND
 
 export function gameKindLabel(kind: string | null | undefined, label: string | null | undefined): string {
   if (kind === 'etc') return label?.trim() || '기타'
+  // 스팀은 게임명이 선택적이다. 있으면 게임명을, 없으면 '스팀'을 배지에 쓴다.
+  if (kind === 'steam') return label?.trim() || GAME_KIND_LABELS.steam
   if (kind && kind in GAME_KIND_LABELS) return GAME_KIND_LABELS[kind as GameKind]
   return '롤체'
+}
+
+/** 스팀 스토어 캡슐 이미지. app/steam/page.tsx 와 동일 규격을 쓴다. */
+export function steamCapsuleUrl(appid: number): string {
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_231x87.jpg`
 }
 
 export const GAME_KIND_BADGE: Record<GameKind, string> = {
