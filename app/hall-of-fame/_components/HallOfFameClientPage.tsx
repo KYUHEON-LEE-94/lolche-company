@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Podium, { rankerName, type HallOfFameRanker } from './Podium';
 import SeasonTab from './SeasonTab';
-import { CARD, CONTAINER } from '@/lib/ui/styles';
+import { CARD, CONTAINER, TABBAR_SAFE_PB } from '@/lib/ui/styles';
 import EmptyState from '@/app/components/ui/EmptyState';
 
 type Season = { id: number; season_name: string; set_number: number }
@@ -22,7 +22,8 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
     const otherRankers = allRankers.slice(3);
 
     return (
-        <div className="bg-canvas min-h-[calc(100vh-3.5rem)] text-white overflow-x-hidden">
+        // SHELL 미사용 페이지라 모바일 하단 탭바 여백을 여기서 직접 확보한다.
+        <div className={`bg-canvas min-h-[calc(100vh-3.5rem)] text-white overflow-x-hidden ${TABBAR_SAFE_PB}`}>
             {/* 🏛️ 실제 컨텐츠 영역 — 진입 즉시 기록을 보여준다 (인트로 없음) */}
             <motion.main
                 initial={{ opacity: 0 }}

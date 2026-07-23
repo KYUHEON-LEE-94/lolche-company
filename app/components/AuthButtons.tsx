@@ -101,33 +101,34 @@ export default function AuthButtons() {
 
   // ✅ 로그인: 프로필 관리 + (관리자면) 관리페이지 + 로그아웃
   return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {displayName && (
             <span className="hidden sm:inline text-xs font-semibold text-slate-300 max-w-[10rem] truncate">
               {displayName}
             </span>
         )}
 
+        {/* 모바일은 상단 바 폭이 좁다(로고 + 버튼 3개). 라벨을 축약해 넘침을 막는다. */}
         <button
             onClick={() => router.push('/profile')}
-            className={BTN_NEUTRAL}
+            className={`${BTN_NEUTRAL} max-sm:px-2.5 max-sm:text-xs`}
         >
-          프로필 관리
+          프로필<span className="hidden sm:inline">&nbsp;관리</span>
         </button>
 
         {isAdmin && (
             <button
                 onClick={() => router.push('/admin/members/sync')}
-                className={BTN_PRIMARY}
+                className={`${BTN_PRIMARY} max-sm:px-2.5 max-sm:text-xs`}
                 title="관리자 페이지로 이동"
             >
-              관리 페이지
+              관리<span className="hidden sm:inline">&nbsp;페이지</span>
             </button>
         )}
 
         <button
             onClick={handleLogout}
-            className={BTN_DANGER}
+            className={`${BTN_DANGER} max-sm:px-2.5 max-sm:text-xs`}
         >
           로그아웃
         </button>

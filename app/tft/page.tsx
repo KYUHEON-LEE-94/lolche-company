@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase/service'
 import type { Member } from '@/types/supabase'
 import MemberRanking from './MemberRanking'
+import { TABBAR_SAFE_PB } from '@/lib/ui/styles'
 
 export const revalidate = 60
 
@@ -24,7 +25,8 @@ export default async function TftRankingPage() {
   if (error) console.error('Supabase error:', error)
 
   return (
-    <main className="mx-auto">
+    // MemberRanking 은 SHELL 을 쓰지 않고 자체 셸을 가진다. 모바일 하단 탭바 여백만 여기서 보탠다.
+    <main className={`mx-auto ${TABBAR_SAFE_PB}`}>
       <MemberRanking
         members={(data ?? []) as Member[]}
         currentSeason={activeSeason}
