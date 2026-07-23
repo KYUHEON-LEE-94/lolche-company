@@ -3,10 +3,13 @@ import { SyncError } from '@/lib/sync/syncMember'
 import {
   fetchPuuid,
   fetchTftLeaguesByPuuid,
+  fetchLolLeaguesByPuuid,
   fetchMatchIdsByPuuid,
   fetchMatchById,
+  LOL_SOLO_QUEUE,
   RiotApiError,
 } from '@/lib/riot/api'
+import { LOL_ENABLED } from '@/lib/constants/features'
 
 const RIOT_MATCH_DETAIL_DELAY_MS = Number(process.env.RIOT_MATCH_DETAIL_DELAY_MS ?? '1200')
 
@@ -94,6 +97,35 @@ export async function doSyncMember(memberId: string) {
         season_id: activeSeason?.id ?? null,
       })
     if (historyError) console.error('member_rank_history insert error', historyError)
+  }
+
+  // LoL 솔로랭크. 플래그가 꺼져 있으면 호출 자체를 하지 않는다(권한 미승인 상태의 403 낭비 방지).
+  // 실패해도 TFT 동기화 결과를 되돌리지 않는다.
+  // ⚠ Phase 2(riot_accounts) 이후에는 대표 계정 기준으로만 수집해 members.lol_* 에 미러링한다.
+  if (LOL_ENABLED) {
+    try {
+      const lolEntries = await fetchLolLeaguesByPuuid(puuid!)
+      // null = 권한 미승인으로 조회 불가. 기존 저장값을 null 로 덮어쓰지 않는다.
+      if (lolEntries) {
+        const lolSolo = lolEntries.find((e) => e.queueType === LOL_SOLO_QUEUE) ?? null
+
+        const { error: lolUpdateError } = await supabaseAdmin
+          .from('members')
+          .update({
+            lol_tier: lolSolo?.tier ?? null,
+            lol_rank: lolSolo?.rank ?? null,
+            lol_league_points: lolSolo?.leaguePoints ?? null,
+            lol_wins: lolSolo?.wins ?? null,
+            lol_losses: lolSolo?.losses ?? null,
+            lol_synced_at: new Date().toISOString(),
+          })
+          .eq('id', memberId)
+
+        if (lolUpdateError) console.error('members.lol_* update error', lolUpdateError)
+      }
+    } catch (e) {
+      console.error('LoL 랭크 동기화 실패', e instanceof Error ? e.message : '오류 발생')
+    }
   }
 
   const matchIds = await fetchMatchIdsByPuuid(puuid!)

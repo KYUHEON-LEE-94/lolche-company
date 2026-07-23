@@ -7,7 +7,7 @@ import type { Member } from '@/types/supabase'
 import Image from 'next/image'
 import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
 import { tierScore } from '@/app/components/ranking/LpSparkline'
-import { TIER_ORDER, RANK_ORDER } from '@/lib/constants/tierOrder'
+import { compareRank } from '@/lib/constants/tierOrder'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -104,14 +104,6 @@ function LpDeltaBadge({ delta }: { delta: LpDelta }) {
 }
 
 // ─── 티어 헬퍼 ───────────────────────────────────────────────────────────────
-
-function rankOrder(rank: string | null): number {
-  return rank ? (RANK_ORDER[rank] ?? 999) : 999
-}
-
-function tierOrder(tier: string | null): number {
-  return tier ? (TIER_ORDER[tier] ?? 999) : 999
-}
 
 function getQueueTierAndLp(m: Member, queue: QueueType) {
   if (queue === 'solo') {
@@ -475,15 +467,9 @@ export default function MemberRanking({
     if (!members.length) return []
     return [...members]
         .filter((m) => getQueueTierAndLp(m, queueType).tier !== null)
-        .sort((a, b) => {
-          const qa = getQueueTierAndLp(a, queueType)
-          const qb = getQueueTierAndLp(b, queueType)
-          const tierDiff = tierOrder(qa.tier) - tierOrder(qb.tier)
-          if (tierDiff !== 0) return tierDiff
-          const rankDiff = rankOrder(qa.rank ?? null) - rankOrder(qb.rank ?? null)
-          if (rankDiff !== 0) return rankDiff
-          return (qb.lp ?? 0) - (qa.lp ?? 0)
-        })
+        .sort((a, b) =>
+          compareRank(getQueueTierAndLp(a, queueType), getQueueTierAndLp(b, queueType)),
+        )
   }, [members, queueType])
 
   // ─── 렌더 ────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase/service'
 import type { Member, Season } from '@/types/supabase'
+import { LOL_ENABLED } from '@/lib/constants/features'
 
 export const revalidate = 60
 
@@ -39,14 +40,17 @@ const NAV_CARDS: NavCard[] = [
     accent: 'from-yellow-400/20 to-yellow-600/5 border-yellow-500/20',
     ready: true,
   },
-  {
-    href: '/lol',
-    title: '롤',
-    description: '리그 오브 레전드 랭킹',
-    icon: '⚔',
-    accent: 'from-sky-400/20 to-sky-600/5 border-sky-500/20',
-    ready: false,
-  },
+  // LoL 은 Riot 제품 권한 승인 전까지 비활성. /lol 이 404 이므로 카드도 숨긴다.
+  ...(LOL_ENABLED
+    ? [{
+        href: '/lol',
+        title: '롤',
+        description: '리그 오브 레전드 솔로랭크 랭킹',
+        icon: '⚔',
+        accent: 'from-sky-400/20 to-sky-600/5 border-sky-500/20',
+        ready: true,
+      }]
+    : []),
   {
     href: '/steam',
     title: '스팀',

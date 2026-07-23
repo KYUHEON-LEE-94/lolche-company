@@ -95,11 +95,30 @@ RIOT_API_KEY=                       # RGAPI-...
 RIOT_ACCOUNT_BASE_URL=              # https://asia.api.riotgames.com/...
 RIOT_TFT_LEAGUE_BASE_URL=           # https://kr.api.riotgames.com/...
 RIOT_TFT_MATCH_BASE_URL=            # https://asia.api.riotgames.com/...
+RIOT_LOL_LEAGUE_BASE_URL=           # https://kr.api.riotgames.com/lol/league/v4/entries/by-puuid
+NEXT_PUBLIC_LOL_ENABLED=false       # LoL 기능 전체 on/off (기본 false)
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 ```
+
+### LoL 기능 플래그 — `NEXT_PUBLIC_LOL_ENABLED`
+
+Riot 프로덕션 키는 제품 단위로 승인된다. 현재 이 키는 TFT만 승인되어 있어
+`lol/league/v4/entries/by-puuid`, `lol/summoner/v4/*` 가 **403**을 반환한다.
+따라서 LoL 기능은 전부 구현되어 있으나 플래그로 잠겨 있다 (`lib/constants/features.ts` → `LOL_ENABLED`).
+
+| 위치 | false일 때 동작 |
+|---|---|
+| `app/components/SiteNav.tsx` | "롤" 항목 미렌더 |
+| `app/page.tsx` 대시보드 | 롤 카드 미렌더 |
+| `app/lol/page.tsx` | `notFound()` → **404** (URL 직접 접근 차단) |
+| `lib/sync/doSyncMember.ts` | LoL 조회 단계 자체를 건너뜀 (불필요한 403 방지) |
+
+Riot 승인 후 `NEXT_PUBLIC_LOL_ENABLED=true` + 재빌드만으로 전체 활성화된다 (코드 수정 불필요).
+`fetchLolLeaguesByPuuid()`는 403을 재시도하지 않고 `console.warn` 1회 후 `null`을 반환해
+기존 저장값을 덮어쓰지 않고 degrade한다.
 
 ## Supabase 클라이언트 사용 규칙
 

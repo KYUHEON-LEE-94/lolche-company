@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AuthButtons from '@/app/components/AuthButtons'
+import { LOL_ENABLED } from '@/lib/constants/features'
 
 type NavItem = {
   href: string
@@ -11,10 +12,11 @@ type NavItem = {
   exact?: boolean
 }
 
+// LoL 은 Riot 제품 권한 승인 전까지 비활성. /lol 자체도 404 를 반환하므로 링크를 노출하지 않는다.
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: '대시보드', exact: true },
   { href: '/tft', label: '롤체 랭킹' },
-  { href: '/lol', label: '롤' },
+  ...(LOL_ENABLED ? [{ href: '/lol', label: '롤' }] : []),
   { href: '/steam', label: '스팀' },
   { href: '/custom-games', label: '내전' },
   { href: '/hall-of-fame', label: '명예의 전당' },
