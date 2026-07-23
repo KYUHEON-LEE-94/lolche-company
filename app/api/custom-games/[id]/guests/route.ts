@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { fetchPuuid, RiotApiError } from '@/lib/riot/api'
-import { getCurrentUser } from '@/lib/supabase/route'
+import { requireGameManager } from '@/lib/customGames/authorize'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -18,8 +18,9 @@ export async function GET(_req: Request, ctx: Ctx) {
 }
 
 export async function POST(req: Request, ctx: Ctx) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 })
+  // B1: 임시로 관리자 전용. B2에서 canManageGame(주최자 본인 + 관리자)으로 완화된다.
+  const denied = await requireGameManager()
+  if (denied) return denied
 
   const { id: gameId } = await ctx.params
 

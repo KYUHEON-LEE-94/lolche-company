@@ -13,7 +13,21 @@
       "Bash(npx next *)",
       "Bash(npx tsc *)",
       "Bash(echo \"TSC_EXIT:$?\")",
-      "Bash(gh pr create --title 'refactor: 코드 품질 개선 — dead code 제거, any 타입 제거, 오류 패턴 통일' --body ' *)"
+      "Bash(gh pr create --title 'refactor: 코드 품질 개선 — dead code 제거, any 타입 제거, 오류 패턴 통일' --body ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git rm *)",
+      "Bash(awk '/\\(type|interface\\) MemberRankHistory/,/}/' types/supabase.ts)",
+      "Bash(rm -rf _workspace_prev)",
+      "Bash(mv _workspace _workspace_prev)",
+      "Bash(mkdir -p _workspace)",
+      "Bash(awk '/\\(type|interface\\) Season /,/}/' types/supabase.ts)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(cd *)",
+      "Bash(lsof -iTCP:3001 -sTCP:LISTEN -n)",
+      "Bash(lsof -iTCP:3000 -sTCP:LISTEN -n)",
+      "Bash(curl -s http://localhost:3000/api/members/__TRACKED_VAR__/history -o /private/tmp/claude-501/-Users-xman0922-IdeaProjects-lolche-company/96d9c365-a2a4-4892-929e-4ea92c241775/scratchpad/resp.json -w 'HTTP:%{http_code}\\\\n')",
+      "Bash(node -e ' *)"
     ]
   }
 }
