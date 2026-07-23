@@ -66,6 +66,8 @@ app/
       game-options/route.ts     #   내전 스팀 게임 후보 (steam_game_options RPC, 로그인+approved)
       shared-with-me/route.ts   #   "나와 같은 게임을 가진 사람들" 요약 (steam_shared_with_member RPC)
       shared-with-me/[memberId]/route.ts  # 상대 1명과 겹치는 전체 게임 (지연 로딩)
+    steam-catalog/              # ⚠ **외부 호출 전용 경계.** `app/api/steam/` 와 의도적으로 분리한 경로다.
+      search/route.ts           #   스팀 스토어 전체 카탈로그 검색 (비공식 storesearch, 서버 인메모리 캐시)
     members/[id]/
       sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 관리자/본인 인증)
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
@@ -93,6 +95,7 @@ lib/
     api.ts                      # Steam Web API (GetPlayerSummaries / GetOwnedGames / ResolveVanityURL)
     resolveSteamId.ts           # 입력 4형태 → SteamID64 정규화
     appDetails.ts               # store appdetails(비공식)로 멀티플레이 판정
+    storeSearch.ts              # store storesearch(비공식)로 전체 카탈로그 검색. 키 불필요, 타임아웃·캐시 내장
   sync/
     syncMember.ts               # 재시도 + 지수 백오프 래퍼
     doSyncMember.ts             # Riot API 실제 호출 + DB 업데이트
@@ -135,6 +138,8 @@ STEAM_SYNC_BATCH=50                 # 1회 스팀 동기화 멤버 수
 STEAM_MEMBER_DELAY_MS=400           # 멤버 간 호출 간격(ms)
 STEAM_APP_DETAIL_BATCH=40           # 1회 실행에서 멀티플레이 판정할 신규 앱 수
 STEAM_APP_DETAIL_DELAY_MS=1500      # 비공식 store API 호출 간격(ms)
+STEAM_STORE_TIMEOUT_MS=4000         # 비공식 store API 타임아웃 (초과 시 빈 결과 degrade)
+STEAM_CATALOG_CACHE_TTL_MS=600000   # 카탈로그 검색 결과 인메모리 캐시 TTL (10분)
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
@@ -497,6 +502,17 @@ self-INSERT/DELETE 정책을 만들면 사용자가 콘솔에서 `joined_at`을 
 | 직접 입력 | 입력한 이름 | `null` |
 | 게임 미정 | `null` | `null` |
 
+게임 검색 소스는 **2개**다.
+
+| 소스 | API | 표시 | 기본 |
+|---|---|---|---|
+| 멤버 보유 게임 | `GET /api/steam/game-options` (DB, RPC) | `보유 N명` 배지 | **ON** |
+| 스팀 전체 카탈로그 | `GET /api/steam-catalog/search` (외부 storesearch) | `스팀 스토어` 배지, 보유자 수 없음 | 세그먼트 토글 / 보유 결과 0건 시 유도 |
+
+카탈로그에서 고른 앱은 `steam_apps` 에 행이 없을 수 있다.
+`custom_games.steam_app_id` 에 FK 가 없으므로(20260727 STEP 1) 그대로 저장된다.
+**고른 앱을 `steam_apps` 에 upsert 하지 않는다** — `backfillAppDetails()` 대상만 늘리고 얻는 게 없다.
+
 이름을 함께 스냅샷으로 저장하므로 렌더에 `steam_apps` 조인이 필요 없다.
 `steam_app_id`의 유일한 용도는 캡슐 이미지(`steamCapsuleUrl()` in `lib/customGames/display.ts`)다.
 `game_kind`를 steam 이외로 바꾸면 `parseGameKind()`가 라벨·appid를 null로 만들고,
@@ -587,6 +603,13 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 - 크론 엔드포인트(`GET /api/admin/sync-all`, `GET /api/admin/sync-steam`)는 `Authorization: Bearer CRON_SECRET`(또는 `ADMIN_SYNC_TOKEN`) 헤더 필수
   (두 경로 모두 `proxy.ts`의 `BYPASS_PATHS`에 등록되어 있어야 한다.
   Next 16에서 `middleware.ts` 규약이 `proxy.ts`로 이름이 바뀌었고 export 함수명도 `proxy`다)
+- **스팀 API 경로 규칙 (2계층):**
+  - `app/api/steam/**` = **DB 전용 경계.** force-dynamic + Supabase RPC/테이블만. `lib/steam/*` import 금지.
+    이 디렉토리에 외부 호출을 넣지 않는다 — 넣고 싶으면 아래 경로를 쓴다.
+  - `app/api/steam-catalog/**` = **외부 호출 경계.** `lib/steam/*` import 허용.
+    반드시 (1) 로그인 + approved 게이트 (2) 검색어 최소 길이 (3) 서버측 캐시 (4) 타임아웃
+    (5) 실패 시 200 + 빈 결과 degrade 를 모두 갖춘다.
+  - 두 경계를 한 라우트에 섞지 않는다. 섞는 순간 "이 파일이 외부를 부르는가"를 경로로 판별할 수 없게 된다.
 - **`STEAM_API_KEY`는 서버 전용.** Steam Web API는 헤더 인증을 지원하지 않아 키를 쿼리 파라미터로 보내므로,
   `lib/steam/*`는 전부 `import 'server-only'`이고 에러 메시지·로그에 URL을 절대 싣지 않는다.
 - 스팀 계정은 **소유권을 증명하지 않는다**(사용자 입력). `members_steam_id64_uidx` 유니크로 선점만 막고 중복 시 409.
@@ -613,3 +636,4 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 | 2026-06-09 | 초기 구성 | 전체 | Analyst→Developer→QA 파이프라인 구성 |
 | 2026-07-23 | 스팀 3건 | `/steam`, 내전, 명예의 전당 | 개인화 섹션 추가(ISR 분리), 내전 스팀 게임 선택, 인트로 제거 |
 | 2026-07-23 | 디자인 통일 | 전 페이지, `SiteNav` | 디자인 토큰(`lib/ui/styles.ts` + `@theme`) 도입, 폰트 복원, 홈 아이콘 |
+| 2026-07-23 | 카탈로그 검색 | `SteamGamePicker`, `app/api/steam-catalog/` | 내전 스팀 게임을 보유 목록 밖에서도 고를 수 있게 |
