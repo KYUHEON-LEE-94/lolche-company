@@ -17,6 +17,7 @@ const CHILD_TABLES = [
   'custom_game_participants',
   'member_rank_history',
   'tft_match_participants',
+  'steam_owned_games',
   'sync_logs',
 ] as const
 

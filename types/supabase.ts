@@ -33,6 +33,25 @@ export type Member = {
   tft_doubleup_wins: number | null
   tft_doubleup_losses: number | null
 
+  // LoL 솔로랭크 (20260724_lol_rank.sql)
+  // ⚠ Phase 2(riot_accounts)에서 tft_* 와 함께 대표 계정 값의 비정규화 캐시로 미러링될 예정
+  lol_tier: string | null
+  lol_rank: string | null
+  lol_league_points: number | null
+  lol_wins: number | null
+  lol_losses: number | null
+  lol_synced_at: string | null
+
+  // 스팀 연동 (20260724_steam.sql)
+  // steam_visibility 는 GetPlayerSummaries 의 communityvisibilitystate 원값 (3 = 공개)
+  steam_id64: string | null
+  steam_persona: string | null
+  steam_avatar_url: string | null
+  steam_visibility: number | null
+  steam_linked_at: string | null
+  steam_synced_at: string | null
+  steam_sync_error: string | null
+
   profile_image_path: string | null
   profile_frame_path: string | null
   profile_updated_at: string | null
@@ -101,6 +120,27 @@ export type ProfileFrame = {
   sort_order: number
   created_by: string | null
   created_at: string
+}
+
+// --- 스팀 (20260724_steam.sql) ---
+export type SteamApp = {
+  appid: number
+  name: string | null
+  /** true=멀티, false=싱글, null=미확인(store API 미조회/실패) */
+  is_multiplayer: boolean | null
+  category_ids: number[] | null
+  details_checked_at: string | null
+  created_at: string
+}
+
+export type SteamOwnedGame = {
+  member_id: string
+  appid: number
+  /** 분 단위 */
+  playtime_forever: number
+  /** 분 단위 (최근 2주) */
+  playtime_2weeks: number
+  updated_at: string
 }
 
 // --- 신규 타입 추가: Season ---
@@ -295,6 +335,23 @@ export interface Database {
           created_at?: string
         }
         Update: Optional<SyncLog>
+      }
+      steam_apps: {
+        Row: SteamApp
+        Insert: Optional<Omit<SteamApp, 'appid' | 'created_at'>> & {
+          appid: number
+          created_at?: string
+        }
+        Update: Optional<SteamApp>
+      }
+      steam_owned_games: {
+        Row: SteamOwnedGame
+        Insert: Optional<Omit<SteamOwnedGame, 'member_id' | 'appid' | 'updated_at'>> & {
+          member_id: string
+          appid: number
+          updated_at?: string
+        }
+        Update: Optional<SteamOwnedGame>
       }
       // --- 내전 테이블 ---
       custom_games: {

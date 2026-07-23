@@ -54,10 +54,10 @@ const NAV_CARDS: NavCard[] = [
   {
     href: '/steam',
     title: '스팀',
-    description: '지금 게임 중인 멤버',
+    description: '함께 할 수 있는 게임과 플레이타임',
     icon: '🎮',
     accent: 'from-emerald-400/20 to-emerald-600/5 border-emerald-500/20',
-    ready: false,
+    ready: true,
   },
 ]
 
