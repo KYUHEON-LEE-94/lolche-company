@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { resolveAvatarUrl } from '@/lib/members/avatar'
 
 /**
  * ⚠ 이 섹션은 세션에 의존한다. /steam 페이지는 ISR(revalidate=300) 공유 캐시이므로
@@ -15,6 +16,7 @@ type SharedMember = {
   member_name: string
   steam_avatar_url: string | null
   profile_image_path: string | null
+  discord_avatar_url: string | null
   shared_count: number
   preview_names: string[]
 }
@@ -42,11 +44,6 @@ function formatHours(minutes: number) {
   if (hours >= 10) return `${hours.toFixed(0)}시간`
   if (hours >= 1) return `${hours.toFixed(1)}시간`
   return `${minutes}분`
-}
-
-function getProfileImageUrl(path: string | null) {
-  if (!path) return null
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`
 }
 
 function capsuleUrl(appid: number) {
@@ -214,7 +211,7 @@ function Body({
       {state.members.map((m) => {
         const detail = details[m.member_id]
         const open = openId === m.member_id
-        const imageUrl = m.steam_avatar_url ?? getProfileImageUrl(m.profile_image_path)
+        const imageUrl = m.steam_avatar_url ?? resolveAvatarUrl(m)
 
         return (
           <li

@@ -1,10 +1,15 @@
 import Image from 'next/image';
+import { resolveAvatarUrl } from '@/lib/members/avatar';
 
 type Ranker = {
     tier: string | null
     rank: string | null
     lp: number | null
-    members: { member_name: string; profile_image_path: string | null } | null
+    members: {
+        member_name: string
+        profile_image_path: string | null
+        discord_avatar_url?: string | null
+    } | null
 }
 
 interface RankerProps {
@@ -27,7 +32,7 @@ export default function HallOfFameCard({ ranker, position }: RankerProps) {
                 {position === 1 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-3xl animate-bounce">{styles.crown}</span>}
                 <div className={`relative rounded-full overflow-hidden border-4 ${styles.border} ${styles.size}`}>
                     <Image
-                        src={ranker.members?.profile_image_path || '/default-profile.png'}
+                        src={resolveAvatarUrl(ranker.members) ?? '/default-profile.png'}
                         alt={ranker.members?.member_name ?? ''}
                         fill
                         className="object-cover"

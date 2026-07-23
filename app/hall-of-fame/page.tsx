@@ -2,6 +2,20 @@ import { supabaseService } from '@/lib/supabase/service';
 import HallOfFameClientPage from './_components/HallOfFameClientPage';
 import { unstable_noStore as noStore } from 'next/cache';
 import { TIER_ORDER, RANK_ORDER } from '@/lib/constants/tierOrder';
+import { withAvatarColumn } from '@/lib/members/avatar';
+
+type RawRanker = {
+    id: string
+    tier: string | null
+    rank: string | null
+    lp: number | null
+    member_name_snapshot: string | null
+    profile_image_snapshot: string | null
+    members:
+        | { member_name: string; profile_image_path: string | null; discord_avatar_url?: string | null }
+        | { member_name: string; profile_image_path: string | null; discord_avatar_url?: string | null }[]
+        | null
+}
 
 export default async function HallOfFamePage({
                                                  searchParams,
@@ -27,18 +41,23 @@ export default async function HallOfFamePage({
     const currentSeason = seasons.find((s) => s.id === currentSeasonId) || seasons[0];
 
     // 3. 해당 시즌 데이터 가져오기
-    const { data: rawRankers } = await supabaseService
-        .schema("public")
-        .from('hall_of_fame')
-        .select(
-            `id, tier, rank, lp, member_name_snapshot, profile_image_snapshot, members(member_name, profile_image_path)`,
-        )
-        .eq('season_id', currentSeasonId)
-        .eq('queue_type', currentQueue);
+    // 마이그레이션(20260729) 미적용이면 임베디드 컬럼 부재(42703)를 흡수해 컬럼 없이 재조회한다.
+    const { data: rawRankersData } = await withAvatarColumn((cols) =>
+        supabaseService
+            .schema("public")
+            .from('hall_of_fame')
+            .select(
+                `id, tier, rank, lp, member_name_snapshot, profile_image_snapshot, members(member_name, profile_image_path${cols})`,
+            )
+            .eq('season_id', currentSeasonId)
+            .eq('queue_type', currentQueue),
+    );
+
+    const rawRankers = (rawRankersData ?? []) as RawRanker[];
 
     // 임베디드 조인은 타입상 배열로 추론되므로 단일 객체로 정규화한다.
     // (멤버가 추방된 기록은 members가 비어 있고 스냅샷만 남는다)
-    const rankers = (rawRankers ?? []).map((r) => {
+    const rankers = rawRankers.map((r) => {
         const joined = r.members
         const member = Array.isArray(joined) ? (joined[0] ?? null) : joined
         return {
@@ -50,8 +69,9 @@ export default async function HallOfFamePage({
             profile_image_snapshot: r.profile_image_snapshot,
             members: member
                 ? {
-                      member_name: member.member_name as string,
-                      profile_image_path: member.profile_image_path as string | null,
+                      member_name: member.member_name,
+                      profile_image_path: member.profile_image_path,
+                      discord_avatar_url: member.discord_avatar_url ?? null,
                   }
                 : null,
         }

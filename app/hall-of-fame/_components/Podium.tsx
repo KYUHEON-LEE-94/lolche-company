@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { profileImageUrl, resolveAvatarUrl } from '@/lib/members/avatar';
 
 export type HallOfFameRanker = {
     id: string
@@ -12,7 +13,11 @@ export type HallOfFameRanker = {
     display_rank: number
     member_name_snapshot: string | null
     profile_image_snapshot: string | null
-    members: { member_name: string; profile_image_path: string | null } | null
+    members: {
+        member_name: string
+        profile_image_path: string | null
+        discord_avatar_url?: string | null
+    } | null
 }
 
 /** 멤버가 추방되면 members 조인이 null이 되므로 아카이브 시점 스냅샷으로 대체한다. */
@@ -20,10 +25,14 @@ export function rankerName(r: Pick<HallOfFameRanker, 'members' | 'member_name_sn
     return r.members?.member_name ?? r.member_name_snapshot ?? '탈퇴한 멤버'
 }
 
-export function rankerImagePath(
+/**
+ * 아바타 URL. 멤버가 살아 있으면 공용 우선순위를 따르고,
+ * 추방돼 members 조인이 null 이면 아카이브 시점 스냅샷(스토리지 경로)으로 대체한다.
+ */
+export function rankerImageUrl(
     r: Pick<HallOfFameRanker, 'members' | 'profile_image_snapshot'>,
 ) {
-    return r.members?.profile_image_path ?? r.profile_image_snapshot ?? null
+    return resolveAvatarUrl(r.members) ?? profileImageUrl(r.profile_image_snapshot)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,11 +76,8 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
     const configRank = Math.min(displayRank, 3) as 1 | 2 | 3;
     const cfg = RANK_CONFIG[configRank];
 
-    const imagePath = rankerImagePath(data);
     const displayName = rankerName(data);
-    const profileImg = imagePath
-        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${imagePath}`
-        : '/images/logo.png';
+    const profileImg = rankerImageUrl(data) ?? '/images/logo.png';
 
     // 단상 높이 조절 (실제 순위가 아닌 포디움의 시각적 위치에 따름)
     const pedestalH = position === 1 ? 'h-24' : position === 2 ? 'h-16' : 'h-12';

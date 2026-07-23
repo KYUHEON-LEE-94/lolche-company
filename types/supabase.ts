@@ -53,6 +53,9 @@ export type Member = {
   steam_synced_at: string | null
   steam_sync_error: string | null
 
+  // 로그인 시 auth/callback 이 갱신한다 (20260729_discord_avatar.sql)
+  discord_avatar_url: string | null
+
   profile_image_path: string | null
   profile_frame_path: string | null
   profile_updated_at: string | null

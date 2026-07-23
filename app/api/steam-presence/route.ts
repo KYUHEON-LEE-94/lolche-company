@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getMyMember } from '@/lib/members/myMember'
 import { fetchPresenceMap, isPresenceVisible } from '@/lib/steam/presence'
+import { withAvatarColumn } from '@/lib/members/avatar'
 
 // ⚠ **외부 호출 경계.** `app/api/steam/**` 는 DB 전용이라 lib/steam/* import 가 금지돼 있다.
 //   이 라우트는 Steam Web API 를 호출하므로 `app/api/steam-catalog/**` 와 같은 이유로
@@ -17,6 +18,7 @@ type MemberRow = {
   steam_visibility: number | null
   steam_avatar_url: string | null
   profile_image_path: string | null
+  discord_avatar_url: string | null
 }
 
 type PresenceState = 'online' | 'offline' | 'unavailable'
@@ -32,15 +34,19 @@ export async function GET() {
     return NextResponse.json({ ok: false, message: '승인된 멤버만 이용할 수 있습니다.' }, { status: 403 })
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('members')
-    .select('id, member_name, steam_id64, steam_visibility, steam_avatar_url, profile_image_path')
-    .eq('status', 'approved')
-    .not('steam_id64', 'is', null)
-    .order('member_name', { ascending: true })
+  const { data, error } = await withAvatarColumn((cols) =>
+    supabaseAdmin
+      .from('members')
+      .select(
+        `id, member_name, steam_id64, steam_visibility, steam_avatar_url, profile_image_path${cols}`,
+      )
+      .eq('status', 'approved')
+      .not('steam_id64', 'is', null)
+      .order('member_name', { ascending: true }),
+  )
 
   if (error) {
-    console.error('[steam-presence] members 조회 실패', error.message)
+    console.error('[steam-presence] members 조회 실패', error.message ?? '오류 발생')
     return NextResponse.json({ ok: false, message: '목록을 불러오지 못했습니다.' }, { status: 500 })
   }
 
@@ -73,6 +79,7 @@ export async function GET() {
       member_name: m.member_name,
       steam_avatar_url: m.steam_avatar_url,
       profile_image_path: m.profile_image_path,
+      discord_avatar_url: m.discord_avatar_url ?? null,
       state,
       persona_state: visible ? (info?.personastate ?? 0) : null,
       game_name: visible ? (info?.gameName ?? null) : null,

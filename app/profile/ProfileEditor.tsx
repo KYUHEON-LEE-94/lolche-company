@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/browser'
+import { isDiscordAvatarUrl } from '@/lib/members/avatar'
 import { useRouter } from 'next/navigation'
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
         member_name: string
         riot_id: string
         profile_image_path: string | null
+        discord_avatar_url: string | null
         profile_frame_path: string | null
         profile_updated_at: string | null
     }
@@ -53,6 +55,19 @@ export default function ProfileEditor({ userId, member }: Props) {
     const [isAdmin, setIsAdmin] = useState(false)
 
     const hasImage = !!imagePath
+
+    // 표시 우선순위는 lib/members/avatar.ts 와 동일하게: 업로드 -> Discord 아바타.
+    const discordAvatarUrl = isDiscordAvatarUrl(member.discord_avatar_url)
+        ? member.discord_avatar_url
+        : null
+    const displayUrl = imageUrl ?? discordAvatarUrl
+    const avatarNotice = hasImage
+        ? discordAvatarUrl
+            ? '업로드한 이미지를 사용 중이에요. 제거하면 Discord 프로필 사진으로 돌아가요.'
+            : '업로드한 이미지를 사용 중이에요.'
+        : discordAvatarUrl
+          ? 'Discord 프로필 사진을 사용 중이에요. 이미지를 업로드하면 업로드한 사진이 우선해요.'
+          : 'Discord로 로그인하면 Discord 프로필 사진이 자동으로 사용돼요.'
 
     useEffect(() => {
         if (!framePath) {
@@ -248,8 +263,8 @@ export default function ProfileEditor({ userId, member }: Props) {
                         {/* 프로필 이미지 */}
                         <div
                             className="absolute inset-0 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60 z-10">
-                            {imageUrl ? (
-                                <Image src={imageUrl} alt="profile image" fill className="object-cover"/>
+                            {displayUrl ? (
+                                <Image src={displayUrl} alt="profile image" fill className="object-cover"/>
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
                                     <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
@@ -287,7 +302,7 @@ export default function ProfileEditor({ userId, member }: Props) {
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-slate-100 font-extrabold">프로필 이미지</div>
-                        <div className="mt-1 text-xs text-slate-400">이미지는 자유롭게 업로드할 수 있어요.</div>
+                        <div className="mt-1 text-xs text-slate-400">{avatarNotice}</div>
                     </div>
 
                     <button
@@ -301,8 +316,8 @@ export default function ProfileEditor({ userId, member }: Props) {
 
                 <div className="mt-5 flex items-center gap-5">
                     <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60">
-                        {imageUrl ? (
-                            <Image src={imageUrl} alt="avatar preview" fill className="object-cover" />
+                        {displayUrl ? (
+                            <Image src={displayUrl} alt="avatar preview" fill className="object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">없음</div>
                         )}

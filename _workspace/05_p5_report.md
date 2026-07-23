@@ -55,7 +55,7 @@
 
 ### ⚠ 구현 중 발견·수정한 실제 버그
 `SiteNav`의 JSX 주석에 `pb-[env(…)]`라고 적었더니 **Tailwind v4 스캐너가 이를 후보 클래스로 인식**해
-`.pb-\[env\(\.\.\.\)\] { padding-bottom: env(...) }`를 생성 → `Parsing CSS source code failed`로 **globals.css 전체가 깨졌다.**
+값이 말줄임표인 잘못된 유틸리티를 생성 → `Parsing CSS source code failed`로 **globals.css 전체가 깨졌다.**
 주석 문구를 자연어로 바꿔 해결. 교훈: 주석에도 Tailwind 유틸리티 형태의 문자열을 쓰면 안 된다.
 
 ---

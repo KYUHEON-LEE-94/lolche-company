@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
 import SharedWithMe from '@/app/steam/SharedWithMe'
 import SteamPresence from '@/app/steam/SteamPresence'
+import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 import { CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import SectionHeader from '@/app/components/ui/SectionHeader'
@@ -30,6 +31,7 @@ type SteamMemberRow = {
   id: string
   member_name: string
   profile_image_path: string | null
+  discord_avatar_url: string | null
   steam_avatar_url: string | null
   steam_visibility: number | null
   steam_synced_at: string | null
@@ -70,29 +72,27 @@ function formatSyncedAt(value: string | null) {
   }).format(date)
 }
 
-function getProfileImageUrl(path: string | null) {
-  if (!path) return null
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`
-}
-
 /**
  * 마이그레이션 미실행(컬럼/테이블 부재) 시에도 500 대신 안내로 degrade 하기 위해
  * 에러를 throw 하지 않고 결과 객체로 돌려준다.
  */
 async function loadSteamData(): Promise<LoadResult> {
-  const membersResult = await supabase
-    .from('members')
-    .select(
-      'id,member_name,profile_image_path,steam_avatar_url,steam_visibility,steam_synced_at',
-    )
-    // 승인 대기/거절 멤버는 노출하지 않는다 (CLAUDE.md 노출 필터 규칙)
-    .eq('status', 'approved')
-    .not('steam_id64', 'is', null)
-    .order('member_name', { ascending: true })
+  const membersResult = await withAvatarColumn((cols) =>
+    supabase
+      .from('members')
+      .select(
+        `id,member_name,profile_image_path,steam_avatar_url,steam_visibility,steam_synced_at${cols}`,
+      )
+      // 승인 대기/거절 멤버는 노출하지 않는다 (CLAUDE.md 노출 필터 규칙)
+      .eq('status', 'approved')
+      .not('steam_id64', 'is', null)
+      .order('member_name', { ascending: true }),
+  )
 
   if (membersResult.error) {
-    console.error('[steam] members 조회 실패', membersResult.error.message)
-    return { ok: false, message: membersResult.error.message }
+    const message = membersResult.error.message ?? '조회에 실패했습니다.'
+    console.error('[steam] members 조회 실패', message)
+    return { ok: false, message }
   }
 
   const members = (membersResult.data ?? []) as SteamMemberRow[]
@@ -338,7 +338,8 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
 }
 
 function MemberAvatar({ member }: { member: SteamMemberRow }) {
-  const imageUrl = member.steam_avatar_url ?? getProfileImageUrl(member.profile_image_path)
+  // 스팀 화면이므로 스팀 아바타를 먼저 쓰고, 없으면 공용 우선순위로 내려간다.
+  const imageUrl = member.steam_avatar_url ?? resolveAvatarUrl(member)
   return (
     <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
       {imageUrl ? (

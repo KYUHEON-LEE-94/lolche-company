@@ -11,6 +11,7 @@ import { compareRank } from '@/lib/constants/tierOrder'
 import { isApexTier, tierScore } from '@/lib/tft/tierScore'
 import { formatKstShort, gameKindLabel } from '@/lib/customGames/display'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
+import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 
 export const revalidate = 60
 
@@ -19,6 +20,7 @@ type DashMember = Pick<
   | 'id'
   | 'member_name'
   | 'profile_image_path'
+  | 'discord_avatar_url'
   | 'tft_tier'
   | 'tft_rank'
   | 'tft_league_points'
@@ -67,11 +69,6 @@ const NAV_CARDS = [
     ? [{ href: '/lol', title: '롤', description: '리그 오브 레전드 솔로랭크', icon: '🗡' }]
     : []),
 ]
-
-function profileImageUrl(path: string | null): string | null {
-  if (!path) return null
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`
-}
 
 function formatSyncedAt(value: string | null) {
   if (!value) return '기록 없음'
@@ -140,7 +137,9 @@ async function fetchRecentMatches(memberIds: string[]): Promise<RecentMatchRow[]
 
 export default async function DashboardPage() {
   const [membersResult, seasonResult, recruiting] = await Promise.all([
-    supabase.from('members').select(MEMBER_COLUMNS).eq('status', 'approved'),
+    withAvatarColumn((cols) =>
+      supabase.from('members').select(`${MEMBER_COLUMNS}${cols}`).eq('status', 'approved'),
+    ),
     supabaseService.from('seasons').select('season_name,set_number').eq('is_active', true).maybeSingle(),
     fetchRecruiting(),
   ])
@@ -221,7 +220,7 @@ export default async function DashboardPage() {
             ) : (
               <ol className="mt-3 divide-y divide-line">
                 {leaderboard.map((m, i) => {
-                  const url = profileImageUrl(m.profile_image_path)
+                  const url = resolveAvatarUrl(m)
                   return (
                     <li key={m.id} className="flex items-center gap-3 py-2.5 min-h-[44px]">
                       <span className="w-5 shrink-0 text-center text-sm font-black text-slate-500">{i + 1}</span>

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
 import { supabaseService } from '@/lib/supabase/service'
-import { getDiscordId, sanitizeNextPath } from '@/lib/auth/discord'
+import { getDiscordAvatarUrl, getDiscordId, sanitizeNextPath } from '@/lib/auth/discord'
+import { isMissingColumnError } from '@/lib/db/pgErrors'
 import type { User } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,29 @@ async function linkDiscordAccount(table: 'members' | 'admins', discordId: string
     }
 }
 
+/**
+ * Discord 아바타를 members 에 반영한다.
+ * 아바타는 사용자가 언제든 바꿀 수 있어 최초 1회만 저장하면 낡는다 — 로그인마다 갱신한다.
+ *
+ * ⚠ 계정 탈취 방지 가드 유지: `user_id = 세션 user` 인 행에만 쓴다.
+ *   discord_id 만 같고 다른 user_id 가 연결된 행은 절대 건드리지 않는다.
+ */
+async function syncDiscordAvatar(discordId: string, user: User) {
+    const avatarUrl = getDiscordAvatarUrl(user)
+    if (!avatarUrl) return
+
+    const { error } = await supabaseService.schema('public')
+        .from('members')
+        .update({ discord_avatar_url: avatarUrl })
+        .eq('discord_id', discordId)
+        .eq('user_id', user.id)
+
+    // 마이그레이션(20260729) 미적용은 장애가 아니다 — 아바타 갱신만 건너뛴다.
+    if (error && !isMissingColumnError(error)) {
+        console.error('[auth/callback] discord_avatar_url 갱신 실패', error.message)
+    }
+}
+
 export async function GET(request: Request) {
     const url = new URL(request.url)
     const origin = url.origin
@@ -73,6 +97,7 @@ export async function GET(request: Request) {
         if (discordId) {
             await linkDiscordAccount('members', discordId, data.user)
             await linkDiscordAccount('admins', discordId, data.user)
+            await syncDiscordAvatar(discordId, data.user)
         }
 
         // 2차 방어: 파싱 결과가 같은 오리진이 아니면 무조건 '/'로 보낸다.

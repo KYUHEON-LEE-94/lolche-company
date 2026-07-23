@@ -14,6 +14,8 @@ type SharedRow = {
   member_name: string | null
   steam_avatar_url: string | null
   profile_image_path: string | null
+  /** RPC 재생성(20260729) 전에는 컬럼 자체가 없어 undefined 로 들어온다. */
+  discord_avatar_url?: string | null
   shared_count: number
   preview_names: string[] | null
 }
@@ -51,6 +53,7 @@ export async function GET(req: Request) {
     member_name: row.member_name ?? '알 수 없음',
     steam_avatar_url: row.steam_avatar_url,
     profile_image_path: row.profile_image_path,
+    discord_avatar_url: row.discord_avatar_url ?? null,
     shared_count: Number(row.shared_count ?? 0),
     preview_names: row.preview_names ?? [],
   }))

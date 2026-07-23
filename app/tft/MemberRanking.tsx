@@ -8,6 +8,7 @@ import Image from 'next/image'
 import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
 import { tierScore } from '@/lib/tft/tierScore'
 import { compareRank } from '@/lib/constants/tierOrder'
+import { resolveAvatarUrl } from '@/lib/members/avatar'
 import { CONTAINER } from '@/lib/ui/styles'
 import EmptyState from '@/app/components/ui/EmptyState'
 
@@ -47,12 +48,6 @@ function calcRemainSec(
   if (!lastSyncedAt || nowMs === 0) return 0
   const diff = Math.floor((nowMs - new Date(lastSyncedAt).getTime()) / 1000)
   return Math.max(0, cooldownSec - diff)
-}
-
-function getProfileImageUrl(path: string | null) {
-  if (!path) return null
-  const { data } = supabaseClient.storage.from('profile-images').getPublicUrl(path)
-  return data.publicUrl
 }
 
 function getFramePublicUrl(framePath: string) {
@@ -253,7 +248,7 @@ const MemberCard = memo(function MemberCard({
   const remainSec = calcRemainSec(effectiveLastSyncedAt, MIN_SYNC_INTERVAL_SEC, nowMs)
   const lpDelta = queue === 'solo' ? calcLpDelta(member) : null
 
-  const profileUrl = getProfileImageUrl(member.profile_image_path)
+  const profileUrl = resolveAvatarUrl(member)
   const framePath = member.profile_frame_path
 
   // 최근 5경기 순위 dots

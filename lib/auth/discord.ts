@@ -1,4 +1,5 @@
 import type { User } from '@supabase/supabase-js'
+import { isDiscordAvatarUrl } from '@/lib/members/avatar'
 
 /**
  * Discord provider의 고유 숫자 ID(snowflake)를 추출한다.
@@ -26,6 +27,22 @@ export function getDiscordDisplayName(user: User | null | undefined): string | n
   const candidates = [meta?.full_name, meta?.name, meta?.user_name, meta?.preferred_username]
   for (const c of candidates) {
     if (typeof c === 'string' && c.length > 0) return c
+  }
+  return null
+}
+
+/**
+ * Discord 아바타 URL. OAuth 세션의 user_metadata 에 이미 들어오므로 추가 API 호출이 없다.
+ *
+ * ⚠ user_metadata 는 IdP가 채우는 값이라 신뢰 경계 밖이다.
+ *   https + cdn.discordapp.com 이 아니면 null 을 돌려 임의 외부 URL 저장을 막는다.
+ */
+export function getDiscordAvatarUrl(user: User | null | undefined): string | null {
+  if (!user) return null
+  const meta = user.user_metadata
+  const candidates = [meta?.avatar_url, meta?.picture]
+  for (const c of candidates) {
+    if (isDiscordAvatarUrl(c)) return c
   }
   return null
 }

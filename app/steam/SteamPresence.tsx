@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { resolveAvatarUrl } from '@/lib/members/avatar'
 import SectionHeader from '@/app/components/ui/SectionHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
 
@@ -20,6 +21,7 @@ type PresenceMember = {
   member_name: string
   steam_avatar_url: string | null
   profile_image_path: string | null
+  discord_avatar_url: string | null
   state: PresenceState
   persona_state: number | null
   game_name: string | null
@@ -39,11 +41,6 @@ const PERSONA_LABEL: Record<number, string> = {
   4: '취침',
   5: '거래 희망',
   6: '플레이 희망',
-}
-
-function getProfileImageUrl(path: string | null) {
-  if (!path) return null
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`
 }
 
 export default function SteamPresence() {
@@ -167,7 +164,7 @@ function Body({ state }: { state: LoadState }) {
 }
 
 function Avatar({ member }: { member: PresenceMember }) {
-  const imageUrl = member.steam_avatar_url ?? getProfileImageUrl(member.profile_image_path)
+  const imageUrl = member.steam_avatar_url ?? resolveAvatarUrl(member)
   return (
     <div className="relative shrink-0">
       <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-line bg-surface-2">

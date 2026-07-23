@@ -296,6 +296,9 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 | `steam_apps` | 스팀 앱 메타 + `is_multiplayer` 3-값 캐시 (true/false/null=분류 미확인). 앱당 1회 조회 후 영구 보관 |
 | `steam_owned_games` | 멤버별 보유 게임 + `playtime_forever`/`playtime_2weeks`(분). `/steam`이 읽는 유일한 소스 |
 
+`members.discord_avatar_url` (20260729_discord_avatar.sql): Discord OAuth 세션의
+`user_metadata.avatar_url` 원문. 로그인마다 `app/auth/callback/route.ts`가 갱신한다.
+
 **스팀 RPC (전부 `security definer` + `revoke ... from public, anon, authenticated` — 서버 라우트 전용):**
 
 | 함수 | 파일 | 용도 |
@@ -604,6 +607,33 @@ DB CHECK(`custom_games_steam_app_id_chk`)가 23514로 최종 차단한다.
 `isCheckViolation()`(23514) / `isMissingColumnError()`(42703)를 잡아 **503 안내**로 돌린다(500 금지).
 RPC 부재(`PGRST202`/`42883`)는 `isMissingFunctionError()`가 잡아 **200 + `migration_required: true` + 빈 목록**이다.
 판별 함수는 전부 `lib/db/pgErrors.ts` 한 곳에 있다.
+
+## 프로필 아바타 우선순위
+
+표시 URL은 **`lib/members/avatar.ts`의 `resolveAvatarUrl(member)` 단 하나**로만 만든다.
+화면마다 스토리지 URL을 직접 조립하지 않는다.
+
+```
+profile_image_path (직접 업로드) → discord_avatar_url (Discord CDN) → null(이니셜/기본 이미지)
+```
+
+- **업로드가 Discord보다 우선**인 이유: Discord 아바타는 로그인 시 자동으로 채워지는 값이고
+  업로드는 사용자의 명시적 행동이다. Discord를 위에 두면 업로드해도 화면이 안 바뀌는 죽은 UI가 되어
+  "어느 쪽을 쓸지" 토글이 추가로 필요해진다. 업로드 제거 = Discord 아바타로 복귀.
+- 전원이 로그인 연결되면 업로드 경로는 이 파일 한 줄을 지워 걷어낼 수 있다.
+- 스팀 화면(`/steam`, 온라인 상태, 같은 게임)만 예외로 `steam_avatar_url`을 먼저 쓰고
+  없을 때 `resolveAvatarUrl()`로 내려간다 (맥락이 스팀이므로).
+- `hall_of_fame`은 추방된 멤버를 위해 `profile_image_snapshot`을 마지막 폴백으로 유지한다
+  (`Podium.tsx`의 `rankerImageUrl()`).
+
+**신뢰 경계:** `user_metadata`는 IdP가 채우는 값이다. `isDiscordAvatarUrl()`이
+https + `cdn.discordapp.com`만 통과시킨다. 저장(`getDiscordAvatarUrl`)과 표시(`resolveAvatarUrl`)
+양쪽에서 검증한다 — 검증 없이 next/image에 넘기면 임의 외부 URL이 렌더된다.
+`next.config.ts`의 `remotePatterns`도 `cdn.discordapp.com` + `/avatars/**`로 좁혀 두었다.
+
+**마이그레이션 미적용 degrade:** `discord_avatar_url` 컬럼이 없으면 select가 42703으로 실패한다.
+`withAvatarColumn()`이 이를 잡아 컬럼 없이 1회 재조회하므로 500 대신 업로드 이미지만 보이는
+상태로 degrade한다. members를 조회하는 화면을 추가할 때 이 헬퍼를 함께 쓴다.
 
 ## 관리자 기능
 

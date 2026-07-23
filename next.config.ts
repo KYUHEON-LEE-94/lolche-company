@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'raw.communitydragon.org',
             },
+            // 디스코드 아바타 (members.discord_avatar_url)
+            {
+                protocol: 'https',
+                hostname: 'cdn.discordapp.com',
+                pathname: '/avatars/**',
+            },
             // 스팀 아바타
             {
                 protocol: 'https',

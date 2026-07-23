@@ -5,6 +5,7 @@ import { supabaseService } from '@/lib/supabase/service'
 import { getDiscordId } from '@/lib/auth/discord'
 import type { MemberStatus } from '@/types/supabase'
 import { listRiotAccounts, pickPrimaryAccount } from '@/lib/members/primaryAccount'
+import { withAvatarColumn } from '@/lib/members/avatar'
 import ProfileEditor from './ProfileEditor'
 import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
 import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
@@ -26,6 +27,21 @@ const SELECT_COLUMNS = `
   profile_updated_at
 `
 
+type ProfileMemberRow = {
+    id: string
+    member_name: string
+    riot_game_name: string
+    riot_tagline: string
+    status: MemberStatus
+    rejected_reason: string | null
+    user_id: string | null
+    profile_image_path: string | null
+    profile_frame_path: string | null
+    profile_updated_at: string | null
+    /** 마이그레이션(20260729) 미적용 환경에서는 undefined 로 들어온다. */
+    discord_avatar_url?: string | null
+}
+
 export default async function ProfilePage() {
     const supabase = await createRouteClient()
 
@@ -39,37 +55,42 @@ export default async function ProfilePage() {
     }
 
     // RLS의 self-SELECT 정책 유무와 무관하게 동작하도록 service role로 조회한다.
-    const { data: byUserId, error: memberError } = await supabaseService
-        .schema('public')
-        .from('members')
-        .select(SELECT_COLUMNS)
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const { data: byUserId, error: memberError } = await withAvatarColumn((cols) =>
+        supabaseService
+            .schema('public')
+            .from('members')
+            .select(`${SELECT_COLUMNS}${cols}`)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+    )
 
     if (memberError) {
-        throw new Error(memberError.message)
+        throw new Error(memberError.message ?? '프로필을 불러오지 못했습니다.')
     }
 
-    let member = byUserId
+    let member = byUserId as ProfileMemberRow | null
 
     // 관리자가 discord_id만 사전 등록한 경우를 위한 fallback
     if (!member) {
         const discordId = getDiscordId(user)
         if (discordId) {
-            const { data: byDiscord } = await supabaseService
-                .schema('public')
-                .from('members')
-                .select(SELECT_COLUMNS)
-                .eq('discord_id', discordId)
-                .maybeSingle()
+            const { data: byDiscordData } = await withAvatarColumn((cols) =>
+                supabaseService
+                    .schema('public')
+                    .from('members')
+                    .select(`${SELECT_COLUMNS}${cols}`)
+                    .eq('discord_id', discordId)
+                    .maybeSingle(),
+            )
 
+            const byDiscord = byDiscordData as ProfileMemberRow | null
             if (byDiscord && (!byDiscord.user_id || byDiscord.user_id === user.id)) {
                 member = byDiscord
             }
         }
     }
 
-    const status = (member?.status ?? null) as MemberStatus | null
+    const status: MemberStatus | null = member?.status ?? null
 
     // 마이그레이션 미적용(테이블 부재)은 500이 아니라 빈 목록 + 안내로 degrade한다.
     let accounts: RiotAccountView[] = []
@@ -138,6 +159,7 @@ export default async function ProfilePage() {
                                 member_name: member.member_name,
                                 riot_id: `${member.riot_game_name}#${member.riot_tagline}`,
                                 profile_image_path: member.profile_image_path,
+                                discord_avatar_url: member.discord_avatar_url ?? null,
                                 profile_frame_path: member.profile_frame_path,
                                 profile_updated_at: member.profile_updated_at,
                             }}

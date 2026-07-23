@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { LOL_ENABLED } from '@/lib/constants/features'
+import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 import { CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
@@ -22,6 +23,7 @@ type LolMember = Pick<
   | 'riot_game_name'
   | 'riot_tagline'
   | 'profile_image_path'
+  | 'discord_avatar_url'
   | 'lol_tier'
   | 'lol_rank'
   | 'lol_league_points'
@@ -53,11 +55,6 @@ function getTierStyle(tier: string | null) {
   return TIER_STYLES[key] ?? FALLBACK_STYLE
 }
 
-function getProfileImageUrl(path: string | null) {
-  if (!path) return null
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-images/${path}`
-}
-
 /** 마스터 이상은 디비전이 없으므로 티어명만 노출한다. */
 const APEX_TIERS = new Set(['CHALLENGER', 'GRANDMASTER', 'MASTER'])
 
@@ -81,14 +78,16 @@ export default async function LolPage() {
   // 네비게이션에서 숨기는 것만으로는 부족하다. URL 직접 접근도 차단한다.
   if (!LOL_ENABLED) notFound()
 
-  const { data, error } = await supabase
-    .from('members')
-    .select(
-      'id,member_name,riot_game_name,riot_tagline,profile_image_path,lol_tier,lol_rank,lol_league_points,lol_wins,lol_losses',
-    )
-    // 승인 대기/거절 상태의 자가 등록 멤버는 랭킹에 노출하지 않는다.
-    .eq('status', 'approved')
-    .order('member_name', { ascending: true })
+  const { data, error } = await withAvatarColumn((cols) =>
+    supabase
+      .from('members')
+      .select(
+        `id,member_name,riot_game_name,riot_tagline,profile_image_path,lol_tier,lol_rank,lol_league_points,lol_wins,lol_losses${cols}`,
+      )
+      // 승인 대기/거절 상태의 자가 등록 멤버는 랭킹에 노출하지 않는다.
+      .eq('status', 'approved')
+      .order('member_name', { ascending: true }),
+  )
 
   if (error) console.error('Supabase error:', error)
 
@@ -118,7 +117,7 @@ export default async function LolPage() {
           <ol className="space-y-2">
             {sorted.map((m, idx) => {
               const style = getTierStyle(m.lol_tier)
-              const imageUrl = getProfileImageUrl(m.profile_image_path)
+              const imageUrl = resolveAvatarUrl(m)
               const record = formatRecord(m.lol_wins, m.lol_losses)
               const unranked = !m.lol_tier
 
