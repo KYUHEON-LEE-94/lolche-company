@@ -9,6 +9,7 @@ import ProfileEditor from './ProfileEditor'
 import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
 import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
+import ProfileChecklist from '@/app/components/ProfileChecklist'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,6 +111,9 @@ export default async function ProfilePage() {
                 />
 
                 <div className="grid gap-6">
+                    {/* 개인화 데이터라 서버에서 렌더하지 않는다(클라이언트 아일랜드 + force-dynamic API). */}
+                    <ProfileChecklist />
+
                     <MemberSelfForm
                         initial={
                             member

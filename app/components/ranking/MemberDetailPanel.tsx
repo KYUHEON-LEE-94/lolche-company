@@ -27,12 +27,117 @@ type MemberStats = {
   topUnits: TopUnit[]
 }
 
-type TabKey = 'overview' | 'matches'
+type MemberAccount = {
+  id: string
+  account_no: number
+  is_primary: boolean
+  riot_game_name: string
+  riot_tagline: string
+  synced: boolean
+  tft_tier: string | null
+  tft_rank: string | null
+  tft_league_points: number | null
+  tft_wins: number | null
+  tft_losses: number | null
+  tft_doubleup_tier: string | null
+  tft_doubleup_rank: string | null
+  tft_doubleup_league_points: number | null
+  tft_doubleup_wins: number | null
+  tft_doubleup_losses: number | null
+  last_synced_at: string | null
+}
+
+type TabKey = 'overview' | 'matches' | 'accounts'
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: '개요' },
   { key: 'matches', label: '전적' },
+  { key: 'accounts', label: '계정' },
 ]
+
+/**
+ * 매치·랭크 히스토리는 대표 계정 puuid 로만 수집된다
+ * (`tft_match_participants` 는 대표 puuid, `member_rank_history` 에는 계정 축이 없다).
+ * 부계정으로 필터하면 항상 0건이라 빈 차트가 버그로 오인되므로 문구로 대신한다.
+ */
+const ACCOUNT_SCOPE_NOTICE = '매치와 그래프는 대표 계정 기준입니다.'
+
+function accountRank(a: MemberAccount, queue: 'solo' | 'doubleup') {
+  return queue === 'solo'
+    ? { tier: a.tft_tier, rank: a.tft_rank, lp: a.tft_league_points, wins: a.tft_wins, losses: a.tft_losses }
+    : {
+        tier: a.tft_doubleup_tier,
+        rank: a.tft_doubleup_rank,
+        lp: a.tft_doubleup_league_points,
+        wins: a.tft_doubleup_wins,
+        losses: a.tft_doubleup_losses,
+      }
+}
+
+function formatSyncedAt(iso: string | null) {
+  if (!iso) return '동기화 기록 없음'
+  const d = new Date(iso)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function AccountCard({
+  account,
+  queue,
+  selected,
+  onSelect,
+}: {
+  account: MemberAccount
+  queue: 'solo' | 'doubleup'
+  selected: boolean
+  onSelect: () => void
+}) {
+  const r = accountRank(account, queue)
+  const total = (r.wins ?? 0) + (r.losses ?? 0)
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left rounded-xl border px-3 py-3 transition-colors ${
+        selected
+          ? 'border-indigo-400/60 bg-indigo-500/10'
+          : 'border-white/[0.07] bg-white/[0.03] hover:border-white/20'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-black text-white truncate">
+          {account.riot_game_name}
+          <span className="text-slate-500 font-bold">#{account.riot_tagline}</span>
+        </span>
+        {account.is_primary && (
+          <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+            대표
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1.5 text-xs text-slate-300">
+        {r.tier ? (
+          <>
+            {r.tier} {r.rank} · {r.lp ?? 0} LP
+            {total > 0 && (
+              <span className="text-slate-500">
+                {' '}
+                · {r.wins ?? 0}승 {r.losses ?? 0}패
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-slate-600">{account.synced ? '언랭크' : '동기화 대기'}</span>
+        )}
+      </div>
+
+      <p className="mt-1 text-[10px] text-slate-600">
+        마지막 동기화 {formatSyncedAt(account.last_synced_at)}
+      </p>
+    </button>
+  )
+}
 
 function StatBox({
   label,
@@ -229,6 +334,8 @@ export default function MemberDetailPanel({
   const [history, setHistory] = useState<HistoryPoint[] | null>(null)
   const [stats, setStats] = useState<MemberStats | null>(null)
   const [matches, setMatches] = useState<MatchRow[] | null>(null)
+  const [accounts, setAccounts] = useState<MemberAccount[] | null>(null)
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
   // 이미 요청한 리소스를 다시 부르지 않기 위한 키 집합.
   const dataKey = `${member.id}|${queue}`
@@ -241,6 +348,8 @@ export default function MemberDetailPanel({
     setHistory(null)
     setStats(null)
     setMatches(null)
+    setAccounts(null)
+    setSelectedAccountId(null)
   }
 
   const load = useCallback(
@@ -276,7 +385,29 @@ export default function MemberDetailPanel({
         setMatches((d as { matches?: MatchRow[] }).matches ?? []),
       )
     }
+    // 계정 탭은 "2개 이상일 때만" 노출하므로 개수를 알기 위해 탭과 무관하게 부른다.
+    // 페이로드가 최대 3행이라 지연 로드보다 즉시 로드가 낫다.
+    load(dataKey, 'accounts', `/api/members/${member.id}/accounts`, (d) => {
+      const list = (d as { accounts?: MemberAccount[] }).accounts ?? []
+      setAccounts(list)
+      setSelectedAccountId(list.find((a) => a.is_primary)?.id ?? list[0]?.id ?? null)
+    })
   }, [tab, member.id, queue, dataKey, load])
+
+  const multiAccount = (accounts?.length ?? 0) > 1
+  const visibleTabs = TABS.filter((t) => t.key !== 'accounts' || multiAccount)
+  const selectedAccount = accounts?.find((a) => a.id === selectedAccountId) ?? null
+  const subAccountSelected = !!selectedAccount && !selectedAccount.is_primary
+
+  // 계정이 1개로 줄어드는 경로(다른 멤버 전환)에서 사라진 탭에 머무르지 않도록 되돌린다.
+  if (tab === 'accounts' && accounts !== null && !multiAccount) {
+    setTab('overview')
+  }
+
+  // 부계정을 고르면 헤더의 랭크 표시만 바뀐다(그래프·매치는 대표 계정 데이터 그대로).
+  const headerRank = subAccountSelected && selectedAccount
+    ? accountRank(selectedAccount, queue)
+    : { tier: member.tft_tier, rank: member.tft_rank, lp: member.tft_league_points }
 
   // ESC 닫기
   useEffect(() => {
@@ -310,11 +441,17 @@ export default function MemberDetailPanel({
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
             <div>
               <p className="font-black text-white text-base leading-tight">{member.member_name}</p>
-              {member.tft_tier && (
+              {headerRank.tier ? (
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  {member.tft_tier} {member.tft_rank} · {member.tft_league_points ?? 0} LP
+                  {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
+                  {subAccountSelected && selectedAccount && (
+                    <span className="text-slate-600">
+                      {' '}
+                      · {selectedAccount.riot_game_name}#{selectedAccount.riot_tagline}
+                    </span>
+                  )}
                 </p>
-              )}
+              ) : null}
             </div>
             <button
               onClick={onClose}
@@ -326,7 +463,7 @@ export default function MemberDetailPanel({
 
           {/* 탭 */}
           <div className="flex border-b border-white/[0.06] px-3">
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -343,6 +480,12 @@ export default function MemberDetailPanel({
 
           {/* 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+
+            {tab !== 'accounts' && subAccountSelected && (
+              <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300">
+                {ACCOUNT_SCOPE_NOTICE}
+              </p>
+            )}
 
             {tab === 'overview' && (
               <>
@@ -446,6 +589,26 @@ export default function MemberDetailPanel({
                   )}
                 </section>
               </>
+            )}
+
+            {tab === 'accounts' && accounts && (
+              <section>
+                <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                  라이엇 계정 ({queueLabel})
+                </h3>
+                <div className="space-y-2">
+                  {accounts.map((a) => (
+                    <AccountCard
+                      key={a.id}
+                      account={a}
+                      queue={queue}
+                      selected={a.id === selectedAccountId}
+                      onSelect={() => setSelectedAccountId(a.id)}
+                    />
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] text-slate-500">{ACCOUNT_SCOPE_NOTICE}</p>
+              </section>
             )}
 
           </div>
