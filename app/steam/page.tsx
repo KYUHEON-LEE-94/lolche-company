@@ -2,9 +2,14 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
+import SharedWithMe from '@/app/steam/SharedWithMe'
 
 // ⚠ 이 페이지는 DB 캐시(steam_owned_games / steam_apps)만 읽는다.
 //   Steam API 호출은 /api/admin/sync-steam(크론)과 스팀 최초 등록 시점에서만 일어난다.
+//
+// ⚠⚠ 이 파일에서 세션을 읽지 않는다 (cookies() / createRouteClient() / auth.getUser() 금지).
+//     revalidate 는 경로 단위 공유 캐시라, 서버에서 개인화하면 A가 만든 HTML이 B에게 서빙된다.
+//     개인화("나와 같은 게임")는 SharedWithMe(Client) → force-dynamic API 경로로만 흐른다.
 export const revalidate = 300
 
 export const metadata: Metadata = {
@@ -154,25 +159,18 @@ function buildSharedGames(members: SteamMemberRow[], owned: OwnedRow[]): SharedG
 
 type MemberStat = {
   member: SteamMemberRow
-  gameCount: number
-  totalMinutes: number
   recentMinutes: number
   recentGames: { appid: number; name: string; minutes: number }[]
 }
 
 function buildMemberStats(members: SteamMemberRow[], owned: OwnedRow[]): MemberStat[] {
   const stats = new Map<string, MemberStat>(
-    members.map((m) => [
-      m.id,
-      { member: m, gameCount: 0, totalMinutes: 0, recentMinutes: 0, recentGames: [] },
-    ]),
+    members.map((m) => [m.id, { member: m, recentMinutes: 0, recentGames: [] }]),
   )
 
   for (const row of owned) {
     const stat = stats.get(row.member_id)
     if (!stat) continue
-    stat.gameCount += 1
-    stat.totalMinutes += row.playtime_forever
     if (row.playtime_2weeks > 0) {
       stat.recentMinutes += row.playtime_2weeks
       stat.recentGames.push({
@@ -223,12 +221,17 @@ export default async function SteamPage() {
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">스팀</h1>
           <p className="mt-2 text-sm text-slate-400">
-            멤버들이 함께 할 수 있는 게임과 플레이 기록을 모았습니다.
+            나와 겹치는 게임, 멤버들이 함께 할 수 있는 게임과 최근 플레이 기록을 모았습니다.
           </p>
         </header>
 
         <div className="mb-10">
           <SteamLinkForm />
+        </div>
+
+        {/* 개인화 섹션. 이 컴포넌트의 실패는 아래 공통 섹션에 영향을 주지 않는다. */}
+        <div className="mb-12">
+          <SharedWithMe />
         </div>
 
         {!result.ok ? (
@@ -252,8 +255,6 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
   const recentPlayers = stats
     .filter((s) => s.recentMinutes > 0)
     .sort((a, b) => b.recentMinutes - a.recentMinutes)
-  const byGameCount = [...stats].sort((a, b) => b.gameCount - a.gameCount).slice(0, 10)
-  const byPlaytime = [...stats].sort((a, b) => b.totalMinutes - a.totalMinutes).slice(0, 10)
   const privateMembers = members.filter(
     (m) => m.steam_visibility != null && m.steam_visibility !== STEAM_VISIBILITY_PUBLIC,
   )
@@ -335,20 +336,6 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
         )}
       </section>
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div>
-          <SectionHeading title="보유 게임 수" />
-          <RankList
-            stats={byGameCount}
-            valueOf={(s) => `${s.gameCount.toLocaleString('ko-KR')}개`}
-          />
-        </div>
-        <div>
-          <SectionHeading title="총 플레이타임" />
-          <RankList stats={byPlaytime} valueOf={(s) => formatHours(s.totalMinutes)} />
-        </div>
-      </section>
-
       {privateMembers.length > 0 && (
         <p className="text-[11px] text-amber-300/80">
           프로필 비공개 — 게임 데이터가 표시되지 않습니다:{' '}
@@ -378,32 +365,3 @@ function MemberAvatar({ member }: { member: SteamMemberRow }) {
   )
 }
 
-function RankList({
-  stats,
-  valueOf,
-}: {
-  stats: MemberStat[]
-  valueOf: (stat: MemberStat) => string
-}) {
-  if (stats.length === 0) return <EmptyBox>표시할 기록이 없습니다.</EmptyBox>
-
-  return (
-    <ol className="space-y-2">
-      {stats.map((stat, idx) => (
-        <li
-          key={stat.member.id}
-          className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3"
-        >
-          <span className="flex w-6 shrink-0 justify-center text-xs font-bold text-slate-500">
-            #{idx + 1}
-          </span>
-          <MemberAvatar member={stat.member} />
-          <p className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-            {stat.member.member_name}
-          </p>
-          <span className="shrink-0 text-sm font-black text-slate-200">{valueOf(stat)}</span>
-        </li>
-      ))}
-    </ol>
-  )
-}
