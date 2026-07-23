@@ -24,6 +24,25 @@ type RiotIdParseResult =
   | { ok: false; message: string }
 
 /**
+ * 태그라인은 영문/숫자로 제한하지 않는다.
+ * Riot 은 한글 태그라인을 허용하고 실제로 사용 중인 멤버가 있다(예: `딸 깍#쉽다쉬워`).
+ * `^[A-Za-z0-9]{2,10}$` 로 막으면 정상 계정이 등록 불가가 되고,
+ * riot_accounts 의 DB CHECK 와도 어긋나 백필이 23514 로 실패한다.
+ * 따라서 공백과 구분자 `#` 만 거르고 나머지는 길이로만 제한한다.
+ */
+const TAGLINE_FORBIDDEN = /[\s#]/
+
+function taglineError(riot_tagline: string): string | null {
+  if (riot_tagline.length > RIOT_TAGLINE_MAX) {
+    return `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.`
+  }
+  if (TAGLINE_FORBIDDEN.test(riot_tagline)) {
+    return '태그라인에는 공백과 #을 넣을 수 없습니다.'
+  }
+  return null
+}
+
+/**
  * 라이엇 ID(게임명+태그라인)만 받는 파서. riot_accounts 라우트 전용.
  * member_name 은 사람 축(members)이라 계정 추가/수정으로는 바뀌지 않는다.
  */
@@ -40,11 +59,9 @@ export function parseRiotAccountInput(body: unknown): RiotIdParseResult {
   if (riot_game_name.length > RIOT_GAME_NAME_MAX) {
     return { ok: false, message: `라이엇 게임명은 ${RIOT_GAME_NAME_MAX}자 이하여야 합니다.` }
   }
-  if (riot_tagline.length > RIOT_TAGLINE_MAX) {
-    return { ok: false, message: `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.` }
-  }
-  if (!/^[A-Za-z0-9]{2,10}$/.test(riot_tagline)) {
-    return { ok: false, message: '태그라인은 영문/숫자 2~10자여야 합니다.' }
+  const taglineMessage = taglineError(riot_tagline)
+  if (taglineMessage) {
+    return { ok: false, message: taglineMessage }
   }
 
   return { ok: true, value: { riot_game_name, riot_tagline } }
@@ -75,11 +92,9 @@ export function parseMemberInput(body: unknown): ParseResult {
   if (riot_game_name.length > RIOT_GAME_NAME_MAX) {
     return { ok: false, message: `라이엇 게임명은 ${RIOT_GAME_NAME_MAX}자 이하여야 합니다.` }
   }
-  if (riot_tagline.length > RIOT_TAGLINE_MAX) {
-    return { ok: false, message: `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.` }
-  }
-  if (!/^[A-Za-z0-9]{2,10}$/.test(riot_tagline)) {
-    return { ok: false, message: '태그라인은 영문/숫자 2~10자여야 합니다.' }
+  const taglineMessage = taglineError(riot_tagline)
+  if (taglineMessage) {
+    return { ok: false, message: taglineMessage }
   }
 
   return { ok: true, value: { member_name, riot_game_name, riot_tagline } }

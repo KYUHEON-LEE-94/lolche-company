@@ -20,8 +20,10 @@
 -- select riot_puuid, count(*) from public.members
 --  where riot_puuid is not null group by 1 having count(*) > 1;
 -- 0-4) tagline CHECK 위반 레거시 행 (STEP 3 실패 요인)
+--   한글 태그라인은 정상이다. 공백·# 포함 또는 10자 초과인 행만 걸린다.
 -- select id, member_name, riot_tagline from public.members
---  where riot_tagline !~ '^[A-Za-z0-9]{2,10}$';
+--  where char_length(riot_tagline) not between 1 and 10
+--     or riot_tagline ~ '[[:space:]#]';
 
 -- ---------------------------------------------------------------------------
 -- STEP 1. riot_accounts 테이블
@@ -37,7 +39,14 @@ create table if not exists public.riot_accounts (
   is_primary      boolean  not null default false,
 
   riot_game_name  text not null check (char_length(riot_game_name) between 1 and 30),
-  riot_tagline    text not null check (riot_tagline ~ '^[A-Za-z0-9]{2,10}$'),
+  -- ⚠ 태그라인을 영문/숫자로 제한하지 않는다.
+  --   Riot 은 한글 태그라인을 허용하고 실제 사용 중인 멤버가 있다(예: `딸 깍#쉽다쉬워`).
+  --   `~ '^[A-Za-z0-9]{2,10}$'` 로 두면 STEP 3 백필이 23514 로 실패한다.
+  --   공백·구분자 `#` 만 거르고 나머지는 길이로만 제한한다 (lib/members/memberInput.ts 와 동일 규칙).
+  riot_tagline    text not null check (
+                    char_length(riot_tagline) between 1 and 10
+                    and riot_tagline !~ '[[:space:]#]'
+                  ),
   riot_puuid      text,
 
   tft_tier                   text,
