@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { fetchPuuid, RiotApiError } from '@/lib/riot/api'
-import { requireGameManager } from '@/lib/customGames/authorize'
+import { authorizeGameManage } from '@/lib/customGames/authorize'
+import { rejectClosedGame, rejectNonTftGame } from '@/lib/customGames/game'
+
+export const dynamic = 'force-dynamic'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -18,22 +21,16 @@ export async function GET(_req: Request, ctx: Ctx) {
 }
 
 export async function POST(req: Request, ctx: Ctx) {
-  // B1: 임시로 관리자 전용. B2에서 canManageGame(주최자 본인 + 관리자)으로 완화된다.
-  const denied = await requireGameManager()
-  if (denied) return denied
-
   const { id: gameId } = await ctx.params
 
-  const { data: game } = await supabaseAdmin
-    .from('custom_games')
-    .select('id, status')
-    .eq('id', gameId)
-    .single()
+  const auth = await authorizeGameManage(gameId)
+  if (!auth.ok) return auth.response
+  const { game } = auth
 
-  if (!game) return NextResponse.json({ error: '내전을 찾을 수 없습니다' }, { status: 404 })
-  if (game.status === 'ended') {
-    return NextResponse.json({ error: '이미 종료된 내전입니다' }, { status: 400 })
-  }
+  const notTft = rejectNonTftGame(game)
+  if (notTft) return notTft
+  const closed = rejectClosedGame(game)
+  if (closed) return closed
 
   const body = (await req.json()) as {
     display_name: string
@@ -49,19 +46,19 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: 'Riot ID를 입력하세요 (게임명#태그)' }, { status: 400 })
   }
 
-  // 참가자 + 게스트 수 합계 확인 (최대 8명)
-  const [{ count: memberCount }, { count: guestCount }] = await Promise.all([
-    supabaseAdmin
-      .from('custom_game_participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('custom_game_id', gameId),
-    supabaseAdmin
-      .from('custom_game_guests')
-      .select('*', { count: 'exact', head: true })
-      .eq('custom_game_id', gameId),
-  ])
-  if ((memberCount ?? 0) + (guestCount ?? 0) >= 8) {
-    return NextResponse.json({ error: '참가자는 최대 8명입니다' }, { status: 400 })
+  // 게스트도 멤버와 같은 정원을 소비한다. 멤버 신청 수는 대기자를 포함하므로
+  // 합산으로 막으면 대기자가 있는 순간 게스트를 영원히 못 넣는다 — 게스트 자체 상한만 본다.
+  // (게스트가 늘면 확정 멤버 수가 줄어드는데, 이는 정원 하향과 동일한 UX 이슈일 뿐이다.)
+  const { count: guestCount } = await supabaseAdmin
+    .from('custom_game_guests')
+    .select('id', { count: 'exact', head: true })
+    .eq('custom_game_id', gameId)
+
+  if ((guestCount ?? 0) + 1 > game.capacity) {
+    return NextResponse.json(
+      { error: `게스트를 포함한 참가자는 최대 ${game.capacity}명입니다` },
+      { status: 400 },
+    )
   }
 
   // Riot API로 PUUID 조회

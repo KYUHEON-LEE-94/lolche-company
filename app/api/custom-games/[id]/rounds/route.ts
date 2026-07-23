@@ -1,29 +1,27 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { findCommonMatch } from '@/lib/tournament/findCommonMatch'
-import { requireGameManager } from '@/lib/customGames/authorize'
+import { authorizeGameManage } from '@/lib/customGames/authorize'
+import { rejectClosedGame, rejectNonTftGame } from '@/lib/customGames/game'
+import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
+
+export const dynamic = 'force-dynamic'
 
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function POST(_req: Request, ctx: Ctx) {
-  // B1: 임시로 관리자 전용. B2에서 canManageGame(주최자 본인 + 관리자)으로 완화된다.
-  const denied = await requireGameManager()
-  if (denied) return denied
-
   const { id: gameId } = await ctx.params
 
-  const { data: game, error: gameError } = await supabaseAdmin
-    .from('custom_games')
-    .select('id, status, game_type, max_rounds')
-    .eq('id', gameId)
-    .single()
+  const auth = await authorizeGameManage(gameId)
+  if (!auth.ok) return auth.response
+  const { game } = auth
 
-  if (gameError || !game) {
-    return NextResponse.json({ error: '내전을 찾을 수 없습니다' }, { status: 404 })
-  }
-  if (game.status === 'ended') {
-    return NextResponse.json({ error: '이미 종료된 내전입니다' }, { status: 400 })
-  }
+  // ⚠ findCommonMatch()는 Riot TFT 매치 API를 호출한다. 비-TFT 내전에서 호출되면
+  //   엉뚱한 매치가 기록되므로 반드시 여기서 차단한다(UI 숨김만으로는 부족).
+  const notTft = rejectNonTftGame(game)
+  if (notTft) return notTft
+  const closed = rejectClosedGame(game)
+  if (closed) return closed
 
   const { data: existingRounds } = await supabaseAdmin
     .from('custom_game_rounds')
@@ -38,13 +36,23 @@ export async function POST(_req: Request, ctx: Ctx) {
     )
   }
 
-  // ── 멤버 PUUID 조회 ──────────────────────────────────────────────
-  const { data: participantRows } = await supabaseAdmin
-    .from('custom_game_participants')
-    .select('member_id')
+  // ── 게스트 PUUID 조회 ─────────────────────────────────────────────
+  const { data: guestRows } = await supabaseAdmin
+    .from('custom_game_guests')
+    .select('id, riot_puuid')
     .eq('custom_game_id', gameId)
 
-  const memberIds = (participantRows ?? []).map((p) => p.member_id)
+  // ── 확정 참가자 PUUID 조회 (대기자는 매치 탐색 대상이 아니다) ────
+  const { data: participantRows } = await supabaseAdmin
+    .from('custom_game_participants')
+    .select('id, member_id, joined_at')
+    .eq('custom_game_id', gameId)
+
+  const { confirmed } = splitParticipants(
+    participantRows ?? [],
+    effectiveMemberCapacity(game.capacity, (guestRows ?? []).length),
+  )
+  const memberIds = confirmed.map((p) => p.member_id)
 
   const { data: memberRows } = await supabaseAdmin
     .from('members')
@@ -58,12 +66,6 @@ export async function POST(_req: Request, ctx: Ctx) {
       { status: 400 },
     )
   }
-
-  // ── 게스트 PUUID 조회 ─────────────────────────────────────────────
-  const { data: guestRows } = await supabaseAdmin
-    .from('custom_game_guests')
-    .select('id, riot_puuid')
-    .eq('custom_game_id', gameId)
 
   // ── PUUID 통합 맵 (PUUID → { type, id }) ─────────────────────────
   const participantByPuuid = new Map<string, { type: 'member' | 'guest'; id: string }>()

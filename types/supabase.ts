@@ -194,11 +194,20 @@ export type SyncLog = {
 }
 
 // --- 내전 ---
+/** 게임 종류. `game_type`(solo/team)과는 다른 축이므로 절대 합치지 않는다. */
+export type CustomGameKind = 'tft' | 'lol' | 'steam' | 'etc'
+export type CustomGameStatus = 'recruiting' | 'in_progress' | 'ended' | 'cancelled'
+
 export type CustomGame = {
   id: string
   title: string
-  status: string // 'in_progress' | 'ended'
-  game_type: string // 'solo' | 'team'
+  status: string // CustomGameStatus
+  game_type: string // 'solo' | 'team' — game_kind='tft'일 때만 의미가 있다
+  game_kind: string // CustomGameKind
+  game_kind_label: string | null // game_kind='etc'일 때만 값이 있다
+  host_member_id: string | null // 주최자 추방 시 null (FK on delete set null)
+  scheduled_at: string | null
+  capacity: number
   max_rounds: number
   created_at: string
   ended_at: string | null

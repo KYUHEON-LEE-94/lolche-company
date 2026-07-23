@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { requireGameManager } from '@/lib/customGames/authorize'
+import { authorizeGameManage } from '@/lib/customGames/authorize'
+
+export const dynamic = 'force-dynamic'
 
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function POST(_req: Request, ctx: Ctx) {
-  // B1: 임시로 관리자 전용. B2에서 canManageGame(주최자 본인 + 관리자)으로 완화된다.
-  const denied = await requireGameManager()
-  if (denied) return denied
-
   const { id } = await ctx.params
+
+  const auth = await authorizeGameManage(id)
+  if (!auth.ok) return auth.response
+
+  if (auth.game.status === 'ended' || auth.game.status === 'cancelled') {
+    return NextResponse.json({ error: '이미 종료된 내전입니다' }, { status: 400 })
+  }
 
   const { error } = await supabaseAdmin
     .from('custom_games')

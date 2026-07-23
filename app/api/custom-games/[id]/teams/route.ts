@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { requireGameManager } from '@/lib/customGames/authorize'
+import { authorizeGameManage } from '@/lib/customGames/authorize'
+import { rejectClosedGame, rejectNonTftGame } from '@/lib/customGames/game'
+import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
+import { TFT_TEAM_CAPACITY } from '@/lib/customGames/constants'
+
+export const dynamic = 'force-dynamic'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -19,27 +24,24 @@ export async function GET(_req: Request, ctx: Ctx) {
 }
 
 export async function POST(req: Request, ctx: Ctx) {
-  // B1: 임시로 관리자 전용. B2에서 canManageGame(주최자 본인 + 관리자)으로 완화된다.
-  const denied = await requireGameManager()
-  if (denied) return denied
-
   const { id: gameId } = await ctx.params
+
+  const auth = await authorizeGameManage(gameId)
+  if (!auth.ok) return auth.response
+  const { game } = auth
+
+  const notTft = rejectNonTftGame(game)
+  if (notTft) return notTft
+  const closed = rejectClosedGame(game)
+  if (closed) return closed
+  if (game.game_type !== 'team') return NextResponse.json({ error: '팀전이 아닙니다' }, { status: 400 })
+
   const body = (await req.json()) as {
     round_number: number
     assignments?: { team_index: number; member_id?: string; guest_id?: string }[]
     random?: boolean
   }
   const { round_number, random = false } = body
-
-  const { data: game } = await supabaseAdmin
-    .from('custom_games')
-    .select('id, status, game_type')
-    .eq('id', gameId)
-    .single()
-
-  if (!game) return NextResponse.json({ error: '내전을 찾을 수 없습니다' }, { status: 404 })
-  if (game.status === 'ended') return NextResponse.json({ error: '종료된 내전입니다' }, { status: 400 })
-  if (game.game_type !== 'team') return NextResponse.json({ error: '팀전이 아닙니다' }, { status: 400 })
 
   const { data: existingRounds } = await supabaseAdmin
     .from('custom_game_rounds')
@@ -56,18 +58,28 @@ export async function POST(req: Request, ctx: Ctx) {
 
   // ── 참가자 목록 조회 ─────────────────────────────────────────────
   const [{ data: memberParts }, { data: guestParts }] = await Promise.all([
-    supabaseAdmin.from('custom_game_participants').select('member_id').eq('custom_game_id', gameId),
+    supabaseAdmin
+      .from('custom_game_participants')
+      .select('id, member_id, joined_at')
+      .eq('custom_game_id', gameId),
     supabaseAdmin.from('custom_game_guests').select('id').eq('custom_game_id', gameId),
   ])
 
+  // 대기자는 팀 배정 대상이 아니다 — 순번 상위 확정 인원만 쓴다.
+  const guestCount = (guestParts ?? []).length
+  const { confirmed } = splitParticipants(
+    memberParts ?? [],
+    effectiveMemberCapacity(game.capacity, guestCount),
+  )
+
   const allParticipants: { type: 'member' | 'guest'; id: string }[] = [
-    ...(memberParts ?? []).map((p) => ({ type: 'member' as const, id: p.member_id })),
+    ...confirmed.map((p) => ({ type: 'member' as const, id: p.member_id })),
     ...(guestParts ?? []).map((g) => ({ type: 'guest' as const, id: g.id })),
   ]
 
-  if (allParticipants.length !== 8) {
+  if (allParticipants.length !== TFT_TEAM_CAPACITY) {
     return NextResponse.json(
-      { error: '팀전은 참가자 8명이어야 팀 배정이 가능합니다' },
+      { error: `팀전은 확정 참가자 ${TFT_TEAM_CAPACITY}명이어야 팀 배정이 가능합니다` },
       { status: 400 },
     )
   }
@@ -150,12 +162,19 @@ export async function POST(req: Request, ctx: Ctx) {
       return NextResponse.json({ error: '참가자 8명 전원을 팀에 배정해야 합니다' }, { status: 400 })
     }
 
+    const allowedIds = new Set(allParticipants.map((p) => p.id))
     for (const a of finalAssignments) {
       if ((!a.member_id && !a.guest_id) || (a.member_id && a.guest_id)) {
         return NextResponse.json({ error: '잘못된 배정 형식입니다' }, { status: 400 })
       }
       if (a.team_index < 1 || a.team_index > 4) {
         return NextResponse.json({ error: '팀 번호는 1~4여야 합니다' }, { status: 400 })
+      }
+      if (!allowedIds.has(a.member_id ?? a.guest_id!)) {
+        return NextResponse.json(
+          { error: '확정 참가자가 아닌 대상이 배정에 포함되어 있습니다' },
+          { status: 400 },
+        )
       }
     }
 

@@ -2,29 +2,106 @@ import 'server-only'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase/route'
 import { requireAdmin } from '@/app/lib/isAdmin'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getDiscordId } from '@/lib/auth/discord'
+import { fetchGame, type GameRow } from './game'
+
+export type ViewerMember = {
+  id: string
+  member_name: string
+  status: string | null
+}
+
+export type Viewer = {
+  userId: string
+  member: ViewerMember | null
+  isAdmin: boolean
+}
 
 /**
- * 내전 쓰기 작업 권한 가드 (Phase B1).
+ * 세션 → members 해석 공용 함수.
  *
- * 지금까지 이 엔드포인트들은 로그인만 확인했기 때문에, 로그인한 아무나
- * 남의 내전을 삭제·종료·강퇴·라운드 조작할 수 있었다. 임시로 관리자 전용으로 조인다.
- *
- * ⚠ 최종 형태가 아니다. Phase B2에서 `custom_games.host_member_id`가 추가되면
- *   `canManageGame(game, viewerMemberId, isAdmin)` — 주최자 본인 + 관리자 — 로 완화된다.
- *
- * 미들웨어가 `/api/*`를 통과시키므로 리다이렉트가 아닌 JSON으로 응답해야 한다.
- * 권한이 있으면 null, 없으면 그대로 반환할 응답을 돌려준다.
+ * ⚠ 요청 body에 실린 어떤 member 식별자도 신뢰하지 않는다. 주최자·참가자 판정은
+ *   전적으로 이 함수가 돌려주는 값으로만 한다.
  */
-export async function requireGameManager(): Promise<NextResponse | null> {
+export async function getViewerMember(): Promise<Viewer | null> {
   const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 })
+  if (!user) return null
+
+  const columns = 'id, member_name, status'
+
+  const { data: byUserId } = await supabaseAdmin
+    .from('members')
+    .select(columns)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  let member: ViewerMember | null = byUserId ?? null
+
+  if (!member) {
+    // user_id 미연결 계정 대비 읽기 전용 fallback (백필은 auth 콜백/requireAdmin이 담당)
+    const discordId = getDiscordId(user)
+    if (discordId) {
+      const { data: byDiscord } = await supabaseAdmin
+        .from('members')
+        .select(columns)
+        .eq('discord_id', discordId)
+        .maybeSingle()
+      member = byDiscord ?? null
+    }
   }
 
-  const { ok } = await requireAdmin()
-  if (!ok) {
-    return NextResponse.json({ error: '권한이 없습니다' }, { status: 403 })
+  const { ok: isAdmin } = await requireAdmin()
+
+  return { userId: user.id, member, isAdmin }
+}
+
+export function isApprovedMember(viewer: Viewer): boolean {
+  return viewer.member !== null && viewer.member.status === 'approved'
+}
+
+/**
+ * 내전 관리 권한: 주최자 본인 + 관리자.
+ *
+ * ⚠ `host_member_id`가 null(주최자가 추방된 내전)이고 열람자도 members 미연결이면
+ *   `null === null`로 통과해 버린다. 그래서 null을 명시적으로 배제한다.
+ */
+export function canManageGame(
+  game: Pick<GameRow, 'host_member_id'>,
+  viewerMemberId: string | null,
+  isAdmin: boolean,
+): boolean {
+  if (isAdmin) return true
+  if (game.host_member_id === null || viewerMemberId === null) return false
+  return game.host_member_id === viewerMemberId
+}
+
+export type GameManageResult =
+  | { ok: true; viewer: Viewer; game: GameRow }
+  | { ok: false; response: NextResponse }
+
+/**
+ * 쓰기 엔드포인트 공통 가드. 미들웨어가 `/api/*`를 통과시키므로 리다이렉트가 아닌
+ * JSON으로 응답해야 한다.
+ */
+export async function authorizeGameManage(gameId: string): Promise<GameManageResult> {
+  const viewer = await getViewerMember()
+  if (!viewer) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 }),
+    }
   }
 
-  return null
+  const fetched = await fetchGame(gameId)
+  if (!fetched.ok) return { ok: false, response: fetched.response }
+
+  if (!canManageGame(fetched.game, viewer.member?.id ?? null, viewer.isAdmin)) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: '권한이 없습니다' }, { status: 403 }),
+    }
+  }
+
+  return { ok: true, viewer, game: fetched.game }
 }
