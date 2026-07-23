@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
 import SharedWithMe from '@/app/steam/SharedWithMe'
+import SteamPresence from '@/app/steam/SteamPresence'
 import { CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import SectionHeader from '@/app/components/ui/SectionHeader'
@@ -210,6 +211,10 @@ export default async function SteamPage() {
         <div className="mb-10">
           <SteamLinkForm />
         </div>
+
+        {/* 실시간 섹션. Client → /api/steam-presence(force-dynamic). 이 페이지의 캐시와 무관하다.
+            숨겨질 수 있으므로 여백은 컴포넌트가 직접 갖는다(빈 div 여백 방지). */}
+        <SteamPresence />
 
         {/* 개인화 섹션. 이 컴포넌트의 실패는 아래 공통 섹션에 영향을 주지 않는다. */}
         <div className="mb-12">

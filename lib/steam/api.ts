@@ -42,6 +42,14 @@ export type SteamPlayerSummary = {
   /** 3 = 공개. 그 외는 비공개(친구 공개 포함) */
   communityvisibilitystate: number
   profileurl: string | null
+  /**
+   * 0=오프라인 1=온라인 2=바쁨 3=자리비움 4=취침 5=거래희망 6=플레이희망.
+   * ⚠ 프로필이 비공개면 실제 상태와 무관하게 항상 0 으로 내려온다.
+   */
+  personastate: number
+  /** 게임 상세정보가 공개일 때만 내려온다. 없으면 null(= "게임 중 아님"이 아니다) */
+  gameextrainfo: string | null
+  gameid: string | null
 }
 
 type PlayerSummariesResponse = {
@@ -52,6 +60,9 @@ type PlayerSummariesResponse = {
       avatarfull?: unknown
       communityvisibilitystate?: unknown
       profileurl?: unknown
+      personastate?: unknown
+      gameextrainfo?: unknown
+      gameid?: unknown
     }>
   }
 }
@@ -84,6 +95,9 @@ export async function fetchPlayerSummaries(steamIds: string[]): Promise<SteamPla
         avatarfull: asString(p.avatarfull),
         communityvisibilitystate: asNumber(p.communityvisibilitystate),
         profileurl: asString(p.profileurl) || null,
+        personastate: asNumber(p.personastate),
+        gameextrainfo: asString(p.gameextrainfo) || null,
+        gameid: asString(p.gameid) || null,
       })
     }
   }
