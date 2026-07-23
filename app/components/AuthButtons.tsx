@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabaseClient } from '@/lib/supabase'
 import { getDiscordDisplayName, getDiscordId } from '@/lib/auth/discord'
 import type { User } from '@supabase/supabase-js'
+import { BTN_DANGER, BTN_NEUTRAL, BTN_PRIMARY } from '@/lib/ui/styles'
 
 export default function AuthButtons() {
   const router = useRouter()
@@ -83,7 +84,7 @@ export default function AuthButtons() {
   }
 
   if (loading) {
-    return <div className="text-xs text-slate-300/80">로딩...</div>
+    return <div className="text-xs text-slate-500">로딩...</div>
   }
 
   // ✅ 비로그인: 로그인 버튼만
@@ -91,7 +92,7 @@ export default function AuthButtons() {
     return (
         <button
             onClick={() => router.push('/login')}
-            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
+            className={BTN_NEUTRAL}
         >
           로그인
         </button>
@@ -109,7 +110,7 @@ export default function AuthButtons() {
 
         <button
             onClick={() => router.push('/profile')}
-            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
+            className={BTN_NEUTRAL}
         >
           프로필 관리
         </button>
@@ -117,7 +118,7 @@ export default function AuthButtons() {
         {isAdmin && (
             <button
                 onClick={() => router.push('/admin/members/sync')}
-                className="px-4 py-2 rounded-xl text-sm font-bold bg-blue-600/90 text-white hover:bg-blue-600 transition"
+                className={BTN_PRIMARY}
                 title="관리자 페이지로 이동"
             >
               관리 페이지
@@ -126,7 +127,7 @@ export default function AuthButtons() {
 
         <button
             onClick={handleLogout}
-            className="px-4 py-2 rounded-xl text-sm font-bold bg-rose-500/90 text-white hover:bg-rose-500 transition"
+            className={BTN_DANGER}
         >
           로그아웃
         </button>

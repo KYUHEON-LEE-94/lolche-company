@@ -3,6 +3,10 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
 import SharedWithMe from '@/app/steam/SharedWithMe'
+import { CONTAINER, SHELL } from '@/lib/ui/styles'
+import PageHeader from '@/app/components/ui/PageHeader'
+import SectionHeader from '@/app/components/ui/SectionHeader'
+import EmptyState from '@/app/components/ui/EmptyState'
 
 // ⚠ 이 페이지는 DB 캐시(steam_owned_games / steam_apps)만 읽는다.
 //   Steam API 호출은 /api/admin/sync-steam(크론)과 스팀 최초 등록 시점에서만 일어난다.
@@ -189,41 +193,19 @@ function buildMemberStats(members: SteamMemberRow[], owned: OwnedRow[]): MemberS
   return [...stats.values()]
 }
 
-function SectionHeading({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <div className="mb-4">
-      <h2 className="text-lg font-black text-white">{title}</h2>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-    </div>
-  )
-}
-
-function EmptyBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-400">
-      {children}
-    </div>
-  )
-}
-
 export default async function SteamPage() {
   const result = await loadSteamData()
 
   return (
-    <main className="min-h-[calc(100vh-3.5rem)] bg-[#07090f] px-4 py-12">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-8">
-          <div className="mb-3 inline-flex items-center gap-3">
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-emerald-500/50" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400">
-              Steam
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">스팀</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            나와 겹치는 게임, 멤버들이 함께 할 수 있는 게임과 최근 플레이 기록을 모았습니다.
-          </p>
-        </header>
+    <main className={SHELL}>
+      <div className={CONTAINER}>
+        <PageHeader
+          kicker="Steam"
+          accent="emerald"
+          title="스팀"
+          description="나와 겹치는 게임, 멤버들이 함께 할 수 있는 게임과 최근 플레이 기록을 모았습니다."
+          className="mb-8"
+        />
 
         <div className="mb-10">
           <SteamLinkForm />
@@ -235,7 +217,7 @@ export default async function SteamPage() {
         </div>
 
         {!result.ok ? (
-          <EmptyBox>스팀 데이터를 아직 사용할 수 없습니다. 잠시 후 다시 확인해주세요.</EmptyBox>
+          <EmptyState>스팀 데이터를 아직 사용할 수 없습니다. 잠시 후 다시 확인해주세요.</EmptyState>
         ) : (
           <SteamSections members={result.members} owned={result.owned} />
         )}
@@ -246,7 +228,7 @@ export default async function SteamPage() {
 
 function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: OwnedRow[] }) {
   if (members.length === 0) {
-    return <EmptyBox>아직 스팀 계정을 연결한 멤버가 없습니다.</EmptyBox>
+    return <EmptyState>아직 스팀 계정을 연결한 멤버가 없습니다.</EmptyState>
   }
 
   const sharedGames = buildSharedGames(members, owned)
@@ -267,20 +249,20 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
   return (
     <div className="space-y-12">
       <section>
-        <SectionHeading
+        <SectionHeader
           title="함께 할 수 있는 게임"
           hint="2명 이상이 보유한 멀티플레이 게임입니다."
         />
         {sharedGames.length === 0 ? (
-          <EmptyBox>아직 함께 보유한 멀티플레이 게임이 없습니다.</EmptyBox>
+          <EmptyState>아직 함께 보유한 멀티플레이 게임이 없습니다.</EmptyState>
         ) : (
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {sharedGames.map((game) => (
               <li
                 key={game.appid}
-                className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 transition-colors hover:border-white/20"
+                className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-line-strong"
               >
-                <div className="relative h-[42px] w-[110px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+                <div className="relative h-[42px] w-[110px] shrink-0 overflow-hidden rounded-lg border border-line bg-surface-2">
                   <Image
                     src={capsuleUrl(game.appid)}
                     alt=""
@@ -310,15 +292,15 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
       </section>
 
       <section>
-        <SectionHeading title="최근 2주 플레이" hint="스팀 기준 최근 2주간 플레이 시간입니다." />
+        <SectionHeader title="최근 2주 플레이" hint="스팀 기준 최근 2주간 플레이 시간입니다." />
         {recentPlayers.length === 0 ? (
-          <EmptyBox>최근 2주간 플레이 기록이 없습니다.</EmptyBox>
+          <EmptyState>최근 2주간 플레이 기록이 없습니다.</EmptyState>
         ) : (
           <ul className="space-y-2">
             {recentPlayers.map((stat) => (
               <li
                 key={stat.member.id}
-                className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3"
               >
                 <MemberAvatar member={stat.member} />
                 <div className="min-w-0 flex-1">
@@ -353,7 +335,7 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
 function MemberAvatar({ member }: { member: SteamMemberRow }) {
   const imageUrl = member.steam_avatar_url ?? getProfileImageUrl(member.profile_image_path)
   return (
-    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06]">
+    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
       {imageUrl ? (
         <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
       ) : (

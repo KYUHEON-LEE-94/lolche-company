@@ -19,6 +19,7 @@ import {
   toKstDateInput,
   toKstTimeInput,
 } from '@/lib/customGames/display'
+import { CONTAINER, PANEL } from '@/lib/ui/styles'
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ function PlacementCell({ result, teamIndex }: {
 }) {
   if (!result) return <span className="text-slate-700 text-xs">-</span>
   const s = PLACEMENT_STYLE[result.placement] ?? {
-    bg: 'bg-white/[0.04] border border-white/[0.07]',
+    bg: 'bg-surface-2 border border-line',
     text: 'text-slate-400',
   }
   const tc = teamIndex !== undefined ? TEAM_COLORS[teamIndex - 1] : undefined
@@ -699,17 +700,9 @@ export default function CustomGameDetailPage() {
   // ── 렌더 ─────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#07090f' }}>
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{ background: 'radial-gradient(ellipse 70% 40% at 50% -5%, rgba(99,102,241,0.12) 0%, transparent 70%)' }}
-      />
-
-      <header
-        className="sticky top-0 z-50 border-b"
-        style={{ background: 'rgba(7,9,15,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}
-      >
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+    <div className="min-h-screen flex flex-col bg-canvas">
+      <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link
               href="/custom-games"
@@ -752,8 +745,8 @@ export default function CustomGameDetailPage() {
                   disabled={joining}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-white/[0.04] border border-white/[0.08] text-slate-400
-                    hover:text-slate-200 hover:bg-white/[0.07]
+                    bg-surface-2 border border-line text-slate-400
+                    hover:text-slate-200 hover:bg-surface-2
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {joining ? <Spinner size={4} /> : null}
@@ -766,8 +759,8 @@ export default function CustomGameDetailPage() {
                   onClick={handleOpenEdit}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-white/[0.04] border border-white/[0.08] text-slate-400
-                    hover:text-slate-200 hover:bg-white/[0.07]"
+                    bg-surface-2 border border-line text-slate-400
+                    hover:text-slate-200 hover:bg-surface-2"
                 >
                   수정
                 </button>
@@ -806,11 +799,8 @@ export default function CustomGameDetailPage() {
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-6 py-8">
-        <div
-          className="rounded-2xl border p-8"
-          style={{ background: 'rgba(13,17,23,0.9)', borderColor: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
-        >
+      <main className={`relative z-10 flex-1 w-full px-4 py-8 ${CONTAINER}`}>
+        <div className={PANEL}>
           {loading && (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
               <Spinner size={6} />
@@ -830,7 +820,7 @@ export default function CustomGameDetailPage() {
               {/* 타이틀 */}
               <div className="mb-8">
                 {game.game_kind === 'steam' && game.steam_app_id != null && (
-                  <div className="relative mb-3 h-[42px] w-[110px] overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+                  <div className="relative mb-3 h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
                     <Image
                       src={steamCapsuleUrl(game.steam_app_id)}
                       alt=""
@@ -928,7 +918,7 @@ export default function CustomGameDetailPage() {
                         placeholder="표시 이름 (예: 홍길동 부계)"
                         disabled={addingGuest}
                         className="flex-1 px-3 py-2 rounded-lg text-sm text-white
-                          bg-white/[0.04] border border-white/[0.08]
+                          bg-surface-2 border border-line
                           placeholder:text-slate-600
                           focus:outline-none focus:border-amber-500/40
                           disabled:opacity-50 transition-colors"
@@ -941,7 +931,7 @@ export default function CustomGameDetailPage() {
                         disabled={addingGuest}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleAddGuest() }}
                         className="flex-1 px-3 py-2 rounded-lg text-sm text-white
-                          bg-white/[0.04] border border-white/[0.08]
+                          bg-surface-2 border border-line
                           placeholder:text-slate-600
                           focus:outline-none focus:border-amber-500/40
                           disabled:opacity-50 transition-colors"
@@ -1228,7 +1218,7 @@ export default function CustomGameDetailPage() {
                 maxLength={60}
                 disabled={savingEdit}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-                  bg-white/[0.04] border border-white/[0.08]
+                  bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
               />
             </div>
@@ -1242,7 +1232,7 @@ export default function CustomGameDetailPage() {
                   onChange={(e) => setEditDate(e.target.value)}
                   disabled={savingEdit}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
-                    bg-white/[0.04] border border-white/[0.08]
+                    bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
@@ -1254,7 +1244,7 @@ export default function CustomGameDetailPage() {
                   onChange={(e) => setEditTime(e.target.value)}
                   disabled={savingEdit}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
-                    bg-white/[0.04] border border-white/[0.08]
+                    bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
@@ -1281,7 +1271,7 @@ export default function CustomGameDetailPage() {
                 onChange={(e) => setEditCapacity(Number(e.target.value))}
                 disabled={savingEdit || isTeam}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-                  bg-white/[0.04] border border-white/[0.08]
+                  bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50
                   disabled:opacity-50 disabled:cursor-not-allowed"
               />
@@ -1322,8 +1312,8 @@ export default function CustomGameDetailPage() {
                 onClick={() => setShowEdit(false)}
                 disabled={savingEdit}
                 className="flex-1 py-3 rounded-xl text-sm font-bold
-                  bg-white/[0.04] border border-white/[0.07] text-slate-400
-                  hover:text-slate-200 hover:bg-white/[0.07]
+                  bg-surface-2 border border-line text-slate-400
+                  hover:text-slate-200 hover:bg-surface-2
                   disabled:opacity-40 transition-all"
               >
                 취소

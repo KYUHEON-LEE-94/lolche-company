@@ -17,6 +17,9 @@ import {
   steamCapsuleUrl,
   todayKstDate,
 } from '@/lib/customGames/display'
+import { ALERT, BTN_GHOST, CARD_HOVER, CONTAINER, SHELL } from '@/lib/ui/styles'
+import PageHeader from '@/app/components/ui/PageHeader'
+import EmptyState from '@/app/components/ui/EmptyState'
 
 // 마이그레이션 미적용 환경에서는 GET이 구 컬럼만 담아 degrade하므로 파생 필드를 optional로 둔다.
 type GameRow = {
@@ -186,72 +189,40 @@ export default function CustomGamesPage() {
   const recruitingCount = games.filter((g) => g.status === 'recruiting').length
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#07090f' }}>
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{ background: 'radial-gradient(ellipse 70% 40% at 50% -5%, rgba(99,102,241,0.12) 0%, transparent 70%)' }}
-      />
-
-      <header
-        className="sticky top-0 z-50 border-b"
-        style={{ background: 'rgba(7,9,15,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}
-      >
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/tft"
-              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-white transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
-                <path d="M15 19l-7-7 7-7" />
-              </svg>
-              롤체 랭킹
-            </Link>
-            <span className="text-slate-700">·</span>
-            <span className="text-sm font-black text-white">내전</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleOpenModal}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              text-sm font-bold transition-all duration-200
-              bg-indigo-500/10 border border-indigo-500/30 text-indigo-400
-              hover:bg-indigo-500/20 hover:text-indigo-300"
-          >
+    <>
+      <main className={SHELL}>
+      <div className={CONTAINER}>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <PageHeader
+            kicker="Custom Games"
+            accent="indigo"
+            title="내전"
+            description={`내전을 모집하고 참가 신청을 받습니다${
+              !loading && recruitingCount > 0 ? ` · 모집 중 ${recruitingCount}건` : ''
+            }`}
+            className=""
+          />
+          <button type="button" onClick={handleOpenModal} className={BTN_GHOST}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
               <path d="M12 4v16m8-8H4" />
             </svg>
             내전 모집
           </button>
         </div>
-      </header>
-
-      <main className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-6 py-8">
-        <div
-          className="rounded-2xl border p-8"
-          style={{ background: 'rgba(13,17,23,0.9)', borderColor: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
-        >
-          <div className="mb-8">
-            <h1 className="text-2xl font-black text-white tracking-tight mb-1">내전</h1>
-            <p className="text-sm text-slate-500">
-              내전을 모집하고 참가 신청을 받습니다
-              {!loading && recruitingCount > 0 && ` · 모집 중 ${recruitingCount}건`}
-            </p>
-          </div>
 
           {migrationRequired && (
-            <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium">
+            <div className={`mb-6 ${ALERT.warn}`}>
               내전 모집 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요.
             </div>
           )}
 
           {error && (
-            <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
+            <div className={`mb-6 ${ALERT.error}`}>
               {error}
             </div>
           )}
           {successMsg && (
-            <div className="mb-6 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+            <div className={`mb-6 ${ALERT.ok}`}>
               {successMsg}
             </div>
           )}
@@ -264,13 +235,7 @@ export default function CustomGamesPage() {
           )}
 
           {!loading && games.length === 0 && (
-            <div
-              className="flex flex-col items-center justify-center py-20 border border-dashed rounded-2xl"
-              style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-            >
-              <p className="text-slate-400 font-bold mb-1">모집 중인 내전이 없습니다</p>
-              <p className="text-slate-600 text-sm">오른쪽 위 [내전 모집] 버튼으로 시작하세요</p>
-            </div>
+            <EmptyState hint="위쪽 [내전 모집] 버튼으로 시작하세요">모집 중인 내전이 없습니다</EmptyState>
           )}
 
           {!loading && games.length > 0 && (
@@ -286,8 +251,7 @@ export default function CustomGamesPage() {
                 return (
                   <div
                     key={g.id}
-                    className="rounded-2xl border p-5 flex flex-col gap-3"
-                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}
+                    className={`${CARD_HOVER} p-5 flex flex-col gap-3`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="text-base font-black text-white leading-snug break-all">{g.title}</h2>
@@ -295,7 +259,7 @@ export default function CustomGamesPage() {
                     </div>
 
                     {g.game_kind === 'steam' && g.steam_app_id != null && (
-                      <div className="relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+                      <div className="relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
                         <Image
                           src={steamCapsuleUrl(g.steam_app_id)}
                           alt=""
@@ -318,7 +282,7 @@ export default function CustomGamesPage() {
                           {g.game_type === 'team' ? '2인 팀전' : '개인전'}
                         </Badge>
                       )}
-                      <Badge className="bg-white/[0.04] border-white/[0.08] text-slate-300">
+                      <Badge className="bg-surface-2 border-line text-slate-300">
                         {taken}/{capacity}
                       </Badge>
                       {waitlistCount > 0 && (
@@ -374,8 +338,8 @@ export default function CustomGamesPage() {
                           disabled={busy}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                             text-xs font-bold transition-all duration-150
-                            bg-white/[0.04] border border-white/[0.08] text-slate-400
-                            hover:text-slate-200 hover:bg-white/[0.07]
+                            bg-surface-2 border border-line text-slate-400
+                            hover:text-slate-200 hover:bg-surface-2
                             disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {busy ? <Spinner size={3} /> : null}
@@ -420,8 +384,7 @@ export default function CustomGamesPage() {
             onClick={() => !creating && setShowModal(false)}
           />
           <div
-            className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
-            style={{ background: 'rgb(13,17,23)', borderColor: 'rgba(255,255,255,0.1)' }}
+            className="relative w-full max-w-lg rounded-2xl border border-line bg-[#0d1117] p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
           >
             <div>
               <h2 className="text-lg font-black text-white mb-1">내전 모집</h2>
@@ -438,7 +401,7 @@ export default function CustomGamesPage() {
                 maxLength={60}
                 disabled={creating}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-                  bg-white/[0.04] border border-white/[0.08]
+                  bg-surface-2 border border-line
                   placeholder:text-slate-600
                   focus:outline-none focus:border-indigo-500/50
                   transition-all duration-200 disabled:opacity-50"
@@ -454,7 +417,7 @@ export default function CustomGamesPage() {
                   onChange={(e) => setDateInput(e.target.value)}
                   disabled={creating}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
-                    bg-white/[0.04] border border-white/[0.08]
+                    bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
@@ -466,7 +429,7 @@ export default function CustomGamesPage() {
                   onChange={(e) => setTimeInput(e.target.value)}
                   disabled={creating}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
-                    bg-white/[0.04] border border-white/[0.08]
+                    bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
@@ -500,7 +463,7 @@ export default function CustomGamesPage() {
                   maxLength={30}
                   disabled={creating}
                   className="mt-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-white
-                    bg-white/[0.04] border border-white/[0.08]
+                    bg-surface-2 border border-line
                     placeholder:text-slate-600
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
@@ -576,7 +539,7 @@ export default function CustomGamesPage() {
                 onChange={(e) => setCapacityInput(Number(e.target.value))}
                 disabled={creating || isTftTeam}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-                  bg-white/[0.04] border border-white/[0.08]
+                  bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50
                   disabled:opacity-50 disabled:cursor-not-allowed"
               />
@@ -591,8 +554,8 @@ export default function CustomGamesPage() {
                 onClick={() => setShowModal(false)}
                 disabled={creating}
                 className="flex-1 py-3 rounded-xl text-sm font-bold
-                  bg-white/[0.04] border border-white/[0.07] text-slate-400
-                  hover:text-slate-200 hover:bg-white/[0.07]
+                  bg-surface-2 border border-line text-slate-400
+                  hover:text-slate-200 hover:bg-surface-2
                   disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 취소
@@ -613,6 +576,6 @@ export default function CustomGamesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

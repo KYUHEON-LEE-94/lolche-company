@@ -7,6 +7,8 @@ import type { MemberStatus } from '@/types/supabase'
 import { listRiotAccounts, pickPrimaryAccount } from '@/lib/members/primaryAccount'
 import ProfileEditor from './ProfileEditor'
 import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
+import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
+import PageHeader from '@/app/components/ui/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,14 +99,15 @@ export default async function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-10">
-            <div className="mx-auto w-full max-w-4xl">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-extrabold text-slate-100">프로필 관리</h1>
-                    <p className="mt-2 text-sm text-slate-300">
-                        라이엇 계정을 직접 등록하고, 승인 후 프로필 이미지·프레임을 설정할 수 있어요.
-                    </p>
-                </div>
+        <div className={SHELL}>
+            <div className={CONTAINER}>
+                <PageHeader
+                    kicker="Profile"
+                    accent="indigo"
+                    title="프로필 관리"
+                    description="라이엇 계정을 직접 등록하고, 승인 후 프로필 이미지·프레임을 설정할 수 있어요."
+                    className="mb-8"
+                />
 
                 <div className="grid gap-6">
                     <MemberSelfForm
@@ -136,7 +139,7 @@ export default async function ProfilePage() {
                             }}
                         />
                     ) : (
-                        <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
+                        <section className={`${CARD} p-6`}>
                             <div className="text-slate-100 font-extrabold">프로필 이미지 · 프레임</div>
                             <p className="mt-2 text-sm text-slate-400">
                                 관리자 승인이 완료되면 이곳에서 프로필 이미지와 프레임을 설정할 수 있어요.

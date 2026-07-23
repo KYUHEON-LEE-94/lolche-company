@@ -8,6 +8,8 @@ import Image from 'next/image'
 import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
 import { tierScore } from '@/app/components/ranking/LpSparkline'
 import { compareRank } from '@/lib/constants/tierOrder'
+import { CONTAINER } from '@/lib/ui/styles'
+import EmptyState from '@/app/components/ui/EmptyState'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -487,8 +489,8 @@ export default function MemberRanking({
           }}
       >
         {/* 다크 오버레이 */}
-        <div className="min-h-screen bg-[#07090f]/85 backdrop-blur-sm px-4 py-8">
-          <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-canvas/85 backdrop-blur-sm px-4 py-12">
+          <div className={CONTAINER}>
 
             {/* ── 헤더 ── */}
             <header className="text-center mb-12">
@@ -502,9 +504,8 @@ export default function MemberRanking({
                         <span className="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase">
                       Now Playing
                     </span>
-                        <div className="h-px w-10 bg-gradient-to-l from-transparent to-amber-500/50" />
                       </div>
-                      <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                         {currentSeason.season_name}
                       </h1>
                       <p className="mt-1 text-sm font-bold text-amber-500 tracking-[0.2em]">
@@ -523,21 +524,23 @@ export default function MemberRanking({
                 <div className="relative group w-full max-w-[320px]">
                   {/* glow */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-600/30 blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-                  <div className="relative h-[68px] rounded-2xl bg-[#0d1117] border border-white/10 overflow-hidden flex items-center justify-center px-6">
+                  <div className="relative h-[68px] rounded-2xl bg-[#0d1117] border border-line overflow-hidden flex items-center justify-center px-6">
                     {/* 상단 하이라이트 */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    <img
+                    <Image
                         src="/images/logo.png"
                         alt="롤체 컴퍼니 로고"
+                        width={542}
+                        height={419}
+                        priority
                         className="max-h-[48px] w-auto object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)] group-hover:drop-shadow-[0_0_20px_rgba(99,102,241,0.7)] transition-all duration-300"
-                        onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   </div>
                 </div>
               </div>
 
               {/* 큐 탭 */}
-              <div className="inline-flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+              <div className="inline-flex gap-1 p-1 rounded-xl bg-surface-2 border border-line">
                 {(['solo', 'doubleup'] as const).map((q) => (
                     <button
                         key={q}
@@ -568,9 +571,7 @@ export default function MemberRanking({
 
             {/* ── 랭킹 그리드 ── */}
             {sorted.length === 0 ? (
-                <div className="text-center py-20 text-slate-600 font-medium">
-                  랭킹 데이터가 없습니다.
-                </div>
+                <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sorted.map((m, idx) => {

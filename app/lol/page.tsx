@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { LOL_ENABLED } from '@/lib/constants/features'
+import { CONTAINER, SHELL } from '@/lib/ui/styles'
+import PageHeader from '@/app/components/ui/PageHeader'
+import EmptyState from '@/app/components/ui/EmptyState'
 
 export const revalidate = 60
 
@@ -100,25 +103,17 @@ export default async function LolPage() {
   const rankedCount = sorted.filter((m) => m.lol_tier).length
 
   return (
-    <main className="min-h-[calc(100vh-3.5rem)] bg-[#07090f] px-4 py-12">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8">
-          <div className="inline-flex items-center gap-3 mb-3">
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-sky-500/50" />
-            <span className="text-[10px] font-black tracking-[0.4em] text-sky-400 uppercase">
-              League of Legends
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">롤 랭킹</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            등록된 라이엇 계정의 솔로랭크 기록입니다. 별도 입력은 필요하지 않습니다.
-          </p>
-        </header>
+    <main className={SHELL}>
+      <div className={CONTAINER}>
+        <PageHeader
+          kicker="League of Legends"
+          accent="sky"
+          title="롤 랭킹"
+          description="등록된 라이엇 계정의 솔로랭크 기록입니다. 별도 입력은 필요하지 않습니다."
+        />
 
         {rankedCount === 0 ? (
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-6 py-16 text-center">
-            <p className="text-sm text-slate-400">아직 동기화된 롤 랭크 정보가 없습니다.</p>
-          </div>
+          <EmptyState>아직 동기화된 롤 랭크 정보가 없습니다.</EmptyState>
         ) : (
           <ol className="space-y-2">
             {sorted.map((m, idx) => {
@@ -130,15 +125,15 @@ export default async function LolPage() {
               return (
                 <li
                   key={m.id}
-                  className={`flex items-center gap-3 rounded-2xl border border-white/[0.07] px-4 py-3 transition-colors hover:border-white/20 ${
-                    unranked ? 'bg-white/[0.015] opacity-70' : 'bg-white/[0.03]'
+                  className={`flex items-center gap-3 rounded-2xl border border-line px-4 py-3 transition-colors hover:border-line-strong ${
+                    unranked ? 'bg-surface opacity-70' : 'bg-surface'
                   }`}
                 >
                   <div className="flex w-8 shrink-0 items-center justify-center text-xs font-bold text-slate-500">
                     {unranked ? '-' : `#${idx + 1}`}
                   </div>
 
-                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06]">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
                     {imageUrl ? (
                       <Image
                         src={imageUrl}

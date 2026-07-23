@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import { sanitizeNextPath } from '@/lib/auth/discord'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ALERT, CARD } from '@/lib/ui/styles'
 
 function DiscordIcon() {
   return (
@@ -57,9 +58,9 @@ function LoginInner() {
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black px-4 py-10">
-        <div className="max-w-md mx-auto">
-          <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-3xl p-8 shadow-2xl">
+      <div className="min-h-screen bg-canvas px-4 py-20 flex items-start justify-center">
+        <div className="w-full max-w-md">
+          <div className={`${CARD} p-8`}>
             <h1 className="text-2xl font-black text-white mb-2">로그인</h1>
             <p className="text-slate-300 text-sm mb-6">
               랭킹을 보려면 Discord 로그인이 필요합니다.
@@ -67,7 +68,7 @@ function LoginInner() {
 
             <div className="space-y-4">
               {displayError && (
-                  <div className="text-sm text-red-300 bg-red-950/30 border border-red-900/40 rounded-2xl px-4 py-3">
+                  <div className={ALERT.error}>
                     {displayError}
                   </div>
               )}
@@ -76,7 +77,7 @@ function LoginInner() {
                   type="button"
                   onClick={handleDiscordLogin}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition disabled:opacity-60"
               >
                 <DiscordIcon />
                 {loading ? '디스코드로 이동 중...' : '디스코드로 로그인'}

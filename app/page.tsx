@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase/service'
 import type { Member, Season } from '@/types/supabase'
 import { LOL_ENABLED } from '@/lib/constants/features'
+import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
+import PageHeader from '@/app/components/ui/PageHeader'
 
 export const revalidate = 60
 
@@ -125,28 +127,20 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <main className="min-h-[calc(100vh-3.5rem)] bg-[#07090f] px-4 py-12">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-10">
-          <div className="inline-flex items-center gap-3 mb-3">
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-amber-500/50" />
-            <span className="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase">
-              Dashboard
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            롤토 컴퍼니
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            단톡방 멤버들의 랭킹과 기록을 한곳에서 확인하세요.
-          </p>
-        </header>
+    <main className={SHELL}>
+      <div className={CONTAINER}>
+        <PageHeader
+          kicker="Dashboard"
+          accent="amber"
+          title="롤토 컴퍼니"
+          description="단톡방 멤버들의 랭킹과 기록을 한곳에서 확인하세요."
+        />
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-5 py-4"
+              className={`${CARD} px-5 py-4`}
             >
               <p className="text-[10px] font-black tracking-[0.2em] uppercase text-slate-500">
                 {stat.label}
@@ -161,7 +155,7 @@ export default async function DashboardPage() {
             <Link
               key={card.href}
               href={card.href}
-              className={`group relative rounded-2xl border bg-gradient-to-br ${card.accent} p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20`}
+              className={`group relative rounded-2xl border bg-gradient-to-br ${card.accent} p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong`}
             >
               <div className="flex items-start justify-between gap-3">
                 <span className="text-2xl leading-none">{card.icon}</span>
@@ -171,7 +165,7 @@ export default async function DashboardPage() {
                   </span>
                 )}
                 {!card.ready && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-300 border border-white/10">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-300 border border-line">
                     준비 중
                   </span>
                 )}

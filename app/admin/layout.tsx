@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { CONTAINER, PANEL } from '@/lib/ui/styles'
 
 const navItems = [
     { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
@@ -45,29 +46,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const isActive = (href: string) => pathname.startsWith(href)
 
     return (
-        <div
-            className="min-h-screen flex flex-col"
-            style={{ background: '#07090f' }}
-        >
-            {/* 상단 글로우 배경 */}
-            <div
-                className="pointer-events-none fixed inset-0 z-0"
-                style={{
-                    background:
-                        'radial-gradient(ellipse 70% 40% at 50% -5%, rgba(99,102,241,0.12) 0%, transparent 70%)',
-                }}
-            />
-
+        <div className="min-h-screen flex flex-col bg-canvas">
             {/* ── 헤더 ── */}
-            <header
-                className="sticky top-0 z-50 border-b"
-                style={{
-                    background: 'rgba(7,9,15,0.85)',
-                    backdropFilter: 'blur(16px)',
-                    borderColor: 'rgba(255,255,255,0.07)',
-                }}
-            >
-                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <header className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
+                <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
 
                     {/* 로고 영역 */}
                     <div className="flex items-center gap-3">
@@ -94,27 +76,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                     key={item.href}
                                     href={item.href}
                                     className={[
-                                        'relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200',
+                                        'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors',
                                         active
-                                            ? 'text-white'
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-white/5',
+                                            ? 'bg-brand/15 text-indigo-300'
+                                            : 'text-slate-400 hover:text-white hover:bg-surface-2',
                                     ].join(' ')}
-                                    style={
-                                        active
-                                            ? {
-                                                background: 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(79,70,229,0.15))',
-                                                border: '1px solid rgba(99,102,241,0.3)',
-                                            }
-                                            : {}
-                                    }
+                                    aria-current={active ? 'page' : undefined}
                                 >
-                                    {/* 활성 인디케이터 */}
-                                    {active && (
-                                        <span
-                                            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full"
-                                            style={{ background: '#818cf8' }}
-                                        />
-                                    )}
                                     <NavIcon name={item.icon} />
                                     {item.label}
                                 </Link>
@@ -125,17 +93,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </header>
 
             {/* ── 메인 ── */}
-            <main className="relative z-10 flex-1 max-w-6xl mx-auto w-full px-6 py-8">
-                <div
-                    className="rounded-2xl border p-8"
-                    style={{
-                        background: 'rgba(13,17,23,0.9)',
-                        borderColor: 'rgba(255,255,255,0.07)',
-                        backdropFilter: 'blur(8px)',
-                    }}
-                >
-                    {children}
-                </div>
+            <main className={`relative z-10 flex-1 w-full px-4 py-8 ${CONTAINER}`}>
+                <div className={PANEL}>{children}</div>
             </main>
 
             {/* ── 푸터 ── */}

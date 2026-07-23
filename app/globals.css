@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ── 서피스 ── 실측 3종(0.02/0.03/0.04) → 2단계로 축약 */
+  --color-canvas: #07090f;                     /* 페이지 배경 */
+  --color-surface: rgba(255, 255, 255, 0.03);  /* 카드 기본 */
+  --color-surface-2: rgba(255, 255, 255, 0.06);/* hover / 인풋 / 중첩 */
+  --color-line: rgba(255, 255, 255, 0.08);     /* 보더 단일값 */
+  --color-line-strong: rgba(255, 255, 255, 0.2);/* hover 보더 */
+
+  /* ── 역할색 ── */
+  --color-brand: oklch(0.585 0.233 277.117);  /* indigo-500 : 주 강조·포커스·내비 active */
+  --color-ok: oklch(0.696 0.17 162.48);       /* emerald-500 : 성공 */
+  --color-warn: oklch(0.769 0.188 70.08);     /* amber-500 : 경고 */
+  --color-danger: oklch(0.637 0.237 25.331);  /* red-500 : 위험 (rose 폐기) */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ⚠ font-family 에 Arial 을 강제하지 않는다 — layout.tsx 가 주입한 Geist 변수를 덮어쓴다.
+   Geist 는 latin 서브셋만 로드되므로 한글 폴백을 명시한다. */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: #ededed;
+  font-family: var(--font-geist-sans), 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
+    ui-sans-serif, system-ui, sans-serif;
 }

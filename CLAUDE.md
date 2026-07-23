@@ -32,6 +32,9 @@ app/
     AuthButtons.tsx             # 로그인/로그아웃/관리자 버튼
     Spinner.tsx                 # 로딩 스피너
     TierPanel.tsx
+    ui/PageHeader.tsx           # kicker + h1 + 설명. **순수 서버 컴포넌트**('use client' 금지 — /steam ISR)
+    ui/SectionHeader.tsx        # h2 + 힌트
+    ui/EmptyState.tsx           # 빈 상태 카드
     ranking/HallOfFameCard.tsx
   admin/                        # 관리자 전용 (인증 필요)
     layout.tsx                  # 관리자 사이드바 레이아웃
@@ -104,6 +107,9 @@ lib/
     steamViewer.ts              # 개인화 스팀 섹션의 요청자 상태 해석 (approved/스팀등록/공개 여부)
   tft/
     tftLocale.ts                # 기물 이미지 URL 생성, 한국어 이름 변환 (KrMaps 캐시)
+  ui/
+    styles.ts                   # 공통 className 상수(SHELL/CONTAINER/CARD/INPUT/BTN_*/ALERT/H1…).
+                                # 순수 문자열이라 서버·클라 양쪽에서 import 한다. 'server-only' 금지
 
 app/lib/
   isAdmin.ts                    # requireAdmin() — 세션 확인 + admins 테이블 체크
@@ -606,3 +612,4 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 |------|----------|------|------|
 | 2026-06-09 | 초기 구성 | 전체 | Analyst→Developer→QA 파이프라인 구성 |
 | 2026-07-23 | 스팀 3건 | `/steam`, 내전, 명예의 전당 | 개인화 섹션 추가(ISR 분리), 내전 스팀 게임 선택, 인트로 제거 |
+| 2026-07-23 | 디자인 통일 | 전 페이지, `SiteNav` | 디자인 토큰(`lib/ui/styles.ts` + `@theme`) 도입, 폰트 복원, 홈 아이콘 |

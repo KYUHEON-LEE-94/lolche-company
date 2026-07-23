@@ -90,10 +90,14 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
             {/* ── 프레임 & 프로필 레이어 ── */}
             <div className="relative group mb-2" style={{ width: cfg.frameW, height: cfg.frameW }}>
                 <div className={`absolute ${cfg.profilePos} rounded-full overflow-hidden z-0`}>
-                    <img
+                    {/* 호스트가 Supabase 외로 바뀔 수 있어 remotePatterns 의존을 피한다 */}
+                    <Image
                         src={profileImg}
                         alt={displayName}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        fill
+                        sizes="280px"
+                        unoptimized
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                 </div>
                 <div className="absolute inset-0 z-10 pointer-events-none">
