@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
+import { sanitizeNextPath } from '@/lib/auth/discord'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function DiscordIcon() {
@@ -22,13 +23,16 @@ function LoginInner() {
   // 콜백 실패 메시지는 URL query에서 직접 파생 (effect setState 불필요)
   const displayError = error ?? searchParams.get('error')
 
-  // 이미 로그인 되어있으면 랭킹으로 보내기
+  // 오픈 리다이렉트 방지: 외부 URL이면 '/'로 강등된다.
+  const nextPath = sanitizeNextPath(searchParams.get('next'))
+
+  // 이미 로그인 되어있으면 원래 가려던 페이지로 보내기
   useEffect(() => {
     ;(async () => {
       const { data } = await supabaseClient.auth.getSession()
-      if (data.session) router.replace('/')
+      if (data.session) router.replace(nextPath)
     })()
-  }, [router])
+  }, [router, nextPath])
 
   const handleDiscordLogin = async () => {
     setLoading(true)
@@ -37,7 +41,9 @@ function LoginInner() {
     try {
       const { error: oauthError } = await supabaseClient.auth.signInWithOAuth({
         provider: 'discord',
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=%2F` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        },
       })
 
       if (oauthError) {
@@ -55,7 +61,9 @@ function LoginInner() {
         <div className="max-w-md mx-auto">
           <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-3xl p-8 shadow-2xl">
             <h1 className="text-2xl font-black text-white mb-2">로그인</h1>
-            <p className="text-slate-300 text-sm mb-6">디스코드 계정으로 로그인합니다.</p>
+            <p className="text-slate-300 text-sm mb-6">
+              랭킹을 보려면 Discord 로그인이 필요합니다.
+            </p>
 
             <div className="space-y-4">
               {displayError && (
@@ -72,14 +80,6 @@ function LoginInner() {
               >
                 <DiscordIcon />
                 {loading ? '디스코드로 이동 중...' : '디스코드로 로그인'}
-              </button>
-
-              <button
-                  type="button"
-                  onClick={() => router.replace('/')}
-                  className="w-full px-4 py-3 rounded-2xl font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
-              >
-                랭킹으로 돌아가기
               </button>
             </div>
           </div>
