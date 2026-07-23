@@ -24,20 +24,15 @@ type RiotIdParseResult =
   | { ok: false; message: string }
 
 /**
- * 태그라인은 영문/숫자로 제한하지 않는다.
- * Riot 은 한글 태그라인을 허용하고 실제로 사용 중인 멤버가 있다(예: `딸 깍#쉽다쉬워`).
+ * 태그라인에 문자 종류 제한을 두지 않는다. 길이만 본다.
+ * 실데이터가 Riot 문서보다 관대하다 — 한글(`딸 깍#쉽다쉬워`)과 공백(`뭘 봐#2 C`)이 모두 존재한다.
  * `^[A-Za-z0-9]{2,10}$` 로 막으면 정상 계정이 등록 불가가 되고,
  * riot_accounts 의 DB CHECK 와도 어긋나 백필이 23514 로 실패한다.
- * 따라서 공백과 구분자 `#` 만 거르고 나머지는 길이로만 제한한다.
+ * riot_accounts.riot_tagline CHECK 와 항상 같은 규칙을 유지할 것.
  */
-const TAGLINE_FORBIDDEN = /[\s#]/
-
 function taglineError(riot_tagline: string): string | null {
   if (riot_tagline.length > RIOT_TAGLINE_MAX) {
     return `태그라인은 ${RIOT_TAGLINE_MAX}자 이하여야 합니다.`
-  }
-  if (TAGLINE_FORBIDDEN.test(riot_tagline)) {
-    return '태그라인에는 공백과 #을 넣을 수 없습니다.'
   }
   return null
 }
