@@ -234,6 +234,10 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 | `tft_matches` | 매치 메타데이터 |
 | `tft_match_participants` | 멤버별 매치 결과 |
 | `sync_logs` | 동기화 감사 로그 |
+| `custom_games` | 내전 모집글 (`host_member_id`, `game_kind`, `capacity`, `scheduled_at`, `status`) |
+| `custom_game_participants` | 참가 신청. **확정/대기 컬럼 없음** — `(joined_at, id)` 순번에서 파생 |
+| `custom_game_guests` | 내전 게스트 (`riot_puuid` 보유 → TFT 전용 개념) |
+| `custom_game_rounds` / `_results` / `_guest_results` / `_teams` | TFT 내전 라운드·결과·팀 배정 |
 | `steam_apps` | 스팀 앱 메타 + `is_multiplayer` 3-값 캐시 (true/false/null=분류 미확인). 앱당 1회 조회 후 영구 보관 |
 | `steam_owned_games` | 멤버별 보유 게임 + `playtime_forever`/`playtime_2weeks`(분). `/steam`이 읽는 유일한 소스 |
 
@@ -258,9 +262,10 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
     → DELETE /api/admin/members/[id]            추방 (body.confirmName === member_name 필수)
 ```
 
-**노출 필터:** `app/tft/page.tsx`, `app/lol/page.tsx`, `app/steam/page.tsx`, `app/custom-games/page.tsx`,
+**노출 필터:** `app/tft/page.tsx`, `app/lol/page.tsx`, `app/steam/page.tsx`,
 그리고 `lib/sync/syncSteamMember.ts`의 `listSteamMembers()`에서 `.eq('status','approved')`.
 이 지점들이 미승인 멤버 차단의 핵심이므로 members를 조회하는 공개 화면·집계를 추가할 때 반드시 함께 적용한다.
+내전은 화면에서 members를 직접 조회하지 않고 서버가 `isApprovedMember()`로 강제한다(아래 참조).
 
 **추방(완전 삭제):** FK의 `ON DELETE` 설정에 의존하지 않고
 `app/api/admin/members/[id]/route.ts`에서 자식 테이블을 명시적으로 정리한 뒤 members를 삭제한다.
@@ -269,6 +274,101 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 **RLS 주의:** `members`에는 self-UPDATE 정책을 두지 않는다. RLS는 행 단위라 컬럼을 제한할 수 없어,
 정책이 있으면 사용자가 콘솔에서 자기 `status`를 `approved`로 바꿀 수 있다.
 정당한 self-UPDATE(프로필 이미지/프레임, Riot ID 신청)는 전부 서버 라우트에서 service role로 수행한다.
+
+## 내전 (custom games)
+
+### `game_kind` vs `game_type` — 절대 합치지 말 것
+
+| 컬럼 | 값 | 의미 |
+|---|---|---|
+| `game_kind` | `'tft' \| 'lol' \| 'steam' \| 'etc'` | **어떤 게임**인가. 신규 컬럼 |
+| `game_kind_label` | text ≤30자 | `game_kind='etc'`일 때만 값 존재. CHECK로 상호 강제 |
+| `game_type` | `'solo' \| 'team'` | TFT **경기 방식**(개인전/2인 팀전). `game_kind='tft'`일 때만 의미 |
+
+`game_type`은 팀 배정·라운드 결과 코드가 이미 점유한 컬럼이다. 여기에 게임 종류를 넣으면
+`teams/route.ts`·`rounds/route.ts`가 깨진다.
+
+**비-TFT 차단:** 라운드·팀·게스트는 전부 Riot TFT 매치 조회를 전제하므로
+`game_kind !== 'tft'`면 rounds/teams/guests API가 `rejectNonTftGame()`으로 **400**을 반환한다.
+UI에서 섹션을 숨기는 것은 UX일 뿐 통제 수단이 아니다.
+
+### 권한 규칙
+
+```
+생성   POST /api/custom-games            로그인 + members.status='approved' (관리자 여부 무관)
+참가   POST|DELETE /[id]/join            로그인 + approved. 주최자는 취소 불가(삭제로 유도)
+관리   PATCH|DELETE /[id], /[id]/end,
+      /[id]/rounds|teams|guests,
+      /[id]/participants/[pid]           canManageGame() = 관리자 OR 주최자 본인
+```
+
+`lib/customGames/authorize.ts`
+- `getViewerMember()` — 세션 `user_id`(→ `discord_id` fallback)로만 멤버를 해석한다.
+  **요청 body의 어떤 member 식별자도 신뢰하지 않는다.**
+- `canManageGame(game, viewerMemberId, isAdmin)` — `host_member_id`는 추방 시 null이 될 수 있으므로
+  `null === null`로 통과하지 않도록 양쪽 null을 명시적으로 거부한다.
+- `authorizeGameManage(gameId)` — 401/404/503/403 판정 후 `{ viewer, game }` 반환.
+
+### 대기열은 저장하지 않고 순번에서 파생한다 ★
+
+`custom_game_participants`에 `status('confirmed'|'waitlisted')` 컬럼을 **만들지 않는다.**
+저장하면 취소마다 승격 UPDATE가 필요해지고, 동시 취소 2건이 같은 대기자를 중복 승격하거나
+아무도 승격하지 못하는 경합이 생긴다. 앱 코드로는 막을 수 없다.
+
+**채택: `(joined_at, id)` 정렬 상위 `capacity`명이 확정, 나머지가 대기** (`lib/customGames/waitlist.ts`).
+- 취소 = DELETE 1건. 승격 로직이 존재하지 않으므로 승격 경합도 존재하지 않는다
+- 정원 상/하향, 동시 취소, 취소+신청 동시 발생이 모두 자동으로 올바르다
+- 게스트도 같은 정원을 소비한다 (`effectiveMemberCapacity(capacity, guestCount)`)
+
+**DB 제약이 유일한 방어선인 곳:** `unique (custom_game_id, member_id)`.
+앱의 select→insert는 더블클릭·동시요청에 반드시 뚫린다. 23505 → **409** 매핑.
+
+**RLS:** `custom_games` / `custom_game_participants` 모두 **select 정책만** 둔다.
+self-INSERT/DELETE 정책을 만들면 사용자가 콘솔에서 `joined_at`을 조작해 대기열을 새치기할 수 있다.
+
+### API 목록
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/api/custom-games` | 목록 + `confirmed_count`/`waitlist_count`/`guest_count`/`host_member_name`/`can_manage`/`my_participation` |
+| POST | `/api/custom-games` | 모집 생성. 주최자가 자동으로 첫 참가자 |
+| GET | `/api/custom-games/[id]` | 상세 + `confirmed[]`/`waitlist[]`/`can_manage`/`my_participation` |
+| PATCH | `/api/custom-games/[id]` | 수정 (화이트리스트 — `host_member_id`/`status`/`id`는 절대 안 바뀜) |
+| DELETE | `/api/custom-games/[id]` | 삭제 |
+| POST\|DELETE | `/api/custom-games/[id]/join` | 참가 신청 / 취소 |
+| DELETE | `/api/custom-games/[id]/participants/[participantId]` | 강퇴 |
+| POST | `/api/custom-games/[id]/end` | 종료 |
+| POST | `/api/custom-games/[id]/rounds\|teams\|guests` | TFT 전용 |
+
+**생성/수정 요청 형식:**
+`{ title, scheduled_date: "YYYY-MM-DD", scheduled_time: "HH:mm", capacity, game_kind, game_kind_label?, game_type?, max_rounds? }`
+
+### 타임존 — 클라이언트에서 절대 `new Date()`로 변환하지 않는다
+
+`<input type="date">`/`<input type="time">` 값을 문자열 그대로 보내고,
+서버의 `parseScheduledAt()`이 `new Date(\`${date}T${time}:00+09:00\`)`로 변환한다
+(한국은 서머타임이 없어 고정 오프셋이 안전하다).
+클라이언트에서 ISO로 변환하면 브라우저 로컬 타임존으로 해석되어 실제 일정과 어긋난다.
+표시는 전부 `lib/customGames/display.ts`의 헬퍼(=`Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' })`)로 고정한다.
+
+> `lib/customGames/display.ts`는 클라이언트 컴포넌트도 import한다.
+> server-only 모듈(`lib/customGames/game.ts`)을 여기서 import하면 안 된다.
+
+### 남용 방지
+
+| 벡터 | 대응 |
+|---|---|
+| 무한 모집글 | 동일 host의 `recruiting`+`in_progress` 동시 3개 제한 |
+| 과거/먼 미래 날짜 | `now()-10분` ~ `now()+90일` |
+| 정원 남용 | `capacity` 2~100. `tft`+`team`이면 8 고정 |
+| 참가 스팸 | 유니크 인덱스 + 총 신청 상한 `min(capacity*3, 60)` |
+| 문자열 | `title ≤60자`, `game_kind_label ≤30자` |
+
+### 마이그레이션 미적용 시 degrade
+
+`scripts/sql/20260725_custom_game_recruit.sql` 미실행 상태에서 신규 컬럼 부재는 Postgres `42703`으로
+나타난다. `isMissingColumnError()`가 이를 잡아 **500이 아니라** 목록 GET은 구 컬럼 fallback +
+`migration_required: true`, 나머지는 503 안내로 degrade한다. UI도 이 플래그로 배너를 띄운다.
 
 ## 관리자 기능
 

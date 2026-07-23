@@ -93,9 +93,17 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
+  // 마이그레이션 미적용 환경에서도 대시보드가 죽지 않도록 실패는 0건으로 취급한다.
+  const recruitingPromise = supabaseService
+    .from('custom_games')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'recruiting')
+
   const memberCountResult = await memberCountPromise
   const seasonResult = await seasonPromise
   const lastSyncResult = await lastSyncPromise
+  const recruitingResult = await recruitingPromise
+  const recruitingCount = recruitingResult.error ? 0 : recruitingResult.count ?? 0
 
   if (memberCountResult.error) console.error('Supabase error:', memberCountResult.error)
   if (lastSyncResult.error) console.error('Supabase error:', lastSyncResult.error)
@@ -157,6 +165,11 @@ export default async function DashboardPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <span className="text-2xl leading-none">{card.icon}</span>
+                {card.href === '/custom-games' && recruitingCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    모집 중 {recruitingCount}건
+                  </span>
+                )}
                 {!card.ready && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-300 border border-white/10">
                     준비 중

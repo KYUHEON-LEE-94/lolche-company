@@ -1,11 +1,21 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabaseClient } from '@/lib/supabase'
-import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
+import { Spinner } from '@/app/components/Spinner'
+import { TFT_TEAM_CAPACITY, type GameKind } from '@/lib/customGames/constants'
+import {
+  GAME_KIND_OPTIONS,
+  formatKstSchedule,
+  gameKindBadgeClass,
+  gameKindLabel,
+  statusBadgeClass,
+  statusLabel,
+  todayKstDate,
+} from '@/lib/customGames/display'
 
+// 마이그레이션 미적용 환경에서는 GET이 구 컬럼만 담아 degrade하므로 파생 필드를 optional로 둔다.
 type GameRow = {
   id: string
   title: string
@@ -14,39 +24,25 @@ type GameRow = {
   max_rounds: number
   created_at: string
   ended_at: string | null
+  game_kind?: string
+  game_kind_label?: string | null
+  capacity?: number
+  scheduled_at?: string | null
+  host_member_id?: string | null
+  host_member_name?: string | null
+  guest_count?: number
+  confirmed_count?: number
+  waitlist_count?: number
+  can_manage?: boolean
+  my_participation?: { position: number; confirmed: boolean } | null
 }
 
-type MemberOption = {
-  id: string
-  member_name: string
-  riot_game_name: string
-  riot_tagline: string
-}
+const DEFAULT_CAPACITY = 8
 
-type GuestInput = {
-  display_name: string
-  riot_game_name: string
-  riot_tagline: string
-}
-
-const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  in_progress: {
-    bg: 'bg-emerald-500/10 border border-emerald-500/20',
-    text: 'text-emerald-400',
-    label: '진행중',
-  },
-  ended: {
-    bg: 'bg-slate-500/10 border border-slate-500/20',
-    text: 'text-slate-400',
-    label: '종료',
-  },
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_BADGE[status] ?? STATUS_BADGE.ended
+function Badge({ className, children }: { className: string; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${s.bg} ${s.text}`}>
-      {s.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border ${className}`}>
+      {children}
     </span>
   )
 }
@@ -55,29 +51,28 @@ export default function CustomGamesPage() {
   const router = useRouter()
   const [games, setGames] = useState<GameRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [migrationRequired, setMigrationRequired] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const [showModal, setShowModal] = useState(false)
-  const [members, setMembers] = useState<MemberOption[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [titleInput, setTitleInput] = useState('')
-  const [maxRounds, setMaxRounds] = useState(5)
+  const [dateInput, setDateInput] = useState('')
+  const [timeInput, setTimeInput] = useState('21:00')
+  const [capacityInput, setCapacityInput] = useState(8)
+  const [gameKind, setGameKind] = useState<GameKind>('tft')
+  const [kindLabel, setKindLabel] = useState('')
   const [gameType, setGameType] = useState<'solo' | 'team'>('solo')
+  const [maxRounds, setMaxRounds] = useState(5)
   const [creating, setCreating] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // 게스트 입력 상태
-  const [guestInputs, setGuestInputs] = useState<GuestInput[]>([])
-  const [showGuestForm, setShowGuestForm] = useState(false)
-  const [guestName, setGuestName] = useState('')
-  const [guestRiotId, setGuestRiotId] = useState('')
+  const [busyId, setBusyId] = useState<string | null>(null)
 
-  const showMsg = (type: 'error' | 'success', msg: string) => {
+  const showMsg = useCallback((type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
     else { setSuccessMsg(msg); setError(null) }
     setTimeout(() => { setError(null); setSuccessMsg(null) }, 4000)
-  }
+  }, [])
 
   const loadGames = useCallback(async () => {
     setLoading(true)
@@ -85,81 +80,49 @@ export default function CustomGamesPage() {
       const res = await fetch('/api/custom-games')
       const body = await res.json()
       if (!res.ok) { showMsg('error', body.error ?? '목록 로드 실패'); return }
-      setGames(body.games ?? [])
+      setGames((body.games ?? []) as GameRow[])
+      setMigrationRequired(Boolean(body.migration_required))
     } catch { showMsg('error', '알 수 없는 오류가 발생했습니다') }
     finally { setLoading(false) }
-  }, [])
+  }, [showMsg])
 
-  const loadMembers = useCallback(async () => {
-    const { data } = await supabaseClient
-      .from('members')
-      .select('id, member_name, riot_game_name, riot_tagline')
-      .eq('status', 'approved')
-      .order('member_name')
-    setMembers((data ?? []) as MemberOption[])
-  }, [])
+  useEffect(() => { loadGames() }, [loadGames])
 
-  useEffect(() => { loadGames(); loadMembers() }, [loadGames, loadMembers])
+  const isTftTeam = gameKind === 'tft' && gameType === 'team'
+  const effectiveCapacity = isTftTeam ? TFT_TEAM_CAPACITY : capacityInput
 
   const handleOpenModal = () => {
     setTitleInput('')
-    setSelectedIds(new Set())
-    setMaxRounds(5)
+    setDateInput(todayKstDate())
+    setTimeInput('21:00')
+    setCapacityInput(8)
+    setGameKind('tft')
+    setKindLabel('')
     setGameType('solo')
-    setGuestInputs([])
-    setShowGuestForm(false)
-    setGuestName('')
-    setGuestRiotId('')
+    setMaxRounds(5)
     setShowModal(true)
-  }
-
-  const toggleMember = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const totalSelected = selectedIds.size + guestInputs.length
-
-  const handleAddGuestToList = () => {
-    if (!guestName.trim()) return
-    const parts = guestRiotId.trim().split('#')
-    if (parts.length !== 2 || !parts[0] || !parts[1]) return
-    if (totalSelected >= 8) return
-    setGuestInputs((prev) => [...prev, {
-      display_name: guestName.trim(),
-      riot_game_name: parts[0].trim(),
-      riot_tagline: parts[1].trim(),
-    }])
-    setGuestName('')
-    setGuestRiotId('')
-    setShowGuestForm(false)
-  }
-
-  const handleRemoveGuest = (idx: number) => {
-    setGuestInputs((prev) => prev.filter((_, i) => i !== idx))
   }
 
   const handleCreate = async () => {
     if (!titleInput.trim()) { showMsg('error', '제목을 입력하세요'); return }
-    if (gameType === 'team' && totalSelected !== 8) {
-      showMsg('error', '팀전은 정확히 8명을 선택해야 합니다'); return
-    }
-    if (totalSelected < 2) { showMsg('error', '참가자를 2명 이상 선택하세요'); return }
+    if (!dateInput || !timeInput) { showMsg('error', '일자와 시간을 모두 입력하세요'); return }
+    if (gameKind === 'etc' && !kindLabel.trim()) { showMsg('error', '기타 게임은 종류 이름을 입력하세요'); return }
+
     setCreating(true)
     try {
+      // ⚠ 일자·시간은 문자열 그대로 보낸다. 클라이언트에서 Date로 변환하면
+      //   브라우저 로컬 타임존으로 해석되어 실제 일정과 어긋난다.
       const res = await fetch('/api/custom-games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: titleInput.trim(),
-          participant_ids: [...selectedIds],
-          max_rounds: maxRounds,
-          game_type: gameType,
-          guests: guestInputs,
+          scheduled_date: dateInput,
+          scheduled_time: timeInput,
+          capacity: effectiveCapacity,
+          game_kind: gameKind,
+          game_kind_label: gameKind === 'etc' ? kindLabel.trim() : null,
+          ...(gameKind === 'tft' ? { game_type: gameType, max_rounds: maxRounds } : {}),
         }),
       })
       const body = await res.json()
@@ -170,28 +133,53 @@ export default function CustomGamesPage() {
     finally { setCreating(false) }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('이 내전을 삭제하시겠습니까? 모든 라운드 기록이 함께 삭제됩니다.')) return
-    setDeletingId(id)
+  const handleJoin = async (game: GameRow) => {
+    setBusyId(game.id)
     try {
-      const res = await fetch(`/api/custom-games/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/custom-games/${game.id}/join`, { method: 'POST' })
+      const body = await res.json()
+      if (!res.ok) { showMsg('error', body.error ?? '신청 실패'); return }
+      showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.position}번으로 신청되었습니다`)
+      await loadGames()
+    } catch { showMsg('error', '신청 중 오류가 발생했습니다') }
+    finally { setBusyId(null) }
+  }
+
+  const handleLeave = async (game: GameRow) => {
+    if (!confirm('참가를 취소하시겠습니까?')) return
+    setBusyId(game.id)
+    try {
+      const res = await fetch(`/api/custom-games/${game.id}/join`, { method: 'DELETE' })
+      const body = await res.json()
+      if (!res.ok) { showMsg('error', body.error ?? '취소 실패'); return }
+      showMsg('success', '참가가 취소되었습니다')
+      await loadGames()
+    } catch { showMsg('error', '취소 중 오류가 발생했습니다') }
+    finally { setBusyId(null) }
+  }
+
+  const handleDelete = async (game: GameRow) => {
+    if (!confirm('이 내전을 삭제하시겠습니까? 모든 참가 신청과 라운드 기록이 함께 삭제됩니다.')) return
+    setBusyId(game.id)
+    try {
+      const res = await fetch(`/api/custom-games/${game.id}`, { method: 'DELETE' })
       const body = await res.json()
       if (!res.ok) { showMsg('error', body.error ?? '삭제 실패'); return }
       showMsg('success', '삭제되었습니다')
       await loadGames()
     } catch { showMsg('error', '삭제 중 오류가 발생했습니다') }
-    finally { setDeletingId(null) }
+    finally { setBusyId(null) }
   }
+
+  const recruitingCount = games.filter((g) => g.status === 'recruiting').length
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#07090f' }}>
-      {/* 배경 글로우 */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{ background: 'radial-gradient(ellipse 70% 40% at 50% -5%, rgba(99,102,241,0.12) 0%, transparent 70%)' }}
       />
 
-      {/* 헤더 */}
       <header
         className="sticky top-0 z-50 border-b"
         style={{ background: 'rgba(7,9,15,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}
@@ -221,12 +209,11 @@ export default function CustomGamesPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
               <path d="M12 4v16m8-8H4" />
             </svg>
-            새 내전
+            내전 모집
           </button>
         </div>
       </header>
 
-      {/* 메인 */}
       <main className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-6 py-8">
         <div
           className="rounded-2xl border p-8"
@@ -234,23 +221,25 @@ export default function CustomGamesPage() {
         >
           <div className="mb-8">
             <h1 className="text-2xl font-black text-white tracking-tight mb-1">내전</h1>
-            <p className="text-sm text-slate-500">TFT 내전을 만들고 결과를 기록합니다</p>
+            <p className="text-sm text-slate-500">
+              내전을 모집하고 참가 신청을 받습니다
+              {!loading && recruitingCount > 0 && ` · 모집 중 ${recruitingCount}건`}
+            </p>
           </div>
 
-          {/* 알림 배너 */}
+          {migrationRequired && (
+            <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium">
+              내전 모집 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요.
+            </div>
+          )}
+
           {error && (
-            <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
-              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+            <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
               {error}
             </div>
           )}
           {successMsg && (
-            <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
-              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
+            <div className="mb-6 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
               {successMsg}
             </div>
           )}
@@ -267,104 +256,137 @@ export default function CustomGamesPage() {
               className="flex flex-col items-center justify-center py-20 border border-dashed rounded-2xl"
               style={{ borderColor: 'rgba(255,255,255,0.07)' }}
             >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-              </div>
-              <p className="text-slate-400 font-bold mb-1">진행 중인 내전이 없습니다</p>
-              <p className="text-slate-600 text-sm">오른쪽 위 [새 내전] 버튼으로 시작하세요</p>
+              <p className="text-slate-400 font-bold mb-1">모집 중인 내전이 없습니다</p>
+              <p className="text-slate-600 text-sm">오른쪽 위 [내전 모집] 버튼으로 시작하세요</p>
             </div>
           )}
 
           {!loading && games.length > 0 && (
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <table className="min-w-full border-collapse">
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['내전명', '유형', '상태', '최대 판수', '생성일', ''].map((label) => (
-                      <th key={label} className="px-4 py-3.5 text-left text-[10px] font-black text-slate-500 tracking-widest uppercase">
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {games.map((g, idx) => (
-                    <tr
-                      key={g.id}
-                      style={{
-                        background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      }}
-                    >
-                      <td className="px-4 py-3.5">
-                        <span className="font-bold text-white text-sm">{g.title}</span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {g.game_type === 'team' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-violet-500/10 border border-violet-500/20 text-violet-400">
-                            팀전
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                            개인전
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3.5"><StatusBadge status={g.status} /></td>
-                      <td className="px-4 py-3.5"><span className="text-sm text-slate-400">{g.max_rounds}판</span></td>
-                      <td className="px-4 py-3.5">
-                        <span className="text-xs text-slate-500">
-                          {new Date(g.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/custom-games/${g.id}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                              text-xs font-bold transition-all duration-150
-                              bg-indigo-500/10 border border-indigo-500/25 text-indigo-400
-                              hover:bg-indigo-500/20 hover:text-indigo-300"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                              <path strokeLinecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            보기
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(g.id)}
-                            disabled={deletingId === g.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                              text-xs font-bold transition-all duration-150
-                              bg-red-500/10 border border-red-500/20 text-red-400
-                              hover:bg-red-500/20 hover:text-red-300
-                              disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {deletingId === g.id ? <Spinner size={3} /> : (
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                                <path strokeLinecap="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            )}
-                            삭제
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="px-5 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
-                <span className="text-xs text-slate-600 font-medium">총 {games.length}개</span>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {games.map((g) => {
+                const capacity = g.capacity ?? DEFAULT_CAPACITY
+                const taken = (g.confirmed_count ?? 0) + (g.guest_count ?? 0)
+                const waitlistCount = g.waitlist_count ?? 0
+                const mine = g.my_participation ?? null
+                const joinable = g.status === 'recruiting'
+                const busy = busyId === g.id
+
+                return (
+                  <div
+                    key={g.id}
+                    className="rounded-2xl border p-5 flex flex-col gap-3"
+                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="text-base font-black text-white leading-snug break-all">{g.title}</h2>
+                      <Badge className={statusBadgeClass(g.status)}>{statusLabel(g.status)}</Badge>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge className={gameKindBadgeClass(g.game_kind)}>
+                        {gameKindLabel(g.game_kind, g.game_kind_label)}
+                      </Badge>
+                      {g.game_kind === 'tft' && (
+                        <Badge className={g.game_type === 'team'
+                          ? 'bg-violet-500/10 border-violet-500/20 text-violet-400'
+                          : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}>
+                          {g.game_type === 'team' ? '2인 팀전' : '개인전'}
+                        </Badge>
+                      )}
+                      <Badge className="bg-white/[0.04] border-white/[0.08] text-slate-300">
+                        {taken}/{capacity}
+                      </Badge>
+                      {waitlistCount > 0 && (
+                        <Badge className="bg-orange-500/10 border-orange-500/20 text-orange-400">
+                          대기 {waitlistCount}명
+                        </Badge>
+                      )}
+                      {mine && (
+                        <Badge className={mine.confirmed
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                          : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}>
+                          {mine.confirmed ? '참가 확정' : `대기 ${mine.position}번`}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-500 flex flex-col gap-0.5">
+                      <span>{formatKstSchedule(g.scheduled_at)}</span>
+                      <span>주최: {g.host_member_name ?? '알 수 없음'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1">
+                      <Link
+                        href={`/custom-games/${g.id}`}
+                        className="inline-flex items-center px-3 py-1.5 rounded-lg
+                          text-xs font-bold transition-all duration-150
+                          bg-indigo-500/10 border border-indigo-500/25 text-indigo-400
+                          hover:bg-indigo-500/20 hover:text-indigo-300"
+                      >
+                        상세
+                      </Link>
+
+                      {joinable && !mine && (
+                        <button
+                          type="button"
+                          onClick={() => handleJoin(g)}
+                          disabled={busy}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                            text-xs font-bold transition-all duration-150
+                            bg-emerald-500/10 border border-emerald-500/25 text-emerald-400
+                            hover:bg-emerald-500/20 hover:text-emerald-300
+                            disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {busy ? <Spinner size={3} /> : null}
+                          {taken >= capacity ? '대기 신청' : '참가 신청'}
+                        </button>
+                      )}
+
+                      {joinable && mine && (
+                        <button
+                          type="button"
+                          onClick={() => handleLeave(g)}
+                          disabled={busy}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                            text-xs font-bold transition-all duration-150
+                            bg-white/[0.04] border border-white/[0.08] text-slate-400
+                            hover:text-slate-200 hover:bg-white/[0.07]
+                            disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {busy ? <Spinner size={3} /> : null}
+                          참가 취소
+                        </button>
+                      )}
+
+                      {g.can_manage && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(g)}
+                          disabled={busy}
+                          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                            text-xs font-bold transition-all duration-150
+                            bg-red-500/10 border border-red-500/20 text-red-400
+                            hover:bg-red-500/20 hover:text-red-300
+                            disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {busy ? <Spinner size={3} /> : null}
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
+          )}
+
+          {!loading && games.length > 0 && (
+            <p className="mt-4 text-xs text-slate-600 font-medium">총 {games.length}개</p>
           )}
         </div>
       </main>
 
-      {/* 생성 모달 */}
+      {/* 모집 폼 */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -373,231 +395,166 @@ export default function CustomGamesPage() {
             onClick={() => !creating && setShowModal(false)}
           />
           <div
-            className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-5"
+            className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
             style={{ background: 'rgb(13,17,23)', borderColor: 'rgba(255,255,255,0.1)' }}
           >
             <div>
-              <h2 className="text-lg font-black text-white mb-1">새 내전 만들기</h2>
-              <p className="text-sm text-slate-500">참가자와 판수를 설정하세요</p>
+              <h2 className="text-lg font-black text-white mb-1">내전 모집</h2>
+              <p className="text-sm text-slate-500">일정과 정원을 정하면 참가 신청을 받습니다</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임 유형</label>
-              <div className="flex gap-2">
-                {([['solo', '개인전'], ['team', '팀전 (4팀 × 2인)']] as const).map(([type, label]) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => { setGameType(type); setSelectedIds(new Set()) }}
-                    disabled={creating}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
-                      gameType === type
-                        ? type === 'team'
-                          ? 'bg-violet-500/25 border border-violet-500/50 text-violet-300'
-                          : 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
-                        : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
-                    } disabled:opacity-50`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {gameType === 'team' && (
-                <p className="mt-1.5 text-xs text-violet-400/70">팀전은 멤버 + 게스트 합산 정확히 8명 필요</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">내전 이름</label>
+              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">제목</label>
               <input
                 type="text"
                 value={titleInput}
                 onChange={(e) => setTitleInput(e.target.value)}
-                placeholder="예) 5월 내전 1회차"
+                placeholder="예) 금요일 저녁 내전"
+                maxLength={60}
                 disabled={creating}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
                   bg-white/[0.04] border border-white/[0.08]
                   placeholder:text-slate-600
-                  focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5
+                  focus:outline-none focus:border-indigo-500/50
                   transition-all duration-200 disabled:opacity-50"
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">일자</label>
+                <input
+                  type="date"
+                  value={dateInput}
+                  onChange={(e) => setDateInput(e.target.value)}
+                  disabled={creating}
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                    bg-white/[0.04] border border-white/[0.08]
+                    focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">시간 (KST)</label>
+                <input
+                  type="time"
+                  value={timeInput}
+                  onChange={(e) => setTimeInput(e.target.value)}
+                  disabled={creating}
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                    bg-white/[0.04] border border-white/[0.08]
+                    focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">최대 판수</label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((n) => (
+              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임 종류</label>
+              <div className="grid grid-cols-4 gap-2">
+                {GAME_KIND_OPTIONS.map((opt) => (
                   <button
-                    key={n}
+                    key={opt.value}
                     type="button"
-                    onClick={() => setMaxRounds(n)}
+                    onClick={() => setGameKind(opt.value)}
                     disabled={creating}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
-                      maxRounds === n
+                    className={`py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+                      gameKind === opt.value
                         ? 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
                         : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
                     } disabled:opacity-50`}
                   >
-                    {n}판
+                    {opt.label}
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">
-                멤버 선택 ({selectedIds.size}명 {gameType === 'team' ? `/ 합산 정확히 8명` : '/ 최대 8명'})
-              </label>
-              <div
-                className="rounded-xl border overflow-y-auto max-h-52"
-                style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
-              >
-                {members.length === 0 ? (
-                  <p className="text-center text-slate-600 text-sm py-6">멤버가 없습니다</p>
-                ) : (
-                  members.map((m) => {
-                    const checked = selectedIds.has(m.id)
-                    const disabled = creating || (!checked && totalSelected >= 8)
-                    return (
-                      <label
-                        key={m.id}
-                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors
-                          border-b last:border-0 ${
-                          checked ? 'bg-indigo-500/10' : disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/[0.03]'
-                        }`}
-                        style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={disabled}
-                          onChange={() => toggleMember(m.id)}
-                          className="w-4 h-4 rounded accent-indigo-500"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-white truncate">{m.member_name}</p>
-                          <p className="text-xs text-slate-500 truncate">{m.riot_game_name}#{m.riot_tagline}</p>
-                        </div>
-                        {checked && (
-                          <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </label>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* 게스트 섹션 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold text-slate-400 tracking-widest uppercase">
-                  게스트 ({guestInputs.length}명)
-                </label>
-                {!showGuestForm && totalSelected < 8 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowGuestForm(true)}
-                    disabled={creating}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg
-                      text-xs font-bold transition-all duration-150
-                      bg-amber-500/10 border border-amber-500/20 text-amber-400
-                      hover:bg-amber-500/20 hover:text-amber-300
-                      disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
-                      <path d="M12 4v16m8-8H4" />
-                    </svg>
-                    추가
-                  </button>
-                )}
-              </div>
-
-              {/* 이미 추가된 게스트 목록 */}
-              {guestInputs.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {guestInputs.map((g, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border"
-                      style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }}
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      <span className="text-xs font-bold text-white">{g.display_name}</span>
-                      <span className="text-[10px] text-slate-500">{g.riot_game_name}#{g.riot_tagline}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGuest(i)}
-                        disabled={creating}
-                        className="ml-0.5 text-slate-600 hover:text-red-400 transition-colors disabled:opacity-40"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
-                          <path d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              {gameKind === 'etc' && (
+                <input
+                  type="text"
+                  value={kindLabel}
+                  onChange={(e) => setKindLabel(e.target.value)}
+                  placeholder="게임 이름 (예: 배틀그라운드)"
+                  maxLength={30}
+                  disabled={creating}
+                  className="mt-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-white
+                    bg-white/[0.04] border border-white/[0.08]
+                    placeholder:text-slate-600
+                    focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                />
               )}
+              {gameKind !== 'tft' && (
+                <p className="mt-1.5 text-xs text-slate-600">
+                  롤체 외 내전은 모집·참가 관리만 지원합니다 (라운드 결과 기록 없음)
+                </p>
+              )}
+            </div>
 
-              {/* 게스트 입력 폼 */}
-              {showGuestForm && (
-                <div
-                  className="p-3 rounded-xl border flex flex-col gap-2"
-                  style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}
-                >
+            {gameKind === 'tft' && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임 방식</label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="표시 이름 (예: 홍길동 부계)"
-                      disabled={creating}
-                      className="flex-1 px-3 py-2 rounded-lg text-xs text-white
-                        bg-white/[0.04] border border-white/[0.08]
-                        placeholder:text-slate-600
-                        focus:outline-none focus:border-amber-500/40
-                        disabled:opacity-50 transition-colors"
-                    />
-                    <input
-                      type="text"
-                      value={guestRiotId}
-                      onChange={(e) => setGuestRiotId(e.target.value)}
-                      placeholder="닉네임#태그"
-                      disabled={creating}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddGuestToList() }}
-                      className="flex-1 px-3 py-2 rounded-lg text-xs text-white
-                        bg-white/[0.04] border border-white/[0.08]
-                        placeholder:text-slate-600
-                        focus:outline-none focus:border-amber-500/40
-                        disabled:opacity-50 transition-colors"
-                    />
+                    {([['solo', '개인전'], ['team', '팀전 (4팀 × 2인)']] as const).map(([type, label]) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setGameType(type)}
+                        disabled={creating}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+                          gameType === type
+                            ? type === 'team'
+                              ? 'bg-violet-500/25 border border-violet-500/50 text-violet-300'
+                              : 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
+                            : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
+                        } disabled:opacity-50`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => { setShowGuestForm(false); setGuestName(''); setGuestRiotId('') }}
-                      disabled={creating}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
-                    >
-                      취소
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAddGuestToList}
-                      disabled={creating || !guestName.trim() || !guestRiotId.trim()}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold
-                        bg-amber-500/15 border border-amber-500/25 text-amber-400
-                        hover:bg-amber-500/25 hover:text-amber-300
-                        disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                    >
-                      추가
-                    </button>
+                  {isTftTeam && (
+                    <p className="mt-1.5 text-xs text-violet-400/70">팀전은 4팀 × 2인 구조라 정원이 8명으로 고정됩니다</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">최대 판수</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setMaxRounds(n)}
+                        disabled={creating}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+                          maxRounds === n
+                            ? 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
+                            : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
+                        } disabled:opacity-50`}
+                      >
+                        {n}판
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
+              </>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">정원</label>
+              <input
+                type="number"
+                min={2}
+                max={100}
+                value={effectiveCapacity}
+                onChange={(e) => setCapacityInput(Number(e.target.value))}
+                disabled={creating || isTftTeam}
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
+                  bg-white/[0.04] border border-white/[0.08]
+                  focus:outline-none focus:border-indigo-500/50
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <p className="mt-1.5 text-xs text-slate-600">
+                {isTftTeam ? '팀전은 8명 고정입니다' : '2~100명. 정원을 넘는 신청은 자동으로 대기자가 됩니다'}
+              </p>
             </div>
 
             <div className="flex gap-3 pt-1">
@@ -615,14 +572,14 @@ export default function CustomGamesPage() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={creating || (gameType === 'team' ? totalSelected !== 8 : totalSelected < 2) || !titleInput.trim()}
+                disabled={creating || !titleInput.trim() || !dateInput || !timeInput}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl
                   text-sm font-bold transition-all duration-200
                   bg-indigo-500/20 border border-indigo-500/40 text-indigo-300
                   hover:bg-indigo-500/30 hover:text-indigo-200
                   disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {creating ? <><Spinner size={4} /> 생성 중...</> : '내전 시작'}
+                {creating ? <><Spinner size={4} /> 등록 중...</> : '모집 시작'}
               </button>
             </div>
           </div>
