@@ -13,6 +13,13 @@
   --color-ok: oklch(0.696 0.17 162.48);       /* emerald-500 : 성공 */
   --color-warn: oklch(0.769 0.188 70.08);     /* amber-500 : 경고 */
   --color-danger: oklch(0.637 0.237 25.331);  /* red-500 : 위험 (rose 폐기) */
+
+  /* ── 위 역할색의 별칭. 새 체계를 만들지 않고 의미만 좁힌다 ── */
+  --color-up: var(--color-ok);       /* 랭크 상승 */
+  --color-down: var(--color-danger); /* 랭크 하락 */
+
+  /* 상단 네비 높이. SHELL 의 min-h 계산과 동일한 3.5rem */
+  --color-nav-h: 3.5rem;
 }
 
 /* ⚠ font-family 에 Arial 을 강제하지 않는다 — layout.tsx 가 주입한 Geist 변수를 덮어쓴다.

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isApprovedMember } from '@/lib/members/approved'
 import { getKrMaps, toKrAugmentName, toKrTraitName, toKrChampionName, getUnitImageUrl } from '@/lib/tft/tftLocale'
 
 type Ctx = { params: Promise<{ id: string }> }
@@ -32,11 +33,26 @@ const QUEUE_ID: Record<string, number> = {
   doubleup: 1160,
 }
 
+const DEFAULT_LIMIT = 5
+const MAX_LIMIT = 20
+
+function parseLimit(raw: string | null): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return DEFAULT_LIMIT
+  return Math.min(Math.max(Math.trunc(n), 1), MAX_LIMIT)
+}
+
 export async function GET(req: Request, ctx: Ctx) {
   const { id: memberId } = await ctx.params
+
+  if (!(await isApprovedMember(memberId))) {
+    return NextResponse.json({ error: '찾을 수 없습니다.' }, { status: 404 })
+  }
+
   const { searchParams } = new URL(req.url)
   const queueParam = searchParams.get('queue') ?? 'solo'
   const queueId = QUEUE_ID[queueParam]
+  const limit = parseLimit(searchParams.get('limit'))
 
   // 단일 쿼리: tft_matches ↔ tft_match_participants 조인 (기존 3회 쿼리 → 1회)
   let q = supabaseAdmin
@@ -57,7 +73,7 @@ export async function GET(req: Request, ctx: Ctx) {
     `)
     .eq('tft_match_participants.member_id', memberId)
     .order('game_datetime', { ascending: false })
-    .limit(5)
+    .limit(limit)
 
   if (queueId !== undefined) {
     q = q.eq('queue_id', queueId)

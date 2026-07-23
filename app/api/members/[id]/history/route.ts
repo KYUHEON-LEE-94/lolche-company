@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isApprovedMember } from '@/lib/members/approved'
 
 type Ctx = { params: Promise<{ id: string }> }
 
+const HISTORY_LIMIT = 60
+
 export async function GET(_req: Request, ctx: Ctx) {
   const { id: memberId } = await ctx.params
+
+  if (!(await isApprovedMember(memberId))) {
+    return NextResponse.json({ error: '찾을 수 없습니다.' }, { status: 404 })
+  }
 
   const { data: activeSeason } = await supabaseAdmin
     .from('seasons')
@@ -20,7 +27,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     .eq('member_id', memberId)
     .eq('season_id', activeSeason.id)
     .order('recorded_at', { ascending: false })
-    .limit(30)
+    .limit(HISTORY_LIMIT)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

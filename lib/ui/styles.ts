@@ -1,7 +1,8 @@
 // 공통 className 상수. 순수 문자열이므로 서버/클라이언트 양쪽에서 import 한다.
 // ⚠ 'server-only' 를 붙이지 않는다.
 
-export const SHELL = 'min-h-[calc(100vh-3.5rem)] bg-canvas px-4 py-12'
+// pb-24: 모바일 하단 탭바(예정)와 iOS 홈 인디케이터에 콘텐츠가 가리지 않도록 확보한다.
+export const SHELL = 'min-h-[calc(100vh-3.5rem)] bg-canvas px-4 pt-8 pb-24 md:py-12'
 export const CONTAINER = 'max-w-6xl mx-auto'
 
 export const CARD = 'rounded-2xl border border-line bg-surface'

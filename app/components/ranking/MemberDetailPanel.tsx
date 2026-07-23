@@ -1,11 +1,56 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import LpSparkline, { type HistoryPoint } from './LpSparkline'
+import { type HistoryPoint } from './LpSparkline'
+import RankLineChart from '../charts/RankLineChart'
+import PlacementHistogram from '../charts/PlacementHistogram'
 import type { Json } from '@/types/supabase'
 import { rarityBorderClass } from '@/lib/tft/tftLocale'
+
+type TopUnit = {
+  character_id: string
+  name: string
+  imageUrl: string
+  count: number
+  avgPlacement: number
+}
+
+type MemberStats = {
+  total: number
+  avgPlacement: number | null
+  top4Rate: number
+  winRate: number
+  distribution: number[]
+  recentForm: number[]
+  topUnits: TopUnit[]
+}
+
+type TabKey = 'overview' | 'matches'
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'overview', label: '개요' },
+  { key: 'matches', label: '전적' },
+]
+
+function StatBox({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone?: 'ok' | 'warn'
+}) {
+  const color = tone === 'ok' ? 'text-emerald-400' : tone === 'warn' ? 'text-amber-400' : 'text-white'
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-3 py-2">
+      <p className="text-[10px] text-slate-500 leading-none mb-1">{label}</p>
+      <p className={`text-sm font-black leading-none ${color}`}>{value}</p>
+    </div>
+  )
+}
 
 type ProcessedUnit = {
   character_id: string
@@ -179,24 +224,59 @@ export default function MemberDetailPanel({
   queue?: 'solo' | 'doubleup'
   onClose: () => void
 }) {
-  const [history, setHistory] = useState<HistoryPoint[]>([])
-  const [matches, setMatches] = useState<MatchRow[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(true)
-  const [loadingMatches, setLoadingMatches] = useState(true)
+  const queueLabel = queue === 'solo' ? '솔로' : '더블업'
+  const [tab, setTab] = useState<TabKey>('overview')
+  const [history, setHistory] = useState<HistoryPoint[] | null>(null)
+  const [stats, setStats] = useState<MemberStats | null>(null)
+  const [matches, setMatches] = useState<MatchRow[] | null>(null)
 
+  // 이미 요청한 리소스를 다시 부르지 않기 위한 키 집합.
+  const dataKey = `${member.id}|${queue}`
+  const requestedRef = useRef<{ key: string; set: Set<string> }>({ key: dataKey, set: new Set() })
+
+  // member/queue 가 바뀌면 렌더 중에 초기화한다(effect 내 setState 로 인한 캐스케이드 렌더 회피).
+  const [loadedKey, setLoadedKey] = useState(dataKey)
+  if (loadedKey !== dataKey) {
+    setLoadedKey(dataKey)
+    setHistory(null)
+    setStats(null)
+    setMatches(null)
+  }
+
+  const load = useCallback(
+    (key: string, resource: string, url: string, apply: (d: unknown) => void) => {
+      const store = requestedRef.current
+      if (store.key !== key) requestedRef.current = { key, set: new Set() }
+      const set = requestedRef.current.set
+      if (set.has(resource)) return
+      set.add(resource)
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then(apply)
+        .catch((e) => {
+          set.delete(resource)
+          console.error(`${resource} fetch 실패:`, e instanceof Error ? e.message : '오류 발생')
+        })
+    },
+    [],
+  )
+
+  // 탭별 lazy fetch — 마운트 시 필요한 것만 부른다.
   useEffect(() => {
-    fetch(`/api/members/${member.id}/history`)
-      .then((r) => r.json())
-      .then((d) => setHistory(d.history ?? []))
-      .catch((e) => console.error('history fetch 실패:', e instanceof Error ? e.message : '오류 발생'))
-      .finally(() => setLoadingHistory(false))
-
-    fetch(`/api/members/${member.id}/matches?queue=${queue}`)
-      .then((r) => r.json())
-      .then((d) => setMatches(d.matches ?? []))
-      .catch((e) => console.error('matches fetch 실패:', e instanceof Error ? e.message : '오류 발생'))
-      .finally(() => setLoadingMatches(false))
-  }, [member.id])
+    if (tab === 'overview') {
+      load(dataKey, 'history', `/api/members/${member.id}/history`, (d) =>
+        setHistory((d as { history?: HistoryPoint[] }).history ?? []),
+      )
+    }
+    load(dataKey, 'stats', `/api/members/${member.id}/stats?queue=${queue}`, (d) =>
+      setStats(d as MemberStats),
+    )
+    if (tab === 'matches') {
+      load(dataKey, 'matches', `/api/members/${member.id}/matches?queue=${queue}&limit=10`, (d) =>
+        setMatches((d as { matches?: MatchRow[] }).matches ?? []),
+      )
+    }
+  }, [tab, member.id, queue, dataKey, load])
 
   // ESC 닫기
   useEffect(() => {
@@ -224,7 +304,7 @@ export default function MemberDetailPanel({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-[#0d1117] border-l border-white/[0.08] z-50 flex flex-col overflow-hidden"
+          className="fixed right-0 top-0 bottom-0 w-full max-w-sm sm:max-w-lg bg-[#0d1117] border-l border-white/[0.08] z-50 flex flex-col overflow-hidden"
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
@@ -244,40 +324,129 @@ export default function MemberDetailPanel({
             </button>
           </div>
 
+          {/* 탭 */}
+          <div className="flex border-b border-white/[0.06] px-3">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-4 py-3 text-xs font-black tracking-wide transition-colors border-b-2 -mb-px ${
+                  tab === t.key
+                    ? 'text-white border-indigo-400'
+                    : 'text-slate-500 border-transparent hover:text-slate-300'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           {/* 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
-            {/* LP 히스토리 차트 */}
-            <section>
-              <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
-                LP 히스토리 ({queue === 'solo' ? '솔로' : '더블업'})
-              </h3>
-              {loadingHistory ? (
-                <div className="h-20 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
-              ) : (
-                <LpSparkline history={history} queue={queue} />
-              )}
-            </section>
+            {tab === 'overview' && (
+              <>
+                <section>
+                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                    랭크 그래프 ({queueLabel})
+                  </h3>
+                  {history === null ? (
+                    <div className="h-40 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
+                  ) : (
+                    <RankLineChart history={history} queue={queue} />
+                  )}
+                </section>
 
-            <div className="h-px bg-white/[0.05]" />
+                <div className="h-px bg-white/[0.05]" />
 
-            {/* 최근 5경기 */}
-            <section>
-              <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
-                최근 매치
-              </h3>
-              {loadingMatches ? (
-                <div className="text-slate-600 text-xs text-center py-4">불러오는 중…</div>
-              ) : matches.length === 0 ? (
-                <div className="text-slate-600 text-xs text-center py-4">매치 데이터 없음</div>
-              ) : (
-                <div className="space-y-2">
-                  {matches.map((m) => (
-                    <MatchCard key={m.match_id} match={m} />
-                  ))}
-                </div>
-              )}
-            </section>
+                <section>
+                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                    전적 요약 ({queueLabel})
+                  </h3>
+                  {stats === null ? (
+                    <div className="text-slate-600 text-xs text-center py-4">불러오는 중…</div>
+                  ) : stats.total === 0 ? (
+                    <div className="text-slate-600 text-xs text-center py-4">매치 데이터 없음</div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <StatBox label="표본" value={`${stats.total}판`} />
+                        <StatBox label="평균 등수" value={stats.avgPlacement?.toFixed(2) ?? '-'} />
+                        <StatBox label="TOP4" value={`${stats.top4Rate}%`} tone="ok" />
+                        <StatBox label="1위" value={`${stats.winRate}%`} tone="warn" />
+                      </div>
+                      {stats.recentForm.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-[10px] text-slate-600 mb-1.5">최근 {stats.recentForm.length}판</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {stats.recentForm.map((p, i) => (
+                              <span
+                                key={i}
+                                className={`w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center bg-white/[0.04] ${placementColor(p)}`}
+                              >
+                                {p}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              </>
+            )}
+
+            {tab === 'matches' && (
+              <>
+                <section>
+                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                    등수 분포
+                  </h3>
+                  {stats === null ? (
+                    <div className="h-28 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
+                  ) : (
+                    <PlacementHistogram distribution={stats.distribution} />
+                  )}
+                </section>
+
+                {stats && stats.topUnits.length > 0 && (
+                  <section>
+                    <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                      자주 쓴 기물
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {stats.topUnits.map((u) => (
+                        <div key={u.character_id} className="flex flex-col items-center gap-0.5 w-12" title={`${u.name} · ${u.count}회 · 평균 ${u.avgPlacement}위`}>
+                          <div className="relative w-8 h-8 rounded overflow-hidden border border-white/10 bg-white/5">
+                            <Image src={u.imageUrl} alt={u.name} fill sizes="32px" className="object-cover" unoptimized />
+                          </div>
+                          <span className="text-[9px] text-slate-500 leading-none">{u.count}회</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <div className="h-px bg-white/[0.05]" />
+
+                <section>
+                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                    최근 매치
+                  </h3>
+                  {matches === null ? (
+                    <div className="text-slate-600 text-xs text-center py-4">불러오는 중…</div>
+                  ) : matches.length === 0 ? (
+                    <div className="text-slate-600 text-xs text-center py-4">매치 데이터 없음</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {matches.map((m) => (
+                        <MatchCard key={m.match_id} match={m} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
 
           </div>
         </motion.aside>
