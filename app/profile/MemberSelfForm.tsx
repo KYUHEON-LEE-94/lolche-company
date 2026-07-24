@@ -29,6 +29,12 @@ type Props = {
     /** 대표 계정이 항상 첫 번째. 마이그레이션 미적용이면 빈 배열 */
     accounts: RiotAccountView[]
     migrationRequired: boolean
+    /**
+     * 온보딩처럼 등록 성공 후 다음 단계로 진행해야 하는 맥락에서 주입한다.
+     * 주입되면 등록 성공 시 router.refresh() 대신 이 콜백을 호출한다
+     * (온보딩은 서버 가드가 member 존재를 감지하면 대시보드로 튕겨내므로 refresh 를 쓰면 안 된다).
+     */
+    onRegistered?: () => void
 }
 
 const inputCls =
@@ -46,6 +52,7 @@ export default function MemberSelfForm({
     rejectedReason,
     accounts,
     migrationRequired,
+    onRegistered,
 }: Props) {
     const router = useRouter()
 
@@ -92,7 +99,8 @@ export default function MemberSelfForm({
             }
 
             setMessage(body.message ?? '신청이 접수되었습니다.')
-            router.refresh()
+            if (onRegistered) onRegistered()
+            else router.refresh()
         } catch (e) {
             setError(e instanceof Error ? e.message : '오류가 발생했습니다.')
         } finally {

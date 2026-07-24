@@ -65,6 +65,32 @@ async function syncDiscordAvatar(discordId: string, user: User) {
     }
 }
 
+/**
+ * 이 사용자가 members 행에 연결돼 있는지 판정한다(최초 로그인 = 미등록 판별).
+ * 계정 연결(linkDiscordAccount)이 먼저 돌았으므로 discord_id 사전 등록 행은 이미 user_id 가 채워졌다.
+ * 그래도 남은 케이스(다른 계정 선점)는 계정 탈취 방지를 위해 "내 것"으로 보지 않는다.
+ */
+async function isRegisteredMember(user: User): Promise<boolean> {
+    const { data: byUserId } = await supabaseService.schema('public')
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (byUserId) return true
+
+    const discordId = getDiscordId(user)
+    if (!discordId) return false
+
+    const { data: byDiscord } = await supabaseService.schema('public')
+        .from('members')
+        .select('id, user_id')
+        .eq('discord_id', discordId)
+        .maybeSingle()
+
+    return Boolean(byDiscord && (!byDiscord.user_id || byDiscord.user_id === user.id))
+}
+
 export async function GET(request: Request) {
     const url = new URL(request.url)
     const origin = url.origin
@@ -104,6 +130,13 @@ export async function GET(request: Request) {
         const target = new URL(next, origin)
         if (target.origin !== origin) {
             return NextResponse.redirect(new URL('/', origin))
+        }
+
+        // 최초 로그인(= 미등록)이면 온보딩으로 유도한다.
+        // 단, next 가 특정 경로를 명시하면(예: /admin 을 거쳐 로그인) 그 의도를 존중한다.
+        // 기본값('/') 이거나 온보딩 자체를 가리킬 때만 온보딩으로 보낸다.
+        if ((next === '/' || next === '/onboarding') && !(await isRegisteredMember(data.user))) {
+            return NextResponse.redirect(new URL('/onboarding', origin))
         }
 
         return NextResponse.redirect(target)
