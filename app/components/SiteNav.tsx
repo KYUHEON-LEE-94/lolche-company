@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AuthButtons from '@/app/components/AuthButtons'
@@ -113,6 +114,28 @@ function isActive(pathname: string, item: NavItem) {
 
 export default function SiteNav() {
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // 경로 변경 시 닫기는 effect가 아니라 메뉴 항목 onClick 에서 처리한다
+  // (effect 안 동기 setState 는 연쇄 렌더를 유발).
+
+  // 바깥 클릭·ESC 로 닫는다.
+  useEffect(() => {
+    if (!menuOpen) return
+    function onPointerDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [menuOpen])
 
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null
@@ -122,13 +145,52 @@ export default function SiteNav() {
     <>
       <nav className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          {/* 모바일: 링크 행 대신 로고만. 6항목 가로 스크롤이 375px 가로 스크롤의 원인이었다. */}
-          <Link
-            href="/"
-            className="md:hidden shrink-0 text-sm font-black tracking-tight text-white"
-          >
-            롤토 컴퍼니
-          </Link>
+          {/* 모바일: 햄버거(전체 메뉴) + 로고.
+              하단 탭바는 주요 4개만 담아 명예의 전당·롤을 접근할 수 없었다 → 햄버거로 전체 노출. */}
+          <div className="md:hidden relative flex items-center gap-1.5" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="전체 메뉴 열기"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 hover:bg-surface-2 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <Link href="/" className="shrink-0 text-sm font-black tracking-tight text-white">
+              롤토 컴퍼니
+            </Link>
+
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-line bg-[#0d1117]/95 backdrop-blur-sm shadow-2xl z-50"
+              >
+                {NAV_ITEMS.map((item) => {
+                  const active = isActive(pathname, item)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
+                        active ? 'bg-brand/15 text-indigo-300' : 'text-slate-200 hover:bg-surface-2'
+                      }`}
+                    >
+                      <NavIcon name={item.icon} className="h-[18px] w-[18px]" />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
           <div className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
