@@ -120,7 +120,7 @@ export default function SiteNav() {
 
   return (
     <>
-      <nav className="border-b border-line bg-canvas/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           {/* 모바일: 링크 행 대신 로고만. 6항목 가로 스크롤이 375px 가로 스크롤의 원인이었다. */}
           <Link
