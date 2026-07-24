@@ -158,7 +158,6 @@ export default async function ProfilePage() {
                                 id: member.id,
                                 member_name: member.member_name,
                                 riot_id: `${member.riot_game_name}#${member.riot_tagline}`,
-                                profile_image_path: member.profile_image_path,
                                 discord_avatar_url: member.discord_avatar_url ?? null,
                                 profile_frame_path: member.profile_frame_path,
                                 profile_updated_at: member.profile_updated_at,

@@ -12,7 +12,6 @@ type Props = {
         id: string
         member_name: string
         riot_id: string
-        profile_image_path: string | null
         discord_avatar_url: string | null
         profile_frame_path: string | null
         profile_updated_at: string | null
@@ -27,47 +26,31 @@ type Frame = {
     sort_order: number
 }
 
-const FRAME_PRESETS = [
-    { key: 'gold', label: '펭구', path: '/frames/frame1.png' },
-    { key: 'silver', label: '펭구링', path: '/frames/frame2.png' },
-    { key: 'emerald', label: '픽셀 펭구', path: '/frames/frame3.png' },
-] as const
-
-export default function ProfileEditor({ userId, member }: Props) {
+export default function ProfileEditor({ member }: Props) {
     const router = useRouter()
 
     const supabase = useMemo(() => createClient(), [])
 
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
-    const [imagePath, setImagePath] = useState<string | null>(member.profile_image_path)
     const [framePath, setFramePath] = useState<string | null>(member.profile_frame_path)
     const [frameUrl, setFrameUrl] = useState<string | null>(null)
 
     const [frames, setFrames] = useState<Frame[]>([])
     const [framesLoading, setFramesLoading] = useState(true)
 
-    const [imageUrl, setImageUrl] = useState<string | null>(null)
-    const [uploading, setUploading] = useState(false)
     const [savingFrame, setSavingFrame] = useState(false)
 
     const [toast, setToast] = useState<string | null>(null)
 
     const [isAdmin, setIsAdmin] = useState(false)
 
-    const hasImage = !!imagePath
-
-    // 표시 우선순위는 lib/members/avatar.ts 와 동일하게: 업로드 -> Discord 아바타.
-    const discordAvatarUrl = isDiscordAvatarUrl(member.discord_avatar_url)
+    // 프로필 사진은 Discord 프로필 전용이다(직접 업로드 제거).
+    const displayUrl = isDiscordAvatarUrl(member.discord_avatar_url)
         ? member.discord_avatar_url
         : null
-    const displayUrl = imageUrl ?? discordAvatarUrl
-    const avatarNotice = hasImage
-        ? discordAvatarUrl
-            ? '업로드한 이미지를 사용 중이에요. 제거하면 Discord 프로필 사진으로 돌아가요.'
-            : '업로드한 이미지를 사용 중이에요.'
-        : discordAvatarUrl
-          ? 'Discord 프로필 사진을 사용 중이에요. 이미지를 업로드하면 업로드한 사진이 우선해요.'
-          : 'Discord로 로그인하면 Discord 프로필 사진이 자동으로 사용돼요.'
+    const avatarNotice = displayUrl
+        ? 'Discord 프로필 사진을 사용 중이에요.'
+        : 'Discord로 로그인하면 Discord 프로필 사진이 자동으로 사용돼요.'
 
     useEffect(() => {
         if (!framePath) {
@@ -77,17 +60,6 @@ export default function ProfileEditor({ userId, member }: Props) {
         const { data } = supabase.storage.from('profile-frames').getPublicUrl(framePath)
         setFrameUrl(`${data.publicUrl}?t=${Date.now()}`) // 캐시 무효화(선택)
     }, [framePath])
-
-    // public bucket 기준: 경로 → 공개 URL로 변환
-    useEffect(() => {
-        if (!imagePath) {
-            setImageUrl(null)
-            return
-        }
-        const { data } = supabase.storage.from('profile-images').getPublicUrl(imagePath)
-        // 캐시 무효화(같은 파일명 업서트 시)
-        setImageUrl(`${data.publicUrl}?t=${Date.now()}`)
-    }, [imagePath])
 
     useEffect(() => {
         let mounted = true
@@ -165,86 +137,6 @@ export default function ProfileEditor({ userId, member }: Props) {
         }
     }
 
-    // -----------------------
-    // 이미지 업로드
-    // -----------------------
-    async function onPickImage(file: File) {
-        setUploading(true)
-        try {
-            // 간단한 가드(원하면 더 엄격하게: 용량 제한 등)
-            if (!file.type.startsWith('image/')) {
-                throw new Error('이미지 파일만 업로드할 수 있어요.')
-            }
-
-            const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
-            const objectPath = `${userId}/avatar-${Date.now()}.${ext}`
-
-            const { error: upErr } = await supabase.storage
-                .from('profile-images')
-                .upload(objectPath, file, {
-                    upsert: false,
-                    contentType: file.type,
-                })
-
-            if (upErr) throw upErr
-
-            // DB에 새 경로 저장
-            const res = await fetch('/api/profile/image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imagePath: objectPath }),
-            })
-
-            if (imagePath) {
-                await supabase.storage.from('profile-images').remove([imagePath])
-            }
-
-            const data = await res.json().catch(() => ({}))
-
-            if (!res.ok || !data.ok) {
-                throw new Error(data.message ?? 'DB 저장에 실패했어요.')
-            }
-
-            setImagePath(objectPath)
-            showToast('프로필 이미지가 저장됐어요 ✅')
-        } catch (e) {
-            showToast(e instanceof Error ? e.message : '이미지 업로드 중 오류가 발생했어요.')
-        } finally {
-            setUploading(false)
-        }
-    }
-
-    // -----------------------
-    // 이미지 제거 (선택)
-    // -----------------------
-    async function removeImage() {
-        setUploading(true)
-        try {
-            // 1) DB null 처리 먼저
-            const res = await fetch('/api/profile/image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imagePath: null }),
-            })
-            const data = await res.json().catch(() => ({}))
-            if (!res.ok || !data.ok) {
-                throw new Error(data.message ?? 'DB 저장에 실패했어요.')
-            }
-
-            // 2) 스토리지 파일 삭제는 선택이지만, 여기서는 같이 정리
-            if (imagePath) {
-                await supabase.storage.from('profile-images').remove([imagePath])
-            }
-
-            setImagePath(null)
-            showToast('프로필 이미지가 제거됐어요 ✅')
-        } catch (e) {
-            showToast(e instanceof Error ? e.message : '이미지 제거 중 오류가 발생했어요.')
-        } finally {
-            setUploading(false)
-        }
-    }
-
     return (
         <div className="grid gap-6">
             {/* 미리보기 카드 */}
@@ -254,7 +146,7 @@ export default function ProfileEditor({ userId, member }: Props) {
                         <div className="text-lg font-bold text-slate-100">{member.member_name}</div>
                         <div className="mt-1 text-sm text-slate-300">{member.riot_id}</div>
                         <div className="mt-2 text-xs text-slate-400">
-                            프로필은 선택 사항(이미지/프레임 각각 없어도 OK)
+                            프로필 사진은 Discord 프로필을 사용해요(프레임은 선택).
                         </div>
                     </div>
 
@@ -297,25 +189,10 @@ export default function ProfileEditor({ userId, member }: Props) {
                 )}
             </section>
 
-            {/* 프로필 이미지 섹션 */}
+            {/* 프로필 이미지 안내 섹션 */}
             <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <div className="text-slate-100 font-extrabold">프로필 이미지</div>
-                        <div className="mt-1 text-xs text-slate-400">{avatarNotice}</div>
-                    </div>
-
-                    <button
-                        disabled={uploading || !hasImage}
-                        onClick={removeImage}
-                        className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-                    >
-                    제거
-                    </button>
-                </div>
-
-                <div className="mt-5 flex items-center gap-5">
-                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60">
+                <div className="flex items-center gap-5">
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60 shrink-0">
                         {displayUrl ? (
                             <Image src={displayUrl} alt="avatar preview" fill className="object-cover" />
                         ) : (
@@ -323,23 +200,10 @@ export default function ProfileEditor({ userId, member }: Props) {
                         )}
                     </div>
 
-                    <label className="inline-flex items-center gap-3">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            disabled={uploading}
-                            onChange={(e) => {
-                                const f = e.target.files?.[0]
-                                if (f) onPickImage(f)
-                                e.currentTarget.value = ''
-                            }}
-                        />
-                        <span className="px-4 py-2 rounded-xl text-sm font-bold bg-amber-500/90 text-slate-900 hover:bg-amber-500 disabled:opacity-50 cursor-pointer">
-              {uploading ? '업로드 중...' : '이미지 업로드'}
-            </span>
-                        <span className="text-xs text-slate-400">권장: 원형</span>
-                    </label>
+                    <div>
+                        <div className="text-slate-100 font-extrabold">프로필 사진</div>
+                        <div className="mt-1 text-xs text-slate-400">{avatarNotice}</div>
+                    </div>
                 </div>
             </section>
 

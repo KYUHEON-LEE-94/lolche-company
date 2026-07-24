@@ -9,7 +9,6 @@ type ProfileStatus = {
   status: string | null
   riotAccountCount: number
   hasSteam: boolean
-  hasProfileImage: boolean
   steamVisibilityOk: boolean
 }
 
@@ -50,14 +49,6 @@ function buildItems(s: ProfileStatus): Item[] {
       hint: '같이 할 게임을 찾아줘요.',
       href: '/steam',
       cta: '연결하기',
-    },
-    {
-      key: 'image',
-      label: '프로필 이미지',
-      done: s.hasProfileImage,
-      hint: '랭킹 카드에 내 얼굴이 붙어요.',
-      href: '/profile',
-      cta: '설정하기',
     },
   ]
 }

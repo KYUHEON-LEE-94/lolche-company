@@ -11,7 +11,6 @@ export type ProfileStatus = {
   status: string | null
   riotAccountCount: number
   hasSteam: boolean
-  hasProfileImage: boolean
   /** steam_visibility === 3 (공개 프로필). 스팀 미연결이면 false. */
   steamVisibilityOk: boolean
 }
@@ -29,7 +28,6 @@ export async function GET() {
       status: null,
       riotAccountCount: 0,
       hasSteam: false,
-      hasProfileImage: false,
       steamVisibilityOk: false,
     }
     return NextResponse.json({ ok: true, ...empty })
@@ -37,7 +35,7 @@ export async function GET() {
 
   const { data: row, error } = await supabaseAdmin
     .from('members')
-    .select('steam_id64, steam_visibility, profile_image_path')
+    .select('steam_id64, steam_visibility')
     .eq('id', me.member.id)
     .maybeSingle()
 
@@ -54,7 +52,6 @@ export async function GET() {
     status: me.member.status,
     riotAccountCount,
     hasSteam: !!row?.steam_id64,
-    hasProfileImage: !!row?.profile_image_path,
     steamVisibilityOk: !!row?.steam_id64 && row?.steam_visibility === 3,
   }
 
