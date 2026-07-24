@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import { sanitizeNextPath } from '@/lib/auth/discord'
+import { GUILD_GATE_ID } from '@/lib/constants/features'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ALERT, CARD } from '@/lib/ui/styles'
 
@@ -44,6 +45,9 @@ function LoginInner() {
         provider: 'discord',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+          // 게이트 ON 이면 콜백에서 가입 서버 목록을 읽어야 하므로 guilds 스코프를 요청한다.
+          // OFF 면 기존대로 스코프 미지정(기본 identify email).
+          ...(GUILD_GATE_ID ? { scopes: 'identify email guilds' } : {}),
         },
       })
 

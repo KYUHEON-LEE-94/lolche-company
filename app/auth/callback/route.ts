@@ -2,10 +2,54 @@ import { NextResponse } from 'next/server'
 import { createRouteClient } from '@/lib/supabase/route'
 import { supabaseService } from '@/lib/supabase/service'
 import { getDiscordAvatarUrl, getDiscordId, sanitizeNextPath } from '@/lib/auth/discord'
+import { GUILD_GATE_ID } from '@/lib/constants/features'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import type { User } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+
+type GuildCheck = { ok: true } | { ok: false; message: string }
+
+/**
+ * 게이트 ON(GUILD_GATE_ID 비어있지 않음)일 때만 호출된다.
+ * OAuth 교환 직후 세션의 provider_token 으로 Discord 가입 서버 목록을 조회해
+ * GUILD_GATE_ID 길드에 속했는지 확인한다.
+ *
+ * ⚠ 실제 강제 지점. provider_token 이 없거나(스코프 누락) 비멤버면 무조건 차단한다.
+ *   네트워크/5xx 등 확인 자체가 실패하면 fail-closed 로 차단하되 재시도 가능 안내로 구분한다.
+ *   토큰은 로그/에러 메시지에 절대 남기지 않는다.
+ */
+async function checkGuildMembership(providerToken: string | null | undefined): Promise<GuildCheck> {
+    const blocked: GuildCheck = { ok: false, message: '이 디스코드 서버 멤버만 이용할 수 있어요.' }
+
+    if (!providerToken) return blocked
+
+    try {
+        const res = await fetch('https://discord.com/api/users/@me/guilds', {
+            headers: { Authorization: `Bearer ${providerToken}` },
+        })
+
+        // 4xx(권한/스코프 문제)는 비멤버로 간주해 차단, 5xx 는 재시도 가능 안내.
+        if (!res.ok) {
+            if (res.status >= 500) {
+                return { ok: false, message: '로그인 확인 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.' }
+            }
+            return blocked
+        }
+
+        const guilds: unknown = await res.json()
+        if (!Array.isArray(guilds)) return blocked
+
+        const isMember = guilds.some(
+            (g) => g && typeof g === 'object' && (g as { id?: unknown }).id === GUILD_GATE_ID,
+        )
+        return isMember ? { ok: true } : blocked
+    } catch (e) {
+        // 네트워크 오류 등: fail-closed. 메시지에 토큰/URL 을 싣지 않는다.
+        console.error('[auth/callback] 길드 확인 실패', e instanceof Error ? e.message : '오류 발생')
+        return { ok: false, message: '로그인 확인 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.' }
+    }
+}
 
 /**
  * discord_id로 등록된 행에 로그인 계정(user_id)을 연결한다.
@@ -115,6 +159,18 @@ export async function GET(request: Request) {
         if (error || !data.user) {
             const message = error?.message ?? '세션 생성에 실패했습니다.'
             return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(message)}`, origin))
+        }
+
+        // ⚠ 길드 게이트는 계정 연결/아바타 동기화보다 먼저 수행한다 —
+        //   비멤버의 members 행을 건드리지 않도록.
+        if (GUILD_GATE_ID) {
+            const gate = await checkGuildMembership(data.session?.provider_token)
+            if (!gate.ok) {
+                await supabase.auth.signOut()
+                return NextResponse.redirect(
+                    new URL(`/login?error=${encodeURIComponent(gate.message)}`, origin),
+                )
+            }
         }
 
         const discordId = getDiscordId(data.user)

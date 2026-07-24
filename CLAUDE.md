@@ -9,7 +9,7 @@ Riot Games API로 TFT 솔로/더블업 랭크를 동기화하고 실시간 리�
 - **데이터베이스:** Supabase (PostgreSQL)
 - **외부 API:** Riot Games TFT API
 - **스타일:** Tailwind CSS v4 + Framer Motion
-- **인증:** Supabase Auth — Discord OAuth 전용 (이메일/패스워드 로그인 미지원)
+- **인증:** Supabase Auth — Discord OAuth 전용 (이메일/패스워드 로그인 미지원). `NEXT_PUBLIC_DISCORD_GUILD_ID` 설정 시 해당 Discord 서버 멤버만 로그인 허용(콜백에서 강제)
 - **배포:** Vercel (크론 매일 09:30 자동 동기화)
 
 ## 빌드/실행 명령어
@@ -153,7 +153,22 @@ RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
+NEXT_PUBLIC_DISCORD_GUILD_ID=       # 값 있으면 그 Discord 서버(길드) 멤버만 로그인 허용, 비우면 게이트 off (기존 동작)
 ```
+
+### Discord 길드 로그인 게이트 — `NEXT_PUBLIC_DISCORD_GUILD_ID`
+
+특정 Discord 서버(길드) 멤버만 로그인하도록 막는 스위치. 상수는 `lib/constants/features.ts` → `GUILD_GATE_ID`.
+값이 있으면 게이트 ON, 비우면 OFF(아무 Discord 계정 로그인 가능 — 기존 동작). 서버를 바꾸려면 값만 교체한다.
+길드 ID는 공개 식별자라 `NEXT_PUBLIC_` 이어도 비밀 노출이 아니다 — **실제 강제는 서버측 콜백에서 한다**.
+
+- **방식 A(봇 불필요):** OAuth `guilds` 스코프. `app/login/page.tsx`가 게이트 ON일 때만
+  `scopes: 'identify email guilds'`를 요청하고, `app/auth/callback/route.ts`가
+  `session.provider_token`으로 `GET /users/@me/guilds`를 호출해 길드 소속을 확인한다.
+- **fail-closed:** provider_token 없음(스코프 누락)·비멤버·4xx면 차단, 5xx/네트워크 오류면
+  재시도 가능 안내로 구분해 차단. 차단 시 `auth.signOut()` 후 `/login?error=...`.
+- 길드 확인은 **계정 연결·아바타 동기화보다 먼저** 수행한다(비멤버의 members 행을 건드리지 않도록).
+- 클라이언트 스코프 요청은 토큰 획득용일 뿐이다. 콜백이 유일한 강제 지점이며 토큰은 로그에 남기지 않는다.
 
 ### LoL 기능 플래그 — `NEXT_PUBLIC_LOL_ENABLED`
 
