@@ -258,7 +258,7 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 
 - **타입:** `any` 사용 금지. catch 블록은 `catch (e)` + `e instanceof Error ? e.message : 'fallback'` 패턴 사용
 - **Supabase 쿼리:** 필요한 컬럼만 `select`로 지정 (Server Component에서 `*` 지양). 관계 테이블 조인은 `!inner` 임베디드 선택 사용 (N+1 방지)
-- **API 입력 검증:** 관리자 API의 문자열 입력은 빈값 체크 + 최대 길이 제한 필수 (`member_name` 50자, `riot_game_name` 30자, `riot_tagline` 10자)
+- **API 입력 검증:** 관리자 API의 문자열 입력은 빈값 체크 + 최대 길이 제한 필수 (`member_name` 25자, `riot_game_name` 30자, `riot_tagline` 10자)
 - **catch 패턴:**
   ```ts
   // ❌ 금지

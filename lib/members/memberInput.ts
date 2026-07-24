@@ -1,4 +1,4 @@
-export const MEMBER_NAME_MAX = 50
+export const MEMBER_NAME_MAX = 25
 export const RIOT_GAME_NAME_MAX = 30
 export const RIOT_TAGLINE_MAX = 10
 export const REJECTED_REASON_MAX = 200
