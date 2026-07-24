@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { createRouteClient } from '@/lib/supabase/route'
-import { requireAdmin } from '@/app/lib/isAdmin'
+import { getViewerMember, isApprovedMember } from '@/lib/customGames/authorize'
 import { syncOneMember } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
@@ -15,9 +14,9 @@ export async function POST(
   const t0 = Date.now()
   const { id: memberId } = await ctx.params
 
-  // 무인증 호출은 Riot 레이트리밋을 고갈시킬 수 있으므로 관리자 또는 본인만 허용한다.
-  const { data: { user } } = await (await createRouteClient()).auth.getUser()
-  if (!user) {
+  // 무인증 호출은 Riot 레이트리밋 고갈 벡터이므로 로그인은 반드시 요구한다.
+  const viewer = await getViewerMember()
+  if (!viewer) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -31,11 +30,13 @@ export async function POST(
     return NextResponse.json({ ok: false, error: 'member not found' }, { status: 404 })
   }
 
-  if (member.user_id !== user.id) {
-    const { ok: isAdmin } = await requireAdmin()
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-    }
+  // 승인된 멤버라면 남의 랭크도 갱신할 수 있다 — 랭킹은 모두가 함께 보는 공개 데이터라
+  // "내 것만" 제한은 실익 없이 UX만 해쳤다(다른 카드의 버튼이 403으로 실패).
+  // 레이트리밋 방어는 권한이 아니라 아래 멤버 단위 쿨다운이 담당한다.
+  // 본인 계정은 아직 미승인(pending)이어도 갱신할 수 있게 남겨 둔다.
+  const isOwnMember = member.user_id !== null && member.user_id === viewer.userId
+  if (!isOwnMember && !viewer.isAdmin && !isApprovedMember(viewer)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
   const now = Date.now()

@@ -72,7 +72,7 @@ app/
     steam-presence/route.ts     # ⚠ **외부 호출 전용 경계.** GetPlayerSummaries 로 "지금 접속 중" 조회
                                 #   force-dynamic + 로그인·approved 게이트 + 인메모리 TTL 캐시. DB 저장 없음
     members/[id]/
-      sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 관리자/본인 인증)
+      sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 로그인·승인 게이트)
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
       history/route.ts          # 랭크 히스토리 조회
     admin/
@@ -219,7 +219,7 @@ LoL 단계 전체를 건너뛰고 `null`을 반환해 기존 저장값을 덮어
 ```
 [프론트 동기화 버튼]
   → POST /api/members/[id]/sync
-      → 인증 체크 (로그인 필수 + 본인 소유 멤버 또는 requireAdmin())
+      → 인증 체크 (로그인 필수 + 승인 멤버 / 본인 소유 멤버 / 관리자)
       → 쿨다운 체크 (MIN_SYNC_INTERVAL_SEC)
       → syncOneMember() — 재시도 래퍼 (최대 5회, 지수 백오프)
           → doSyncMember()
@@ -716,7 +716,12 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 - 멤버 동기화는 기본 쿨다운 300초 (프론트: `NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC`, 백: `doSyncMember.ts` 내 10분)
 - 프로필 이미지: Supabase Storage `profile-images` 버킷
 - 프레임 이미지: Supabase Storage `profile-frames` 버킷
-- `/api/members/[id]/sync`는 로그인 + (본인 소유 멤버 또는 관리자)만 호출 가능 — 무인증 호출은 Riot 레이트리밋 고갈 벡터
+- `/api/members/[id]/sync`는 **로그인 + (승인 멤버 / 본인 소유 멤버 / 관리자)** 가 호출할 수 있다.
+  랭킹은 모두가 함께 보는 공개 데이터라 "내 것만" 제한은 실익 없이 `/tft` 카드의 동기화 버튼을 403으로 만들었다.
+  **레이트리밋 방어는 권한이 아니라 멤버 단위 쿨다운(`MIN_SYNC_INTERVAL_SEC`, 기본 300초)이 담당한다** —
+  누가 눌러도 같은 멤버는 5분에 1회를 넘길 수 없으므로 상한은 권한을 열기 전과 동일하다.
+  본인 계정은 아직 `pending`이어도 갱신할 수 있다(승인 전 랭크 확인 경로).
+  무인증 호출은 여전히 401 — 이것이 레이트리밋 고갈 방어의 실제 경계다
 - DB 마이그레이션은 `scripts/sql/`에 파일로만 작성하고 Supabase SQL Editor에서 직접 실행한다.
   **SQL 먼저 → 배포 나중** 순서를 지킬 것 (`members.status`, `hall_of_fame.member_name_snapshot`을 코드가 참조함)
 
