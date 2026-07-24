@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase/service'
 import type { Member, Season } from '@/types/supabase'
@@ -7,6 +6,10 @@ import { LOL_ENABLED } from '@/lib/constants/features'
 import { CARD, CARD_HOVER, CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import ProfileChecklist from '@/app/components/ProfileChecklist'
+import DashboardRankSections, {
+  type DashMover,
+  type DashRankMember,
+} from '@/app/DashboardRankSections'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { isApexTier, tierScore } from '@/lib/tft/tierScore'
 import { formatKstShort, gameKindLabel } from '@/lib/customGames/display'
@@ -176,6 +179,26 @@ export default async function DashboardPage() {
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .slice(0, 3)
 
+  // 아바타 URL·랭크 라벨을 서버에서 확정해 넘긴다 —
+  // resolveAvatarUrl/formatRank/isApexTier 를 클라이언트 번들로 끌어오지 않기 위해서다.
+  const toDashRank = (m: DashMember): DashRankMember => ({
+    id: m.id,
+    member_name: m.member_name,
+    tft_tier: m.tft_tier,
+    tft_rank: m.tft_rank,
+    tft_league_points: m.tft_league_points,
+    avatarUrl: resolveAvatarUrl(m),
+    rankLabel: formatRank(m.tft_tier, m.tft_rank, m.tft_league_points),
+  })
+
+  const leaderboardView: DashRankMember[] = leaderboard.map(toDashRank)
+
+  const moversView: DashMover[] = movers.map(({ member, delta }) => ({
+    member: toDashRank(member),
+    delta,
+    prevLabel: formatRank(member.tft_tier_prev, member.tft_rank_prev, member.tft_lp_prev),
+  }))
+
   const stats = [
     { label: '승인 멤버', value: `${members.length}명` },
     {
@@ -206,77 +229,10 @@ export default async function DashboardPage() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* ① 리더보드 TOP5 */}
-          <section className={`${CARD} p-5 lg:col-span-2`}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-black text-white">롤체 TOP 5</h2>
-              <Link href="/tft" className="text-xs font-bold text-indigo-300 hover:text-indigo-200">
-                전체 보기 →
-              </Link>
-            </div>
-
-            {leaderboard.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">아직 랭크 기록이 없어요.</p>
-            ) : (
-              <ol className="mt-3 divide-y divide-line">
-                {leaderboard.map((m, i) => {
-                  const url = resolveAvatarUrl(m)
-                  return (
-                    <li key={m.id} className="flex items-center gap-3 py-2.5 min-h-[44px]">
-                      <span className="w-5 shrink-0 text-center text-sm font-black text-slate-500">{i + 1}</span>
-                      {url ? (
-                        <Image
-                          src={url}
-                          alt=""
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 shrink-0 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="h-8 w-8 shrink-0 rounded-full bg-surface-2" aria-hidden />
-                      )}
-                      <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{m.member_name}</span>
-                      <span className="shrink-0 text-xs font-bold text-slate-400">
-                        {formatRank(m.tft_tier, m.tft_rank, m.tft_league_points)}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ol>
-            )}
-          </section>
-
-          {/* ② 최근 랭크 변동 */}
-          <section className={`${CARD} p-5`}>
-            <h2 className="text-sm font-black text-white">최근 랭크 변동</h2>
-
-            {movers.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">직전 동기화 대비 변동이 없어요.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {movers.map(({ member, delta }) => {
-                  const up = delta > 0
-                  return (
-                    <li key={member.id} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="min-w-0 truncate text-sm font-bold text-white">{member.member_name}</span>
-                        <span
-                          className={`shrink-0 text-xs font-black ${up ? 'text-emerald-400' : 'text-red-400'}`}
-                        >
-                          {up ? '▲' : '▼'} {Math.abs(delta)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 truncate">
-                        {formatRank(member.tft_tier_prev, member.tft_rank_prev, member.tft_lp_prev)}
-                        {' → '}
-                        {formatRank(member.tft_tier, member.tft_rank, member.tft_league_points)}
-                      </p>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
+          {/* ①② TOP5 + 랭크 변동 — 클릭 시 상세 패널.
+              ISR(revalidate=60) 공유 캐시라 상태는 클라이언트 아일랜드가 소유한다.
+              Fragment 를 반환하므로 grid 직계 자식 관계와 lg:col-span-2 가 보존된다. */}
+          <DashboardRankSections leaderboard={leaderboardView} movers={moversView} />
 
           {/* ③ 모집 중 내전 */}
           <section className={`${CARD} p-5`}>

@@ -47,6 +47,17 @@ type MemberAccount = {
   last_synced_at: string | null
 }
 
+/** fetch 실패 시 "불러오는 중…" 고착을 막기 위한 확정값(= 표본 0판). */
+const EMPTY_STATS: MemberStats = {
+  total: 0,
+  avgPlacement: null,
+  top4Rate: 0,
+  winRate: 0,
+  distribution: [],
+  recentForm: [],
+  topUnits: [],
+}
+
 type TabKey = 'overview' | 'matches' | 'accounts'
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -352,8 +363,15 @@ export default function MemberDetailPanel({
     setSelectedAccountId(null)
   }
 
+  // onFail 은 필수 인자다 — 빠뜨리면 실패 시 "불러오는 중…" 에 영구 고착된다.
   const load = useCallback(
-    (key: string, resource: string, url: string, apply: (d: unknown) => void) => {
+    (
+      key: string,
+      resource: string,
+      url: string,
+      apply: (d: unknown) => void,
+      onFail: () => void,
+    ) => {
       const store = requestedRef.current
       if (store.key !== key) requestedRef.current = { key, set: new Set() }
       const set = requestedRef.current.set
@@ -365,6 +383,7 @@ export default function MemberDetailPanel({
         .catch((e) => {
           set.delete(resource)
           console.error(`${resource} fetch 실패:`, e instanceof Error ? e.message : '오류 발생')
+          onFail()
         })
     },
     [],
@@ -373,25 +392,46 @@ export default function MemberDetailPanel({
   // 탭별 lazy fetch — 마운트 시 필요한 것만 부른다.
   useEffect(() => {
     if (tab === 'overview') {
-      load(dataKey, 'history', `/api/members/${member.id}/history`, (d) =>
-        setHistory((d as { history?: HistoryPoint[] }).history ?? []),
+      load(
+        dataKey,
+        'history',
+        `/api/members/${member.id}/history`,
+        (d) => setHistory((d as { history?: HistoryPoint[] }).history ?? []),
+        () => setHistory([]),
       )
     }
-    load(dataKey, 'stats', `/api/members/${member.id}/stats?queue=${queue}`, (d) =>
-      setStats(d as MemberStats),
+    load(
+      dataKey,
+      'stats',
+      `/api/members/${member.id}/stats?queue=${queue}`,
+      (d) => setStats(d as MemberStats),
+      () => setStats(EMPTY_STATS),
     )
     if (tab === 'matches') {
-      load(dataKey, 'matches', `/api/members/${member.id}/matches?queue=${queue}&limit=10`, (d) =>
-        setMatches((d as { matches?: MatchRow[] }).matches ?? []),
+      load(
+        dataKey,
+        'matches',
+        `/api/members/${member.id}/matches?queue=${queue}&limit=10`,
+        (d) => setMatches((d as { matches?: MatchRow[] }).matches ?? []),
+        () => setMatches([]),
       )
     }
     // 계정 탭은 "2개 이상일 때만" 노출하므로 개수를 알기 위해 탭과 무관하게 부른다.
     // 페이로드가 최대 3행이라 지연 로드보다 즉시 로드가 낫다.
-    load(dataKey, 'accounts', `/api/members/${member.id}/accounts`, (d) => {
-      const list = (d as { accounts?: MemberAccount[] }).accounts ?? []
-      setAccounts(list)
-      setSelectedAccountId(list.find((a) => a.is_primary)?.id ?? list[0]?.id ?? null)
-    })
+    load(
+      dataKey,
+      'accounts',
+      `/api/members/${member.id}/accounts`,
+      (d) => {
+        const list = (d as { accounts?: MemberAccount[] }).accounts ?? []
+        setAccounts(list)
+        setSelectedAccountId(list.find((a) => a.is_primary)?.id ?? list[0]?.id ?? null)
+      },
+      () => {
+        setAccounts([])
+        setSelectedAccountId(null)
+      },
+    )
   }, [tab, member.id, queue, dataKey, load])
 
   const multiAccount = (accounts?.length ?? 0) > 1
@@ -409,11 +449,20 @@ export default function MemberDetailPanel({
     ? accountRank(selectedAccount, queue)
     : { tier: member.tft_tier, rank: member.tft_rank, lp: member.tft_league_points }
 
-  // ESC 닫기
+  // ESC 닫기 + 배경 스크롤 잠금 + 닫은 뒤 트리거로 포커스 복귀
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+
+    return () => {
+      window.removeEventListener('keydown', handler)
+      document.body.style.overflow = prevOverflow
+      opener?.focus?.()
+    }
   }, [onClose])
 
   return (
@@ -427,10 +476,14 @@ export default function MemberDetailPanel({
           transition={{ duration: 0.2 }}
           className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
           onClick={onClose}
+          aria-hidden
         />
 
         {/* 패널 */}
         <motion.aside
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${member.member_name} 상세 전적`}
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
@@ -454,7 +507,9 @@ export default function MemberDetailPanel({
               ) : null}
             </div>
             <button
+              type="button"
               onClick={onClose}
+              aria-label="닫기"
               className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               ✕
