@@ -20,6 +20,8 @@ type Season = {
     season_name: string
     set_number: number
     is_active: boolean
+    start_date: string | null
+    end_date: string | null
 }
 
 export default function AdminSeasonManagementPage() {
@@ -240,19 +242,30 @@ export default function AdminSeasonManagementPage() {
                                             </svg>
                                         </button>
 
-                                        {/* 시즌 시작/종료 버튼 */}
-                                        <button
-                                            onClick={() => handleUpdateStatus(s.id, s.is_active)}
-                                            disabled={processingId === s.id}
-                                            className={[
-                                                'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200',
-                                                s.is_active
-                                                    ? 'bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20'
-                                                    : 'bg-indigo-600 text-white hover:bg-indigo-500'
-                                            ].join(' ')}
-                                        >
-                                            {processingId === s.id ? '...' : s.is_active ? '시즌 종료' : '시즌 시작'}
-                                        </button>
+                                        {/* 시즌 상태 버튼.
+                                            지난 시즌(종료되어 end_date 가 찍힌 비활성 시즌)은 다시 시작할 일이 없으므로
+                                            시작 버튼을 노출하지 않고 "종료됨" 라벨만 보여준다. */}
+                                        {s.is_active ? (
+                                            <button
+                                                onClick={() => handleUpdateStatus(s.id, true)}
+                                                disabled={processingId === s.id}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20"
+                                            >
+                                                {processingId === s.id ? '...' : '시즌 종료'}
+                                            </button>
+                                        ) : s.end_date ? (
+                                            <span className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-slate-500 bg-white/[0.03] border border-line">
+                                                종료됨
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleUpdateStatus(s.id, false)}
+                                                disabled={processingId === s.id}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-indigo-600 text-white hover:bg-indigo-500"
+                                            >
+                                                {processingId === s.id ? '...' : '시즌 시작'}
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>

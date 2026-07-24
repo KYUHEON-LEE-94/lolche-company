@@ -72,21 +72,30 @@ export async function updateSeasonStatusAction(id: number, targetStatus: boolean
 
     try {
         const { supabaseService } = await import('@/lib/supabase/service');
+        const nowIso = new Date().toISOString();
 
-        // 1. 만약 활성화(true)하려는 것이라면, 다른 모든 시즌을 비활성화
+        // 1. 활성화(시작)하려는 경우, 현재 활성 시즌은 "종료"로 마감한다.
+        //    end_date 를 찍어야 지난 시즌으로 판별되어 "시즌 시작" 버튼이 사라진다.
+        //    (기존에는 is_active 만 false 로 바꿔 end_date 가 비어 계속 시작 버튼이 노출됐다)
         if (targetStatus) {
             await supabaseService
                 .schema("public")
                 .from('seasons')
-                .update({ is_active: false })
-                .neq('id', -1); // 모든 행 선택을 위한 트릭
+                .update({ is_active: false, end_date: nowIso })
+                .eq('is_active', true);
         }
 
         // 2. 해당 시즌 상태 업데이트
+        //    시작: 활성화하며 end_date 를 비운다(재시작 시 다시 진행 중 상태로).
+        //    종료: 비활성화하며 end_date 를 찍어 지난 시즌으로 마감한다.
+        const patch = targetStatus
+            ? { is_active: true, end_date: null }
+            : { is_active: false, end_date: nowIso };
+
         const { error } = await supabaseService
             .schema("public")
             .from('seasons')
-            .update({ is_active: targetStatus })
+            .update(patch)
             .eq('id', id);
 
         if (error) throw error;
