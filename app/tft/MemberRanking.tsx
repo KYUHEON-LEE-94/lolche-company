@@ -143,6 +143,26 @@ function getTierStyle(tier: string | null) {
   return (tier && TIER_STYLES[tier.toUpperCase()]) ? TIER_STYLES[tier.toUpperCase()] : FALLBACK_STYLE
 }
 
+// 좁은 행에서 티어명을 압축 표기. 도메인 라벨이라 여기서만 쓴다.
+const TIER_SHORT: Record<string, string> = {
+  CHALLENGER: 'CHAL',
+  GRANDMASTER: 'GM',
+  MASTER: 'MASTER',
+  DIAMOND: 'DIA',
+  EMERALD: 'EMER',
+  PLATINUM: 'PLAT',
+  GOLD: 'GOLD',
+  SILVER: 'SILVER',
+  BRONZE: 'BRONZE',
+  IRON: 'IRON',
+}
+
+function shortTierLabel(tier: string | null, rank: string | null) {
+  if (!tier) return 'UNRANKED'
+  const base = TIER_SHORT[tier.toUpperCase()] ?? tier.toUpperCase()
+  return rank ? `${base} ${rank}` : base
+}
+
 // ─── 랭킹 배지 ───────────────────────────────────────────────────────────────
 
 function RankBadge({ idx }: { idx: number }) {
@@ -217,9 +237,9 @@ function SyncButton({
   )
 }
 
-// ─── 멤버 카드 ───────────────────────────────────────────────────────────────
+// ─── 멤버 행 ─────────────────────────────────────────────────────────────────
 
-const MemberCard = memo(function MemberCard({
+const MemberRow = memo(function MemberRow({
                       member,
                       idx,
                       queue,
@@ -257,157 +277,101 @@ const MemberCard = memo(function MemberCard({
     : []
 
   return (
-      <article
+      <div
           onClick={() => onDetailOpen(member)}
-          className={`
-        group relative flex flex-col rounded-2xl cursor-pointer
-        bg-[#0d1117] border border-white/[0.06]
-        overflow-hidden
-        transition-all duration-300
-        hover:-translate-y-1 hover:shadow-2xl
-        ${style.glow}
-      `}
+          className="
+        group relative flex items-center gap-2.5 sm:gap-3
+        min-h-[56px] pl-3 pr-2 sm:pr-3 py-2 cursor-pointer
+        transition-colors hover:bg-surface-2
+      "
       >
-        {/* 티어 컬러 스트립 */}
-        <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${style.strip}`} />
+        {/* 티어 컬러 액센트 (좌측 얇은 바) */}
+        <span className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-gradient-to-b ${style.strip} opacity-70`} />
 
-        {/* 배경 랭크 숫자 */}
-        <span
-            className="
-          pointer-events-none select-none absolute -right-2 top-3
-          text-[72px] font-black leading-none
-          text-white/[0.03] tracking-tight tabular-nums
-        "
-        >
-        {String(idx + 1).padStart(2, '0')}
-      </span>
+        {/* 순위 */}
+        <RankBadge idx={idx} />
 
-        <div className="relative p-5 pl-6 flex flex-col gap-4">
-
-          {/* 상단: 랭킹 배지 */}
-          <div className="flex items-start justify-between">
-            <RankBadge idx={idx} />
-            {/* 티어 아이콘 배지 */}
-            {tier && (
-                <span className={`text-[10px] font-black tracking-widest px-2 py-1 rounded-md border ${style.badge}`}>
-              {tier}
-            </span>
+        {/* 아바타 */}
+        <div className="relative w-9 h-9 shrink-0">
+          {framePath && (
+              <div className="absolute -inset-[7px] z-20 pointer-events-none">
+                <Image
+                    src={getFramePublicUrl(framePath)}
+                    alt=""
+                    fill
+                    sizes="52px"
+                    className="object-contain"
+                />
+              </div>
+          )}
+          <div className="
+            relative z-10 w-full h-full rounded-lg overflow-hidden
+            bg-surface-2 border border-line
+            flex items-center justify-center
+          ">
+            {profileUrl ? (
+                <Image src={profileUrl} alt={`${member.member_name} 프로필`} fill sizes="36px" className="object-cover" />
+            ) : (
+                <svg className="w-5 h-5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
             )}
           </div>
+        </div>
 
-          {/* 프로필 */}
-          <div className="flex items-center gap-3">
-            {/* 아바타 */}
-            <div className="relative w-[52px] h-[52px] flex-shrink-0">
-              {framePath && (
-                  <div className="absolute -inset-9 z-20 pointer-events-none">
-                    <Image
-                        src={getFramePublicUrl(framePath)}
-                        alt="profile frame"
-                        fill
-                        sizes="140px"
-                        className="object-contain"
-                    />
-                  </div>
-              )}
-              <div className="
-              relative z-10 w-full h-full rounded-xl overflow-hidden
-              bg-gradient-to-br from-slate-700 to-slate-800
-              border border-white/10
-              flex items-center justify-center
-            ">
-                {profileUrl ? (
-                    <Image src={profileUrl} alt={`${member.member_name} 프로필`} fill sizes="52px" className="object-cover" />
-                ) : (
-                    <svg className="w-6 h-6 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                )}
-              </div>
-            </div>
+        {/* 이름 · 라이엇 ID */}
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-white text-sm leading-tight truncate">{member.member_name}</p>
+          <p className="text-[11px] text-slate-500 leading-tight truncate">
+            {member.riot_game_name}
+            <span className="text-slate-600">#{member.riot_tagline}</span>
+          </p>
+        </div>
 
-            {/* 이름 정보 */}
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-0.5">카카오 ID</p>
-              <p className="font-bold text-white text-[15px] leading-tight truncate">{member.member_name}</p>
-              <p className="text-[12px] text-slate-500 mt-0.5 truncate">
-                {member.riot_game_name}
-                <span className="text-slate-600">#{member.riot_tagline}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* 구분선 */}
-          <div className="h-px bg-white/[0.05]" />
-
-          {/* 티어 + LP */}
-          <div className="flex items-center gap-3">
-            {/* 티어 아이콘 */}
-            <span className={`text-3xl leading-none ${style.text} drop-shadow-sm`}>
-            {style.icon}
-          </span>
-
-            <div className="flex-1">
-              <p className={`text-xl font-black leading-tight tracking-wide ${style.text}`}>
-                {tier ?? 'UNRANKED'}
-              </p>
-              <p className="text-[11px] font-bold text-slate-500 tracking-widest">
-                {rank ? `${rank} · DIVISION` : 'NO RANK'}
-              </p>
-            </div>
-
-            {/* LP 배지 */}
-            <div className="text-right bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2">
-              <p className="text-lg font-black text-white leading-none tabular-nums">{lp}</p>
-              <p className="text-[10px] font-bold text-slate-500 tracking-widest mt-0.5">LP</p>
-            </div>
-          </div>
-
-          {/* LP 변화 배지 + 최근 5경기 */}
-          {(lpDelta || recent5.length > 0) && (
-            <div className="flex items-center justify-between gap-2 -mt-1">
-              <div className="flex items-center gap-1.5">
-                {recent5.map((p, i) => (
-                  <span
-                    key={i}
-                    title={`${p}위`}
-                    className={`w-2 h-2 rounded-full ${p === 1 ? 'bg-yellow-400' : p <= 4 ? 'bg-emerald-500' : 'bg-slate-600'}`}
-                  />
-                ))}
-              </div>
-              {lpDelta && <LpDeltaBadge delta={lpDelta} />}
-            </div>
-          )}
-
-          {/* 구분선 */}
-          <div className="h-px bg-white/[0.05]" />
-
-          {/* 동기화 영역 */}
-          <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[11px] text-slate-600 leading-snug">
-              {effectiveLastSyncedAt && nowMs > 0 ? (
-                  <>
-                    최근{' '}
-                    <span className="text-slate-400 font-semibold">
-                  {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
-                </span>
-                  </>
-              ) : (
-                  <span>{nowMs === 0 ? '' : '동기화 기록 없음'}</span>
-              )}
-              {syncMsg && (
-                  <span className="block mt-0.5 text-amber-400">{syncMsg}</span>
-              )}
-            </div>
-
-            <SyncButton
-                remainSec={remainSec}
-                isSyncing={isSyncing}
-                onSync={() => onSync(member.id)}
+        {/* 최근 5경기 (md+) */}
+        <div className="hidden md:flex items-center justify-end gap-1 shrink-0 w-[72px]">
+          {recent5.slice(0, 5).map((p, i) => (
+            <span
+              key={i}
+              title={`${p}위`}
+              className={`w-2 h-2 rounded-full ${p === 1 ? 'bg-yellow-400' : p <= 4 ? 'bg-emerald-500' : 'bg-slate-600'}`}
             />
+          ))}
+        </div>
+
+        {/* LP 변동 (sm+) */}
+        <div className="hidden sm:flex items-center justify-end shrink-0 w-[92px]">
+          {lpDelta && <LpDeltaBadge delta={lpDelta} />}
+        </div>
+
+        {/* 티어 · LP */}
+        <div className="flex items-center gap-1.5 shrink-0 w-[92px] justify-end text-right">
+          <span className={`text-base leading-none ${style.text}`}>{style.icon}</span>
+          <div className="leading-tight">
+            <p className={`text-xs font-black ${style.text}`}>{shortTierLabel(tier, rank)}</p>
+            <p className="text-[11px] font-bold text-slate-300 tabular-nums">{lp} LP</p>
           </div>
         </div>
-      </article>
+
+        {/* 동기화 (행 클릭과 분리) */}
+        <div
+            className="flex flex-col items-end gap-0.5 shrink-0"
+            onClick={(e) => e.stopPropagation()}
+        >
+          <SyncButton
+              remainSec={remainSec}
+              isSyncing={isSyncing}
+              onSync={() => onSync(member.id)}
+          />
+          {syncMsg ? (
+              <span className="text-[10px] text-amber-400 max-w-[110px] truncate leading-tight">{syncMsg}</span>
+          ) : effectiveLastSyncedAt && nowMs > 0 ? (
+              <span className="hidden sm:block text-[10px] text-slate-600 leading-tight">
+                {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
+              </span>
+          ) : null}
+        </div>
+      </div>
   )
 })
 
@@ -480,7 +444,6 @@ export default function MemberRanking({
             backgroundRepeat: 'no-repeat',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundAttachment: 'fixed',
           }}
       >
         {/* 다크 오버레이 */}
@@ -564,15 +527,15 @@ export default function MemberRanking({
               </div>
             </header>
 
-            {/* ── 랭킹 그리드 ── */}
+            {/* ── 랭킹 리스트 ── */}
             {sorted.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-line bg-surface overflow-hidden divide-y divide-line">
                   {sorted.map((m, idx) => {
                     const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
                     return (
-                        <MemberCard
+                        <MemberRow
                             key={m.id}
                             member={m}
                             idx={idx}
