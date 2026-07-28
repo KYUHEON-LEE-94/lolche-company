@@ -6,14 +6,20 @@ import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
 import Image from 'next/image'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
-import { TFT_TEAM_CAPACITY } from '@/lib/customGames/constants'
+import LolTeamAssignPanel, {
+  EMPTY_LOL_DRAFT,
+  type LolTeamDraft,
+} from '@/app/custom-games/_components/LolTeamAssignPanel'
+import { LOL_POSITIONS, TFT_TEAM_CAPACITY } from '@/lib/customGames/constants'
 import { effectiveMemberCapacity } from '@/lib/customGames/waitlist'
 import {
   formatKstSchedule,
   formatKstShort,
   gameKindBadgeClass,
   gameKindLabel,
+  lolModeLabel,
   openNativePicker,
+  positionLabel,
   statusBadgeClass,
   statusLabel,
   steamCapsuleUrl,
@@ -32,6 +38,7 @@ type GameDetail = {
   game_kind: string
   game_kind_label: string | null
   steam_app_id: number | null
+  lol_mode: string | null
   max_rounds: number
   capacity: number
   scheduled_at: string | null
@@ -85,6 +92,20 @@ type TeamRow = {
   team_index: number
   member_id: string | null
   guest_id: string | null
+}
+
+type LolTeamRow = {
+  team_index: number
+  member_id: string | null
+  guest_id: string | null
+  position: string | null
+}
+
+type MemberOption = {
+  id: string
+  member_name: string
+  riot_game_name: string
+  riot_tagline: string
 }
 
 type MyParticipation = { id: string; position: number; confirmed: boolean } | null
@@ -287,6 +308,7 @@ export default function CustomGameDetailPage() {
   const [guests, setGuests] = useState<GuestParticipant[]>([])
   const [rounds, setRounds] = useState<Round[]>([])
   const [teams, setTeams] = useState<TeamRow[]>([])
+  const [lolTeams, setLolTeams] = useState<LolTeamRow[]>([])
   const [canManage, setCanManage] = useState(false)
   const [myParticipation, setMyParticipation] = useState<MyParticipation>(null)
   const [loading, setLoading] = useState(true)
@@ -322,6 +344,18 @@ export default function CustomGameDetailPage() {
   const [savingTeams, setSavingTeams] = useState(false)
   const [teamSaveError, setTeamSaveError] = useState<string | null>(null)
 
+  // 롤 팀 배정 상태
+  const [lolDraft, setLolDraft] = useState<LolTeamDraft>(EMPTY_LOL_DRAFT)
+  const [savingLolTeams, setSavingLolTeams] = useState(false)
+  const [lolTeamError, setLolTeamError] = useState<string | null>(null)
+
+  // 관리자 멤버 추가 상태
+  const [showMemberAdd, setShowMemberAdd] = useState(false)
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberOptions, setMemberOptions] = useState<MemberOption[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
+  const [addingMemberId, setAddingMemberId] = useState<string | null>(null)
+
   const showMsg = useCallback((type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
     else { setSuccessMsg(msg); setError(null) }
@@ -341,6 +375,7 @@ export default function CustomGameDetailPage() {
       setGuests(body.guests ?? [])
       setRounds(body.rounds ?? [])
       setTeams(body.teams ?? [])
+      setLolTeams(body.lol_teams ?? [])
       setCanManage(Boolean(body.can_manage))
       setMyParticipation(body.my_participation ?? null)
       setMigrationRequired(Boolean(body.migration_required))
@@ -352,6 +387,8 @@ export default function CustomGameDetailPage() {
 
   const isTft = game?.game_kind === 'tft'
   const isTeam = isTft && game?.game_type === 'team'
+  const isLol = game?.game_kind === 'lol'
+  const isRift = isLol && game?.lol_mode === 'rift'
   const isClosed = game?.status === 'ended' || game?.status === 'cancelled'
   const isRecruiting = game?.status === 'recruiting'
 
@@ -376,6 +413,36 @@ export default function CustomGameDetailPage() {
     setTeamSaveError(null)
   }, [teams, rounds.length, isTeam])
 
+  // ── 롤 팀 드래프트 초기화 ──────────────────────────────────────────
+  useEffect(() => {
+    if (!isLol) return
+    if (lolTeams.length === 0) {
+      setLolDraft(EMPTY_LOL_DRAFT)
+      setLolTeamError(null)
+      return
+    }
+    const next: LolTeamDraft = [
+      [null, null, null, null, null],
+      [null, null, null, null, null],
+    ]
+    lolTeams.forEach((t) => {
+      const memberKey = t.member_id
+      if (!memberKey) return
+      const teamIdx = t.team_index - 1
+      if (teamIdx !== 0 && teamIdx !== 1) return
+      // 협곡은 포지션으로 슬롯을 고정하고, 증바람은 빈 슬롯 순서대로 채운다.
+      const slot = isRift && t.position ? LOL_POSITIONS.indexOf(t.position as (typeof LOL_POSITIONS)[number]) : -1
+      if (slot >= 0) {
+        next[teamIdx][slot] = memberKey
+      } else {
+        const empty = next[teamIdx].findIndex((v) => v === null)
+        if (empty >= 0) next[teamIdx][empty] = memberKey
+      }
+    })
+    setLolDraft(next)
+    setLolTeamError(null)
+  }, [lolTeams, isLol, isRift])
+
   // ── 데이터 계산 ───────────────────────────────────────────────────
 
   const allParticipants: AnyParticipant[] = useMemo(() => [
@@ -394,6 +461,12 @@ export default function CustomGameDetailPage() {
       isGuest: true,
     })),
   ], [confirmedList, guests])
+
+  // 롤 팀 배정은 게스트 없이 확정 멤버만 대상으로 한다.
+  const lolParticipants = useMemo(
+    () => confirmedList.map((p) => ({ key: p.member_id, name: p.member_name })),
+    [confirmedList],
+  )
 
   // ── 이벤트 핸들러 ─────────────────────────────────────────────────
 
@@ -601,6 +674,85 @@ export default function CustomGameDetailPage() {
     } catch { setTeamSaveError('저장 중 오류가 발생했습니다') }
     finally { setSavingTeams(false) }
   }
+
+  // ── 롤 팀 배정 핸들러 ─────────────────────────────────────────────
+  const handleSaveLolTeams = async () => {
+    setSavingLolTeams(true)
+    setLolTeamError(null)
+    const assignments = lolDraft.flatMap((team, teamIdx) =>
+      team
+        .map((key, slotIdx) => ({ key, slotIdx }))
+        .filter((s): s is { key: string; slotIdx: number } => s.key !== null)
+        .map((s) => ({
+          team_index: teamIdx + 1,
+          member_id: s.key,
+          ...(isRift ? { position: LOL_POSITIONS[s.slotIdx] } : {}),
+        })),
+    )
+    try {
+      const res = await fetch(`/api/custom-games/${gameId}/lol-teams`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignments }),
+      })
+      const body = await res.json()
+      if (!res.ok) { setLolTeamError(body.error ?? '저장 실패'); return }
+      showMsg('success', '팀 배정이 저장되었습니다')
+      await loadDetail()
+    } catch { setLolTeamError('저장 중 오류가 발생했습니다') }
+    finally { setSavingLolTeams(false) }
+  }
+
+  const handleRandomLolTeams = async () => {
+    setSavingLolTeams(true)
+    setLolTeamError(null)
+    try {
+      const res = await fetch(`/api/custom-games/${gameId}/lol-teams`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ random: true }),
+      })
+      const body = await res.json()
+      if (!res.ok) { setLolTeamError(body.error ?? '랜덤 배정 실패'); return }
+      await loadDetail()
+    } catch { setLolTeamError('랜덤 배정 중 오류가 발생했습니다') }
+    finally { setSavingLolTeams(false) }
+  }
+
+  // ── 관리자 멤버 직접 추가 핸들러 ──────────────────────────────────
+  const loadMemberOptions = useCallback(async (q: string) => {
+    setLoadingOptions(true)
+    try {
+      const res = await fetch(`/api/custom-games/${gameId}/member-options?q=${encodeURIComponent(q)}`)
+      const body = await res.json()
+      if (!res.ok) { showMsg('error', body.error ?? '멤버 목록 로드 실패'); return }
+      setMemberOptions(body.members ?? [])
+    } catch { showMsg('error', '멤버 목록 로드 중 오류가 발생했습니다') }
+    finally { setLoadingOptions(false) }
+  }, [gameId, showMsg])
+
+  const handleAddMember = async (memberId: string) => {
+    setAddingMemberId(memberId)
+    try {
+      const res = await fetch(`/api/custom-games/${gameId}/participants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_id: memberId }),
+      })
+      const body = await res.json()
+      if (!res.ok) { showMsg('error', body.error ?? '추가 실패'); return }
+      showMsg('success', '멤버가 추가되었습니다')
+      await Promise.all([loadDetail(), loadMemberOptions(memberQuery)])
+    } catch { showMsg('error', '추가 중 오류가 발생했습니다') }
+    finally { setAddingMemberId(null) }
+  }
+
+  // 관리자 멤버 추가 패널이 열려 있는 동안만 후보를 조회한다(검색어 디바운스).
+  useEffect(() => {
+    if (!showMemberAdd) return
+    const t = setTimeout(() => { loadMemberOptions(memberQuery) }, 250)
+    return () => clearTimeout(t)
+  }, [showMemberAdd, memberQuery, loadMemberOptions])
 
   // ── 파생 값 ───────────────────────────────────────────────────────
 
@@ -844,6 +996,11 @@ export default function CustomGameDetailPage() {
                       {isTeam ? '2인 팀전' : '개인전'}
                     </Badge>
                   )}
+                  {isLol && game.lol_mode && (
+                    <Badge className="bg-sky-500/10 border-sky-500/20 text-sky-400">
+                      {lolModeLabel(game.lol_mode)}
+                    </Badge>
+                  )}
                   <Badge className={statusBadgeClass(game.status)}>{statusLabel(game.status)}</Badge>
                   {myParticipation && (
                     <Badge className={myParticipation.confirmed
@@ -891,19 +1048,93 @@ export default function CustomGameDetailPage() {
                   <h2 className="text-xs font-black text-subtle tracking-widest uppercase">
                     확정 명단 ({seatsTaken}/{game.capacity})
                   </h2>
-                  {isTft && !isClosed && canManage && canAddGuest && !showGuestForm && (
-                    <button
-                      type="button"
-                      onClick={() => setShowGuestForm(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                        text-xs font-bold transition-all duration-150
-                        bg-amber-500/10 border border-amber-500/20 text-warn-ink
-                        hover:bg-amber-500/20 hover:text-warn-ink"
-                    >
-                      게스트 추가
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {canManage && !isClosed && (
+                      <button
+                        type="button"
+                        onClick={() => setShowMemberAdd((v) => !v)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                          text-xs font-bold transition-all duration-150
+                          bg-brand/10 border border-brand/25 text-brand-ink
+                          hover:bg-brand/20"
+                      >
+                        멤버 추가
+                      </button>
+                    )}
+                    {isTft && !isClosed && canManage && canAddGuest && !showGuestForm && (
+                      <button
+                        type="button"
+                        onClick={() => setShowGuestForm(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                          text-xs font-bold transition-all duration-150
+                          bg-amber-500/10 border border-amber-500/20 text-warn-ink
+                          hover:bg-amber-500/20 hover:text-warn-ink"
+                      >
+                        게스트 추가
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {canManage && !isClosed && showMemberAdd && (
+                  <div className="mb-4 p-4 rounded-xl border border-line bg-surface">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-black text-brand-ink tracking-widest uppercase">승인 멤버 추가</p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowMemberAdd(false); setMemberQuery('') }}
+                        className="text-xs font-bold text-subtle hover:text-muted transition-colors"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={memberQuery}
+                      onChange={(e) => setMemberQuery(e.target.value)}
+                      placeholder="멤버 이름 검색"
+                      className="w-full mb-3 px-3 py-2 rounded-lg text-sm text-fg
+                        bg-surface-2 border border-line
+                        placeholder:text-faint
+                        focus:outline-none focus:border-brand/50 transition-colors"
+                    />
+                    {loadingOptions ? (
+                      <div className="flex items-center gap-2 text-subtle text-sm py-3">
+                        <Spinner size={4} /> 불러오는 중...
+                      </div>
+                    ) : memberOptions.length === 0 ? (
+                      <p className="text-sm text-faint py-2">추가할 수 있는 승인 멤버가 없습니다</p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                        {memberOptions.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-line bg-surface-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-fg leading-tight truncate">{m.member_name}</p>
+                              <p className="text-[10px] text-faint truncate">
+                                {m.riot_game_name ? `${m.riot_game_name}#${m.riot_tagline}` : '라이엇 ID 미등록'}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddMember(m.id)}
+                              disabled={addingMemberId === m.id}
+                              className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                                text-xs font-bold transition-all duration-150
+                                bg-emerald-500/10 border border-emerald-500/25 text-ok-ink
+                                hover:bg-emerald-500/20 hover:text-ok-ink
+                                disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              {addingMemberId === m.id ? <Spinner size={3} /> : '추가'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {isTft && showGuestForm && (
                   <div
@@ -1186,7 +1417,70 @@ export default function CustomGameDetailPage() {
                 </>
               )}
 
-              {!isTft && (
+              {/* ── 롤 내전: 팀/포지션 배정 (전용 경로, TFT 로직과 분리) ───── */}
+              {isLol && (
+                <>
+                  {canManage && !isClosed && (
+                    <LolTeamAssignPanel
+                      participants={lolParticipants}
+                      mode={isRift ? 'rift' : 'aram'}
+                      draft={lolDraft}
+                      onChange={setLolDraft}
+                      onRandom={handleRandomLolTeams}
+                      onSave={handleSaveLolTeams}
+                      saving={savingLolTeams}
+                      validationError={lolTeamError}
+                    />
+                  )}
+
+                  {lolTeams.length > 0 && (
+                    <div className="mb-8">
+                      <h2 className="text-xs font-black text-subtle tracking-widest uppercase mb-3">팀 구성</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {([1, 2] as const).map((teamIndex) => {
+                          const rows = lolTeams
+                            .filter((t) => t.team_index === teamIndex && t.member_id)
+                            .sort((a, b) => {
+                              if (!isRift) return 0
+                              return LOL_POSITIONS.indexOf(a.position as (typeof LOL_POSITIONS)[number]) -
+                                LOL_POSITIONS.indexOf(b.position as (typeof LOL_POSITIONS)[number])
+                            })
+                          const ts = teamIndex === 1
+                            ? { bg: 'bg-rose-500/10 border-rose-500/25', dot: 'bg-rose-500', text: 'text-danger-ink', label: '1팀 (블루)' }
+                            : { bg: 'bg-sky-500/10 border-sky-500/25', dot: 'bg-sky-500', text: 'text-sky-400', label: '2팀 (레드)' }
+                          return (
+                            <div key={teamIndex} className={`rounded-xl border p-3 ${ts.bg}`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={`w-1.5 h-1.5 rounded-full ${ts.dot}`} />
+                                <span className={`text-[10px] font-black tracking-widest uppercase ${ts.text}`}>{ts.label}</span>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                {rows.length === 0 && <p className="text-xs text-faint">미배정</p>}
+                                {rows.map((t) => (
+                                  <div key={`${t.member_id}-${t.position ?? ''}`} className="flex items-center gap-2 text-sm">
+                                    {isRift && (
+                                      <span className="w-10 text-[10px] font-bold text-muted shrink-0">
+                                        {positionLabel(t.position)}
+                                      </span>
+                                    )}
+                                    <span className="font-bold text-fg">
+                                      {confirmedList.find((p) => p.member_id === t.member_id)?.member_name
+                                        ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
+                                        ?? '알 수 없음'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!isTft && !isLol && (
                 <p className="text-sm text-faint">
                   {gameKindLabel(game.game_kind, game.game_kind_label)} 내전은 모집·참가 관리만 지원합니다.
                 </p>

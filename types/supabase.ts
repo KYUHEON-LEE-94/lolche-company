@@ -256,6 +256,7 @@ export type CustomGame = {
   game_kind: string // CustomGameKind
   game_kind_label: string | null // 'etc'는 필수, 'steam'은 선택. 그 외는 항상 null
   steam_app_id: number | null // game_kind='steam' 전용. 캡슐 이미지 표시용 스냅샷 (FK 없음)
+  lol_mode: string | null // 'aram' | 'rift' — game_kind='lol' 전용. 그 외는 항상 null
   host_member_id: string | null // 주최자 추방 시 null (FK on delete set null)
   scheduled_at: string | null
   capacity: number
@@ -271,6 +272,7 @@ export type CustomGameTeam = {
   team_index: number
   member_id: string | null
   guest_id: string | null
+  position: string | null // 협곡 포지션 슬롯(top/jungle/mid/adc/support). 증바람·TFT는 null
   created_at: string
 }
 

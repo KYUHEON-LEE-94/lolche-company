@@ -6,12 +6,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
-import { TFT_TEAM_CAPACITY, type GameKind } from '@/lib/customGames/constants'
+import { LOL_CAPACITY, LOL_MODES, TFT_TEAM_CAPACITY, type GameKind, type LolMode } from '@/lib/customGames/constants'
 import {
   GAME_KIND_OPTIONS,
+  LOL_MODE_LABELS,
   formatKstSchedule,
   gameKindBadgeClass,
   gameKindLabel,
+  lolModeLabel,
   openNativePicker,
   statusBadgeClass,
   statusLabel,
@@ -34,6 +36,7 @@ type GameRow = {
   game_kind?: string
   game_kind_label?: string | null
   steam_app_id?: number | null
+  lol_mode?: string | null
   capacity?: number
   scheduled_at?: string | null
   host_member_id?: string | null
@@ -71,6 +74,7 @@ export default function CustomGamesPage() {
   const [gameKind, setGameKind] = useState<GameKind>('tft')
   const [kindLabel, setKindLabel] = useState('')
   const [steamGame, setSteamGame] = useState<SteamGameSelection>({ label: '', appId: null })
+  const [lolMode, setLolMode] = useState<LolMode>('rift')
   const [gameType, setGameType] = useState<'solo' | 'team'>('solo')
   const [maxRounds, setMaxRounds] = useState(5)
   const [creating, setCreating] = useState(false)
@@ -97,8 +101,9 @@ export default function CustomGamesPage() {
 
   useEffect(() => { loadGames() }, [loadGames])
 
+  const isLol = gameKind === 'lol'
   const isTftTeam = gameKind === 'tft' && gameType === 'team'
-  const effectiveCapacity = isTftTeam ? TFT_TEAM_CAPACITY : capacityInput
+  const effectiveCapacity = isLol ? LOL_CAPACITY : isTftTeam ? TFT_TEAM_CAPACITY : capacityInput
 
   const handleOpenModal = () => {
     setTitleInput('')
@@ -108,6 +113,7 @@ export default function CustomGamesPage() {
     setGameKind('tft')
     setKindLabel('')
     setSteamGame({ label: '', appId: null })
+    setLolMode('rift')
     setGameType('solo')
     setMaxRounds(5)
     setShowModal(true)
@@ -138,6 +144,7 @@ export default function CustomGamesPage() {
                 ? steamGame.label.trim() || null
                 : null,
           ...(gameKind === 'steam' ? { steam_app_id: steamGame.appId } : {}),
+          ...(gameKind === 'lol' ? { lol_mode: lolMode } : {}),
           ...(gameKind === 'tft' ? { game_type: gameType, max_rounds: maxRounds } : {}),
         }),
       })
@@ -281,6 +288,11 @@ export default function CustomGamesPage() {
                           ? 'bg-violet-500/10 border-violet-500/20 text-violet-400'
                           : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}>
                           {g.game_type === 'team' ? '2인 팀전' : '개인전'}
+                        </Badge>
+                      )}
+                      {g.game_kind === 'lol' && g.lol_mode && (
+                        <Badge className="bg-sky-500/10 border-sky-500/20 text-sky-400">
+                          {lolModeLabel(g.lol_mode)}
                         </Badge>
                       )}
                       <Badge className="bg-surface-2 border-line text-muted">
@@ -474,7 +486,33 @@ export default function CustomGamesPage() {
               {gameKind === 'steam' && !migrationRequired && (
                 <SteamGamePicker value={steamGame} onChange={setSteamGame} disabled={creating} />
               )}
-              {gameKind !== 'tft' && (
+              {isLol && (
+                <div className="mt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {LOL_MODES.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setLolMode(mode)}
+                        disabled={creating}
+                        className={`py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+                          lolMode === mode
+                            ? 'bg-sky-500/25 border border-sky-500/50 text-brand-ink'
+                            : 'bg-surface border border-line text-subtle hover:text-muted hover:bg-surface-2'
+                        } disabled:opacity-50`}
+                      >
+                        {LOL_MODE_LABELS[mode]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-xs text-faint">
+                    {lolMode === 'rift'
+                      ? '협곡은 5:5 팀 분할 + 포지션 배치를 상세에서 지원합니다 (정원 10명 고정)'
+                      : '증바람은 5:5 팀 분할을 상세에서 지원합니다 (정원 10명 고정)'}
+                  </p>
+                </div>
+              )}
+              {(gameKind === 'steam' || gameKind === 'etc') && (
                 <p className="mt-1.5 text-xs text-faint">
                   롤체 외 내전은 모집·참가 관리만 지원합니다 (라운드 결과 기록 없음)
                 </p>
@@ -540,14 +578,18 @@ export default function CustomGamesPage() {
                 max={100}
                 value={effectiveCapacity}
                 onChange={(e) => setCapacityInput(Number(e.target.value))}
-                disabled={creating || isTftTeam}
+                disabled={creating || isTftTeam || isLol}
                 className="w-full px-4 py-3 rounded-xl text-sm font-medium text-fg
                   bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50
                   disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <p className="mt-1.5 text-xs text-faint">
-                {isTftTeam ? '팀전은 8명 고정입니다' : '2~100명. 정원을 넘는 신청은 자동으로 대기자가 됩니다'}
+                {isLol
+                  ? '롤 내전은 5:5 구조라 10명 고정입니다'
+                  : isTftTeam
+                    ? '팀전은 8명 고정입니다'
+                    : '2~100명. 정원을 넘는 신청은 자동으로 대기자가 됩니다'}
               </p>
             </div>
 

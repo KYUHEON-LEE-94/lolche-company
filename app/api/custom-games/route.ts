@@ -3,10 +3,12 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, canManageGame, isApprovedMember } from '@/lib/customGames/authorize'
 import {
   GAME_COLUMNS,
+  PRE_LOL_GAME_COLUMNS,
   LEGACY_GAME_COLUMNS,
   PRE_RECRUIT_GAME_COLUMNS,
   isCheckViolation,
   isMissingColumnError,
+  lolMigrationRequiredResponse,
   migrationRequiredResponse,
   steamMigrationRequiredResponse,
   type GameRow,
@@ -46,28 +48,43 @@ export async function GET() {
     }
     migrationRequired = true
 
-    const legacy = await supabaseAdmin
+    // 20260731(lol_mode) 미적용 → PRE_LOL 로 내려간다(steam_app_id 는 존재).
+    const preLol = await supabaseAdmin
       .from('custom_games')
-      .select(LEGACY_GAME_COLUMNS)
+      .select(PRE_LOL_GAME_COLUMNS)
       .order('created_at', { ascending: false })
 
-    if (legacy.error) {
-      if (!isMissingColumnError(legacy.error)) {
-        return NextResponse.json({ error: legacy.error.message }, { status: 500 })
+    if (preLol.error) {
+      if (!isMissingColumnError(preLol.error)) {
+        return NextResponse.json({ error: preLol.error.message }, { status: 500 })
       }
-      // 20260725 자체가 미적용 — 모집 컬럼이 없어 집계를 만들 수 없다.
-      const preRecruit = await supabaseAdmin
+
+      // 20260727(steam_app_id)까지 미적용 → LEGACY 로 내려간다.
+      const legacy = await supabaseAdmin
         .from('custom_games')
-        .select(PRE_RECRUIT_GAME_COLUMNS)
+        .select(LEGACY_GAME_COLUMNS)
         .order('created_at', { ascending: false })
 
-      if (preRecruit.error) {
-        return NextResponse.json({ error: preRecruit.error.message }, { status: 500 })
-      }
-      return NextResponse.json({ games: preRecruit.data ?? [], migration_required: true })
-    }
+      if (legacy.error) {
+        if (!isMissingColumnError(legacy.error)) {
+          return NextResponse.json({ error: legacy.error.message }, { status: 500 })
+        }
+        // 20260725 자체가 미적용 — 모집 컬럼이 없어 집계를 만들 수 없다.
+        const preRecruit = await supabaseAdmin
+          .from('custom_games')
+          .select(PRE_RECRUIT_GAME_COLUMNS)
+          .order('created_at', { ascending: false })
 
-    gameRows = (legacy.data ?? []).map((row) => ({ ...row, steam_app_id: null }))
+        if (preRecruit.error) {
+          return NextResponse.json({ error: preRecruit.error.message }, { status: 500 })
+        }
+        return NextResponse.json({ games: preRecruit.data ?? [], migration_required: true })
+      }
+
+      gameRows = (legacy.data ?? []).map((row) => ({ ...row, steam_app_id: null, lol_mode: null }))
+    } else {
+      gameRows = (preLol.data ?? []).map((row) => ({ ...row, lol_mode: null }))
+    }
   } else {
     gameRows = primary.data ?? []
   }
@@ -156,7 +173,12 @@ export async function POST(req: Request) {
   const title = parseTitle(body.title)
   if (!title.ok) return NextResponse.json({ error: title.message }, { status: 400 })
 
-  const kind = parseGameKind(body.game_kind ?? 'tft', body.game_kind_label, body.steam_app_id)
+  const kind = parseGameKind(
+    body.game_kind ?? 'tft',
+    body.game_kind_label,
+    body.steam_app_id,
+    body.lol_mode,
+  )
   if (!kind.ok) return NextResponse.json({ error: kind.message }, { status: 400 })
 
   // 팀전·라운드 기록은 TFT 매치 조회를 전제하므로 다른 종류에서는 방식을 solo로 고정한다.
@@ -204,6 +226,9 @@ export async function POST(req: Request) {
       scheduled_at: scheduledAt.value,
       host_member_id: viewer.member.id,
       ...(kind.value.steam_app_id !== null ? { steam_app_id: kind.value.steam_app_id } : {}),
+      // ⚠ lol_mode 는 20260731 이후에만 존재한다. null이면 아예 보내지 않아
+      //   미적용 환경의 기존 흐름(롤 외 종류)이 그대로 동작하게 둔다.
+      ...(kind.value.lol_mode !== null ? { lol_mode: kind.value.lol_mode } : {}),
     })
     .select('id')
     .single()
@@ -212,6 +237,10 @@ export async function POST(req: Request) {
     // 스팀 게임명/appid는 CHECK 완화(20260727)가 선행되어야 한다. 위반은 500이 아니라 안내다.
     if (kind.value.game_kind === 'steam' && (isMissingColumnError(gameError) || isCheckViolation(gameError))) {
       return steamMigrationRequiredResponse()
+    }
+    // 롤 모드는 lol_mode 컬럼·CHECK(20260731)가 선행되어야 한다. 위반은 500이 아니라 안내다.
+    if (kind.value.game_kind === 'lol' && (isMissingColumnError(gameError) || isCheckViolation(gameError))) {
+      return lolMigrationRequiredResponse()
     }
     if (isMissingColumnError(gameError)) return migrationRequiredResponse()
     return NextResponse.json({ error: gameError?.message ?? '생성 실패' }, { status: 500 })

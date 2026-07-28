@@ -17,6 +17,24 @@ export const CAPACITY_MIN = 2
 export const CAPACITY_MAX = 100
 /** tft + team(2인 팀전)은 4팀 × 2명 구조라 정원이 8로 고정된다 */
 export const TFT_TEAM_CAPACITY = 8
+/** 롤 내전은 증바람/협곡 모두 5:5 구조라 정원이 10으로 고정된다 (TFT_TEAM_CAPACITY 패턴) */
+export const LOL_CAPACITY = 10
+
+/** 롤 게임 모드: 증바람(ARAM) / 협곡(Rift). game_kind='lol' 전용 신규 컬럼 lol_mode. */
+export const LOL_MODES = ['aram', 'rift'] as const
+export type LolMode = (typeof LOL_MODES)[number]
+
+/** 협곡 포지션 슬롯. 증바람은 포지션 없음(null). */
+export const LOL_POSITIONS = ['top', 'jungle', 'mid', 'adc', 'support'] as const
+export type LolPosition = (typeof LOL_POSITIONS)[number]
+
+export function isLolMode(value: unknown): value is LolMode {
+  return typeof value === 'string' && (LOL_MODES as readonly string[]).includes(value)
+}
+
+export function isLolPosition(value: unknown): value is LolPosition {
+  return typeof value === 'string' && (LOL_POSITIONS as readonly string[]).includes(value)
+}
 export const MAX_ROUNDS_MIN = 1
 export const MAX_ROUNDS_MAX = 20
 export const MAX_ACTIVE_GAMES_PER_HOST = 3
@@ -85,6 +103,15 @@ export type GameKindInput = {
   game_kind: GameKind
   game_kind_label: string | null
   steam_app_id: number | null
+  lol_mode: LolMode | null
+}
+
+/** 롤 모드 파싱. game_kind='lol' 일 때만 필수. */
+export function parseLolMode(raw: unknown): ParseResult<LolMode> {
+  if (!isLolMode(raw)) {
+    return { ok: false, message: '롤 모드는 증바람(aram) 또는 협곡(rift)이어야 합니다' }
+  }
+  return { ok: true, value: raw }
 }
 
 /** appid는 표시(캡슐 이미지)용 스냅샷이라 FK가 없다. 형식만 검증한다. */
@@ -94,6 +121,7 @@ export function parseGameKind(
   kindRaw: unknown,
   labelRaw: unknown,
   steamAppIdRaw?: unknown,
+  lolModeRaw?: unknown,
 ): ParseResult<GameKindInput> {
   if (!isGameKind(kindRaw)) {
     return { ok: false, message: `게임 종류는 ${GAME_KINDS.join(', ')} 중 하나여야 합니다` }
@@ -106,7 +134,10 @@ export function parseGameKind(
     if (label.length > GAME_KIND_LABEL_MAX) {
       return { ok: false, message: `게임 종류 이름은 ${GAME_KIND_LABEL_MAX}자 이하여야 합니다` }
     }
-    return { ok: true, value: { game_kind: kindRaw, game_kind_label: label, steam_app_id: null } }
+    return {
+      ok: true,
+      value: { game_kind: kindRaw, game_kind_label: label, steam_app_id: null, lol_mode: null },
+    }
   }
 
   if (kindRaw === 'steam') {
@@ -123,12 +154,25 @@ export function parseGameKind(
         game_kind: kindRaw,
         game_kind_label: label || null,
         steam_app_id: label ? appId.value : null,
+        lol_mode: null,
       },
     }
   }
 
+  if (kindRaw === 'lol') {
+    const mode = parseLolMode(lolModeRaw)
+    if (!mode.ok) return { ok: false, message: mode.message }
+    return {
+      ok: true,
+      value: { game_kind: kindRaw, game_kind_label: null, steam_app_id: null, lol_mode: mode.value },
+    }
+  }
+
   // CHECK 제약이 game_kind not in ('etc','steam') 일 때 라벨/appid null을 강제한다.
-  return { ok: true, value: { game_kind: kindRaw, game_kind_label: null, steam_app_id: null } }
+  return {
+    ok: true,
+    value: { game_kind: kindRaw, game_kind_label: null, steam_app_id: null, lol_mode: null },
+  }
 }
 
 function parseSteamAppId(raw: unknown): ParseResult<number | null> {
@@ -154,6 +198,10 @@ export function parseCapacity(
   gameKind: GameKind,
   gameType: string,
 ): ParseResult<number> {
+  if (gameKind === 'lol') {
+    // 롤 내전은 증바람/협곡 모두 5:5 구조라 정원을 협상하지 않는다.
+    return { ok: true, value: LOL_CAPACITY }
+  }
   if (gameKind === 'tft' && gameType === 'team') {
     // 팀 배정 로직이 4팀 × 2명을 전제하므로 정원을 협상하지 않는다.
     return { ok: true, value: TFT_TEAM_CAPACITY }

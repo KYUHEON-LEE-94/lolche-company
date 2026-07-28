@@ -5,6 +5,7 @@ import {
   fetchGame,
   isCheckViolation,
   isMissingColumnError,
+  lolMigrationRequiredResponse,
   migrationRequiredResponse,
   steamMigrationRequiredResponse,
 } from '@/lib/customGames/game'
@@ -133,6 +134,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   }))
 
   // ── 팀 배정 (TFT 팀전만 조회) ─────────────────────────────────────
+  //   ⚠ TFT 경로는 기존 그대로 유지한다(position 미조회).
   let teams: { round_number: number; team_index: number; member_id: string | null; guest_id: string | null }[] = []
   if (game.game_kind === 'tft' && game.game_type === 'team') {
     const { data: teamRows } = await supabaseAdmin
@@ -142,6 +144,34 @@ export async function GET(_req: Request, ctx: Ctx) {
       .order('round_number')
       .order('team_index')
     teams = teamRows ?? []
+  }
+
+  // ── 롤 팀/포지션 배정 (롤 전용, position 포함) ──────────────────────
+  let lolTeams: {
+    team_index: number
+    member_id: string | null
+    guest_id: string | null
+    position: string | null
+  }[] = []
+  if (game.game_kind === 'lol') {
+    const withPosition = await supabaseAdmin
+      .from('custom_game_teams')
+      .select('team_index, member_id, guest_id, position')
+      .eq('custom_game_id', id)
+      .order('team_index')
+    if (withPosition.error) {
+      // 20260731(position) 미적용 → position 없이 재조회해 degrade.
+      if (isMissingColumnError(withPosition.error)) {
+        const { data: legacyRows } = await supabaseAdmin
+          .from('custom_game_teams')
+          .select('team_index, member_id, guest_id')
+          .eq('custom_game_id', id)
+          .order('team_index')
+        lolTeams = (legacyRows ?? []).map((t) => ({ ...t, position: null }))
+      }
+    } else {
+      lolTeams = withPosition.data ?? []
+    }
   }
 
   const mine = viewerMemberId
@@ -161,6 +191,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     guests,
     rounds,
     teams,
+    lol_teams: lolTeams,
     can_manage: canManageGame(game, viewerMemberId, viewer?.isAdmin ?? false),
     my_participation: mine
       ? { id: mine.id, position: mine.position, confirmed: mine.confirmed }
@@ -193,6 +224,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     game_kind?: GameKind
     game_kind_label?: string | null
     steam_app_id?: number | null
+    lol_mode?: string | null
     game_type?: string
     capacity?: number
     max_rounds?: number
@@ -209,13 +241,15 @@ export async function PATCH(req: Request, ctx: Ctx) {
     body.game_kind !== undefined ? body.game_kind : game.game_kind,
     body.game_kind_label !== undefined ? body.game_kind_label : game.game_kind_label,
     body.steam_app_id !== undefined ? body.steam_app_id : game.steam_app_id,
+    body.lol_mode !== undefined ? body.lol_mode : game.lol_mode,
   )
   if (!kind.ok) return NextResponse.json({ error: kind.message }, { status: 400 })
 
   if (
     body.game_kind !== undefined ||
     body.game_kind_label !== undefined ||
-    body.steam_app_id !== undefined
+    body.steam_app_id !== undefined ||
+    body.lol_mode !== undefined
   ) {
     // 롤체 → 비롤체 전환 시, 이미 수집된 라운드/팀/게스트는 비롤체 화면에서
     // 렌더되지도 삭제되지도 않아 관리 불가 상태로 남는다. 기록이 있으면 전환을 막는다.
@@ -242,6 +276,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
     //   앱이 빠뜨려도 DB CHECK(20260727 STEP 3)가 23514로 최종 차단한다.
     if (kind.value.steam_app_id !== game.steam_app_id) {
       patch.steam_app_id = kind.value.steam_app_id
+    }
+    // ⚠ kind가 lol이 아니게 되면 lol_mode를 반드시 함께 비운다.
+    //   앱이 빠뜨려도 DB CHECK(20260731)가 23514로 최종 차단한다.
+    if (kind.value.lol_mode !== game.lol_mode) {
+      patch.lol_mode = kind.value.lol_mode
     }
   }
 
@@ -286,8 +325,19 @@ export async function PATCH(req: Request, ctx: Ctx) {
         return steamMigrationRequiredResponse()
       }
     }
+    if (patch.lol_mode !== undefined || kind.value.game_kind === 'lol') {
+      if (isMissingColumnError(error) || isCheckViolation(error)) {
+        return lolMigrationRequiredResponse()
+      }
+    }
     if (isMissingColumnError(error)) return migrationRequiredResponse()
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // 게임 종류가 실제로 바뀌면 이전 종류의 팀 배정(TFT 4팀×2 / 롤 5:5·포지션)은
+  // 새 화면에서 렌더되지 않아 관리 불가 상태로 남는다. 종류 전환 시 함께 정리한다.
+  if (patch.game_kind !== undefined && patch.game_kind !== game.game_kind) {
+    await supabaseAdmin.from('custom_game_teams').delete().eq('custom_game_id', id)
   }
 
   return NextResponse.json({ ok: true })

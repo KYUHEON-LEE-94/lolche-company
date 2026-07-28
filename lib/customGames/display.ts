@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react'
-import { GAME_KINDS, type GameKind, type GameStatus } from './constants'
+import { GAME_KINDS, type GameKind, type GameStatus, type LolMode, type LolPosition } from './constants'
 
 /**
  * 클라이언트 컴포넌트에서도 쓰는 표시 전용 헬퍼.
@@ -32,6 +32,29 @@ export const GAME_KIND_OPTIONS: { value: GameKind; label: string }[] = GAME_KIND
   value: kind,
   label: GAME_KIND_LABELS[kind],
 }))
+
+/** 롤 모드 한국어 표기 (aram=증바람, rift=협곡) */
+export const LOL_MODE_LABELS: Record<LolMode, string> = {
+  aram: '증바람',
+  rift: '협곡',
+}
+
+export function lolModeLabel(mode: string | null | undefined): string {
+  return mode && mode in LOL_MODE_LABELS ? LOL_MODE_LABELS[mode as LolMode] : ''
+}
+
+/** 협곡 포지션 한국어 표기 */
+export const POSITION_LABELS: Record<LolPosition, string> = {
+  top: '탑',
+  jungle: '정글',
+  mid: '미드',
+  adc: '원딜',
+  support: '서폿',
+}
+
+export function positionLabel(position: string | null | undefined): string {
+  return position && position in POSITION_LABELS ? POSITION_LABELS[position as LolPosition] : ''
+}
 
 export function gameKindLabel(kind: string | null | undefined, label: string | null | undefined): string {
   if (kind === 'etc') return label?.trim() || '기타'

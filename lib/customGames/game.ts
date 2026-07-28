@@ -10,11 +10,15 @@ import type { GameKind } from './constants'
 
 export { isCheckViolation, isMissingColumnError, isUniqueViolation }
 
-/** 20260727 미적용 환경에서 42703으로 깨지는 신규 컬럼. LEGACY_GAME_COLUMNS로 fallback한다. */
+/** 20260731 미적용 환경에서 42703으로 깨지는 최신 컬럼(lol_mode 포함). PRE_LOL로 fallback한다. */
 export const GAME_COLUMNS =
+  'id, title, status, game_type, game_kind, game_kind_label, steam_app_id, lol_mode, max_rounds, capacity, scheduled_at, host_member_id, created_at, ended_at'
+
+/** 20260731 이전(lol_mode 없음) — steam_app_id 는 존재. lol_mode 를 null 로 채운다. */
+export const PRE_LOL_GAME_COLUMNS =
   'id, title, status, game_type, game_kind, game_kind_label, steam_app_id, max_rounds, capacity, scheduled_at, host_member_id, created_at, ended_at'
 
-/** 20260727 이전 스키마에서도 확실히 존재하는 컬럼만. */
+/** 20260727 이전 스키마에서도 확실히 존재하는 컬럼만(steam_app_id·lol_mode 없음). */
 export const LEGACY_GAME_COLUMNS =
   'id, title, status, game_type, game_kind, game_kind_label, max_rounds, capacity, scheduled_at, host_member_id, created_at, ended_at'
 
@@ -30,6 +34,7 @@ export type GameRow = {
   game_kind: GameKind
   game_kind_label: string | null
   steam_app_id: number | null
+  lol_mode: 'aram' | 'rift' | null
   max_rounds: number
   capacity: number
   scheduled_at: string | null
@@ -43,6 +48,9 @@ export const MIGRATION_REQUIRED_MESSAGE =
 
 export const STEAM_MIGRATION_REQUIRED_MESSAGE =
   '스팀 내전 게임 선택 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. (scripts/sql/20260727_custom_game_steam.sql 미적용)'
+
+export const LOL_MIGRATION_REQUIRED_MESSAGE =
+  '롤 내전 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. (scripts/sql/20260731_custom_game_lol.sql 미적용)'
 
 export function migrationRequiredResponse(): NextResponse {
   return NextResponse.json(
@@ -58,6 +66,13 @@ export function steamMigrationRequiredResponse(): NextResponse {
   )
 }
 
+export function lolMigrationRequiredResponse(): NextResponse {
+  return NextResponse.json(
+    { error: LOL_MIGRATION_REQUIRED_MESSAGE, migration_required: true },
+    { status: 503 },
+  )
+}
+
 /**
  * 라운드 결과 수집·팀 배정·게스트는 전부 Riot TFT 매치 조회를 전제한다.
  * UI에서 숨기는 것만으로는 API 직접 호출을 막지 못하므로 서버에서 차단한다.
@@ -66,6 +81,18 @@ export function rejectNonTftGame(game: Pick<GameRow, 'game_kind'>): NextResponse
   if (game.game_kind === 'tft') return null
   return NextResponse.json(
     { error: 'TFT 내전에서만 사용할 수 있는 기능입니다' },
+    { status: 400 },
+  )
+}
+
+/**
+ * rejectNonTftGame 의 대칭 가드. 롤 전용 팀/포지션 배정은 이 가드로만 열린다.
+ * ★ TFT 로직(teams/rounds/guests)에 롤이 새어들지 않도록 롤 전용 라우트에서만 쓴다.
+ */
+export function rejectNonLolGame(game: Pick<GameRow, 'game_kind'>): NextResponse | null {
+  if (game.game_kind === 'lol') return null
+  return NextResponse.json(
+    { error: '롤 내전에서만 사용할 수 있는 기능입니다' },
     { status: 400 },
   )
 }
@@ -93,12 +120,34 @@ export async function fetchGame(gameId: string): Promise<FetchGameResult> {
     .maybeSingle()
 
   if (error) {
-    if (isMissingColumnError(error)) return fetchGameLegacy(gameId)
+    // 20260731(lol_mode) 미적용 → PRE_LOL 로 내려간다.
+    if (isMissingColumnError(error)) return fetchGamePreLol(gameId)
     return { ok: false, response: NextResponse.json({ error: error.message }, { status: 500 }) }
   }
   if (!data) return { ok: false, response: notFoundResponse() }
 
   return { ok: true, game: data as unknown as GameRow, migrationRequired: false }
+}
+
+async function fetchGamePreLol(gameId: string): Promise<FetchGameResult> {
+  const { data, error } = await supabaseAdmin
+    .from('custom_games')
+    .select(PRE_LOL_GAME_COLUMNS)
+    .eq('id', gameId)
+    .maybeSingle()
+
+  if (error) {
+    // 20260727(steam_app_id)까지 미적용 → LEGACY 로 내려간다.
+    if (isMissingColumnError(error)) return fetchGameLegacy(gameId)
+    return { ok: false, response: NextResponse.json({ error: error.message }, { status: 500 }) }
+  }
+  if (!data) return { ok: false, response: notFoundResponse() }
+
+  return {
+    ok: true,
+    game: { ...(data as unknown as Omit<GameRow, 'lol_mode'>), lol_mode: null },
+    migrationRequired: true,
+  }
 }
 
 async function fetchGameLegacy(gameId: string): Promise<FetchGameResult> {
@@ -117,7 +166,11 @@ async function fetchGameLegacy(gameId: string): Promise<FetchGameResult> {
 
   return {
     ok: true,
-    game: { ...(data as unknown as Omit<GameRow, 'steam_app_id'>), steam_app_id: null },
+    game: {
+      ...(data as unknown as Omit<GameRow, 'steam_app_id' | 'lol_mode'>),
+      steam_app_id: null,
+      lol_mode: null,
+    },
     migrationRequired: true,
   }
 }
