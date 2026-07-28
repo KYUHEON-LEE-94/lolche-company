@@ -50,7 +50,8 @@ export const STEAM_MIGRATION_REQUIRED_MESSAGE =
   '스팀 내전 게임 선택 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. (scripts/sql/20260727_custom_game_steam.sql 미적용)'
 
 export const LOL_MIGRATION_REQUIRED_MESSAGE =
-  '롤 내전 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. (scripts/sql/20260731_custom_game_lol.sql 미적용)'
+  '롤 내전 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해주세요. ' +
+  '(scripts/sql/20260731_custom_game_lol.sql · 20260732_custom_game_lol_guest.sql 미적용)'
 
 export function migrationRequiredResponse(): NextResponse {
   return NextResponse.json(
