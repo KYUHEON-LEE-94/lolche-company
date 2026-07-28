@@ -51,8 +51,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <header className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
                 <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
 
-                    {/* 로고 영역 */}
-                    <div className="flex items-center gap-3">
+                    {/* 로고 영역 — 클릭 시 사이트 홈으로 (어드민에서 나가는 기본 경로) */}
+                    <Link
+                        href="/"
+                        className="flex items-center gap-3 rounded-xl px-1 -mx-1 transition-colors hover:bg-surface-2"
+                        aria-label="사이트 홈으로 이동"
+                    >
                         <div
                             className="w-8 h-8 rounded-xl flex items-center justify-center"
                             style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}
@@ -65,10 +69,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                             <p className="text-sm font-bold text-white leading-tight">롤체 컴퍼니</p>
                             <p className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase leading-tight">Admin</p>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* 네비게이션 */}
-                    <nav className="flex gap-1">
+                    <nav className="flex items-center gap-1">
                         {navItems.map((item) => {
                             const active = isActive(item.href)
                             return (
@@ -88,6 +92,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                 </Link>
                             )
                         })}
+
+                        {/* 어드민 밖으로 나가는 명시적 경로 */}
+                        <Link
+                            href="/"
+                            className="ml-1 inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-slate-300 transition-colors hover:text-white hover:bg-surface-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
+                            </svg>
+                            사이트로
+                        </Link>
                     </nav>
                 </div>
             </header>
