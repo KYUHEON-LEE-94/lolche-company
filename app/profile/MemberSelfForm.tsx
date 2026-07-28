@@ -38,12 +38,12 @@ type Props = {
 }
 
 const inputCls =
-    'w-full px-4 py-3 rounded-xl text-sm font-medium text-white bg-white/[0.04] border border-white/[0.08] placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5 transition-all'
+    'w-full px-4 py-3 rounded-xl text-sm font-medium text-fg bg-surface-2 border border-line placeholder:text-faint focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5 transition-all'
 
 const STATUS_BADGE: Record<MemberStatus, { label: string; cls: string }> = {
-    pending: { label: '승인 대기 중', cls: 'bg-amber-500/10 text-amber-300 ring-amber-500/30' },
-    approved: { label: '승인 완료', cls: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30' },
-    rejected: { label: '거절됨', cls: 'bg-red-500/10 text-red-300 ring-red-500/30' },
+    pending: { label: '승인 대기 중', cls: 'bg-amber-500/10 text-warn-ink ring-amber-500/30' },
+    approved: { label: '승인 완료', cls: 'bg-emerald-500/10 text-ok-ink ring-emerald-500/30' },
+    rejected: { label: '거절됨', cls: 'bg-red-500/10 text-danger-ink ring-red-500/30' },
 }
 
 export default function MemberSelfForm({
@@ -171,10 +171,10 @@ export default function MemberSelfForm({
         <section className="rounded-3xl bg-slate-900/40 ring-1 ring-slate-700/50 p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-lg font-extrabold text-slate-100">
+                    <h2 className="text-lg font-extrabold text-fg">
                         {initial ? '내 라이엇 계정' : '멤버 등록 신청'}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-muted">
                         {initial
                             ? `라이엇 계정은 최대 ${MAX_RIOT_ACCOUNTS}개까지 등록할 수 있고, 랭킹에는 대표 계정만 표시돼요.`
                             : '단톡방 아이디와 라이엇 ID를 입력하면 관리자 승인 후 랭킹에 등록돼요.'}
@@ -190,21 +190,21 @@ export default function MemberSelfForm({
             </div>
 
             {status === 'pending' && (
-                <div className="mt-4 rounded-2xl bg-amber-500/5 ring-1 ring-amber-500/20 p-4 text-sm text-amber-200/90">
+                <div className="mt-4 rounded-2xl bg-amber-500/5 ring-1 ring-amber-500/20 p-4 text-sm text-warn-ink/90">
                     관리자 승인 전에는 랭킹에 표시되지 않아요. 승인되면 자동으로 전적이 동기화됩니다.
                 </div>
             )}
 
             {status === 'rejected' && (
-                <div className="mt-4 rounded-2xl bg-red-500/5 ring-1 ring-red-500/20 p-4 text-sm text-red-200/90">
+                <div className="mt-4 rounded-2xl bg-red-500/5 ring-1 ring-red-500/20 p-4 text-sm text-danger-ink/90">
                     <div className="font-bold">신청이 거절되었습니다.</div>
                     {rejectedReason && <div className="mt-1">사유: {rejectedReason}</div>}
-                    <div className="mt-1 text-red-200/70">정보를 수정하고 다시 신청할 수 있어요.</div>
+                    <div className="mt-1 text-danger-ink/70">정보를 수정하고 다시 신청할 수 있어요.</div>
                 </div>
             )}
 
             {initial && migrationRequired && (
-                <div className="mt-4 rounded-2xl bg-slate-500/5 ring-1 ring-slate-500/20 p-4 text-sm text-slate-300">
+                <div className="mt-4 rounded-2xl bg-slate-500/5 ring-1 ring-slate-500/20 p-4 text-sm text-muted">
                     다중 라이엇 계정 기능이 아직 활성화되지 않았습니다. 아래 폼으로 대표 계정만 수정할 수 있어요.
                 </div>
             )}
@@ -213,14 +213,14 @@ export default function MemberSelfForm({
             {initial && accounts.length > 0 && (
                 <div className="mt-6">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase">
+                        <h3 className="text-xs font-black text-muted tracking-widest uppercase">
                             등록된 계정 ({accounts.length}/{MAX_RIOT_ACCOUNTS})
                         </h3>
                         {canAdd && !addOpen && (
                             <button
                                 type="button"
                                 onClick={() => setAddOpen(true)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-brand-ink bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
                             >
                                 계정 추가
                             </button>
@@ -231,7 +231,7 @@ export default function MemberSelfForm({
                         {accounts.map((a) => (
                             <li
                                 key={a.id}
-                                className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4"
+                                className="rounded-2xl bg-surface ring-1 ring-line p-4"
                             >
                                 {editingId === a.id ? (
                                     <form onSubmit={(e) => handleEditSave(e, a.id)} className="space-y-3">
@@ -244,7 +244,7 @@ export default function MemberSelfForm({
                                             required
                                         />
                                         <div className="flex items-center gap-2">
-                                            <span className="text-slate-500 font-bold">#</span>
+                                            <span className="text-subtle font-bold">#</span>
                                             <input
                                                 type="text"
                                                 value={editTag}
@@ -265,7 +265,7 @@ export default function MemberSelfForm({
                                             <button
                                                 type="button"
                                                 onClick={() => setEditingId(null)}
-                                                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-all"
+                                                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-muted bg-surface hover:bg-surface-2 transition-all"
                                             >
                                                 취소
                                             </button>
@@ -276,17 +276,17 @@ export default function MemberSelfForm({
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2">
                                                 {a.is_primary && (
-                                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30">
+                                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/15 text-brand-ink ring-1 ring-indigo-500/30">
                                                         대표
                                                     </span>
                                                 )}
-                                                <span className="text-sm font-bold text-slate-100 truncate">
+                                                <span className="text-sm font-bold text-fg truncate">
                                                     {a.riot_game_name}
-                                                    <span className="text-slate-500">#{a.riot_tagline}</span>
+                                                    <span className="text-subtle">#{a.riot_tagline}</span>
                                                 </span>
                                             </div>
                                             {a.is_primary && (
-                                                <p className="mt-1 text-[11px] text-slate-500">
+                                                <p className="mt-1 text-[11px] text-subtle">
                                                     이 계정의 랭크가 공개 랭킹에 표시돼요.
                                                 </p>
                                             )}
@@ -298,7 +298,7 @@ export default function MemberSelfForm({
                                                     type="button"
                                                     onClick={() => handleSetPrimary(a)}
                                                     disabled={busyId === a.id}
-                                                    className="px-3 py-2 rounded-lg text-xs font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white disabled:opacity-50 transition-all"
+                                                    className="px-3 py-2 rounded-lg text-xs font-bold text-ok-ink bg-emerald-500/10 hover:bg-emerald-500 hover:text-white disabled:opacity-50 transition-all"
                                                 >
                                                     대표 지정
                                                 </button>
@@ -310,7 +310,7 @@ export default function MemberSelfForm({
                                                     setEditName(a.riot_game_name)
                                                     setEditTag(a.riot_tagline)
                                                 }}
-                                                className="px-3 py-2 rounded-lg text-xs font-bold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
+                                                className="px-3 py-2 rounded-lg text-xs font-bold text-brand-ink bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
                                             >
                                                 수정
                                             </button>
@@ -323,7 +323,7 @@ export default function MemberSelfForm({
                                                         ? '마지막 라이엇 계정은 삭제할 수 없어요.'
                                                         : undefined
                                                 }
-                                                className="px-3 py-2 rounded-lg text-xs font-bold text-red-300 bg-red-500/10 hover:bg-red-500 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                                className="px-3 py-2 rounded-lg text-xs font-bold text-danger-ink bg-red-500/10 hover:bg-red-500 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                             >
                                                 삭제
                                             </button>
@@ -335,7 +335,7 @@ export default function MemberSelfForm({
                     </ul>
 
                     {isLastAccount && (
-                        <p className="mt-2 text-[11px] text-slate-500">
+                        <p className="mt-2 text-[11px] text-subtle">
                             마지막 라이엇 계정은 삭제할 수 없어요. 계정을 바꾸려면 &lsquo;수정&rsquo;을 이용하세요.
                         </p>
                     )}
@@ -343,9 +343,9 @@ export default function MemberSelfForm({
                     {addOpen && (
                         <form
                             onSubmit={handleAdd}
-                            className="mt-3 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06] p-4 space-y-3"
+                            className="mt-3 rounded-2xl bg-surface ring-1 ring-line p-4 space-y-3"
                         >
-                            <div className="text-xs font-black text-slate-400 tracking-widest uppercase">
+                            <div className="text-xs font-black text-muted tracking-widest uppercase">
                                 계정 추가
                             </div>
                             <input
@@ -358,7 +358,7 @@ export default function MemberSelfForm({
                                 required
                             />
                             <div className="flex items-center gap-2">
-                                <span className="text-slate-500 font-bold">#</span>
+                                <span className="text-subtle font-bold">#</span>
                                 <input
                                     type="text"
                                     value={addTag}
@@ -369,7 +369,7 @@ export default function MemberSelfForm({
                                     required
                                 />
                             </div>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-[11px] text-subtle">
                                 추가한 계정은 대표로 지정하기 전까지 랭킹에 표시되지 않아요.
                             </p>
                             <div className="flex gap-2">
@@ -383,7 +383,7 @@ export default function MemberSelfForm({
                                 <button
                                     type="button"
                                     onClick={() => setAddOpen(false)}
-                                    className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-all"
+                                    className="flex-1 py-2.5 rounded-xl text-xs font-bold text-muted bg-surface hover:bg-surface-2 transition-all"
                                 >
                                     취소
                                 </button>
@@ -395,13 +395,13 @@ export default function MemberSelfForm({
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 {initial && accounts.length > 0 && (
-                    <div className="text-xs font-black text-slate-400 tracking-widest uppercase">
+                    <div className="text-xs font-black text-muted tracking-widest uppercase">
                         단톡방 아이디 · 대표 계정
                     </div>
                 )}
 
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-black text-slate-400 tracking-widest uppercase">
+                    <label className="block text-xs font-black text-muted tracking-widest uppercase">
                         단톡방 아이디
                     </label>
                     <input
@@ -415,7 +415,7 @@ export default function MemberSelfForm({
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-black text-slate-400 tracking-widest uppercase">
+                    <label className="block text-xs font-black text-muted tracking-widest uppercase">
                         라이엇 게임명
                     </label>
                     <input
@@ -429,11 +429,11 @@ export default function MemberSelfForm({
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-black text-slate-400 tracking-widest uppercase">
+                    <label className="block text-xs font-black text-muted tracking-widest uppercase">
                         태그라인
                     </label>
                     <div className="flex items-center gap-2">
-                        <span className="text-slate-500 font-bold">#</span>
+                        <span className="text-subtle font-bold">#</span>
                         <input
                             type="text"
                             value={riotTagline}
@@ -444,11 +444,11 @@ export default function MemberSelfForm({
                             required
                         />
                     </div>
-                    <p className="text-[11px] text-slate-600">영문/숫자 2~10자</p>
+                    <p className="text-[11px] text-faint">영문/숫자 2~10자</p>
                 </div>
 
                 {!initial && (
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-subtle">
                         이미 등록된 멤버라면 기존과 같은 라이엇 ID를 입력하세요. 기존 랭킹·전적 기록에 그대로 연결됩니다.
                     </p>
                 )}
@@ -462,19 +462,19 @@ export default function MemberSelfForm({
                 </button>
 
                 {isApproved && (
-                    <p className="text-[11px] text-slate-500 text-center">
+                    <p className="text-[11px] text-subtle text-center">
                         대표 계정의 라이엇 ID를 변경하면 승인 대기 상태로 돌아가고 랭킹에서 일시적으로 제외됩니다.
                     </p>
                 )}
             </form>
 
             {message && (
-                <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-300 text-xs font-bold">
+                <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-ok-ink text-xs font-bold">
                     {message}
                 </div>
             )}
             {error && (
-                <div className="mt-4 p-4 rounded-xl bg-red-500/10 ring-1 ring-red-500/20 text-red-300 text-xs font-bold">
+                <div className="mt-4 p-4 rounded-xl bg-red-500/10 ring-1 ring-red-500/20 text-danger-ink text-xs font-bold">
                     {error}
                 </div>
             )}

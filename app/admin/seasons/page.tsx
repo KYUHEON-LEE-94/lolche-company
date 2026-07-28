@@ -8,9 +8,9 @@ import {Spinner} from '@/app/components/Spinner'
 
 
 const inputCls = `
-  w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-  bg-white/[0.04] border border-white/[0.08]
-  placeholder:text-slate-600
+  w-full px-4 py-3 rounded-xl text-sm font-medium text-fg
+  bg-surface-2 border border-line
+  placeholder:text-faint
   focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5
   transition-all duration-200
 `
@@ -110,8 +110,8 @@ export default function AdminSeasonManagementPage() {
             {/* ── 헤더 ── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight mb-1">시즌 & 명예의 전당</h1>
-                    <p className="text-sm text-slate-500">시즌을 관리하고 명예의 전당 데이터를 기록합니다</p>
+                    <h1 className="text-2xl font-black text-fg tracking-tight mb-1">시즌 & 명예의 전당</h1>
+                    <p className="text-sm text-subtle">시즌을 관리하고 명예의 전당 데이터를 기록합니다</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -143,16 +143,16 @@ export default function AdminSeasonManagementPage() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
           </span>
-                    <span className="text-xs font-black text-amber-500 tracking-widest uppercase">Now Active</span>
+                    <span className="text-xs font-black text-warn-ink tracking-widest uppercase">Now Active</span>
                 </div>
 
                 {activeSeason ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div>
-                            <p className="text-3xl font-black text-white tracking-tight leading-tight">
+                            <p className="text-3xl font-black text-fg tracking-tight leading-tight">
                                 {activeSeason.season_name}
                             </p>
-                            <p className="text-sm font-bold text-amber-500/70 tracking-widest uppercase mt-1">
+                            <p className="text-sm font-bold text-warn-ink/70 tracking-widest uppercase mt-1">
                                 SET {activeSeason.set_number}
                             </p>
                         </div>
@@ -163,8 +163,8 @@ export default function AdminSeasonManagementPage() {
                                 disabled={archiveLoading}
                                 className="
                   inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
-                  bg-amber-500/10 border border-amber-500/25 text-amber-400
-                  hover:bg-amber-500/20 hover:text-amber-300 transition-all
+                  bg-amber-500/10 border border-amber-500/25 text-warn-ink
+                  hover:bg-amber-500/20 hover:text-warn-ink transition-all
                   disabled:opacity-40 disabled:cursor-not-allowed
                 "
                             >
@@ -175,8 +175,8 @@ export default function AdminSeasonManagementPage() {
                                 disabled={archiveLoading}
                                 className="
                   inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
-                  bg-indigo-500/10 border border-indigo-500/25 text-indigo-400
-                  hover:bg-indigo-500/20 hover:text-indigo-300 transition-all
+                  bg-indigo-500/10 border border-indigo-500/25 text-brand-ink
+                  hover:bg-indigo-500/20 hover:text-brand-ink transition-all
                   disabled:opacity-40 disabled:cursor-not-allowed
                 "
                             >
@@ -189,7 +189,7 @@ export default function AdminSeasonManagementPage() {
                         className="text-center py-5 rounded-xl border border-dashed"
                         style={{ borderColor: 'rgba(245,158,11,0.2)' }}
                     >
-                        <p className="text-sm text-amber-600 font-medium">
+                        <p className="text-sm text-warn-ink font-medium">
                             활성화된 시즌이 없습니다. 아래 목록에서 시즌을 시작하세요.
                         </p>
                     </div>
@@ -198,30 +198,30 @@ export default function AdminSeasonManagementPage() {
 
             {/* ── 시즌 목록 ── */}
             {loading ? (
-                <div className="flex justify-center py-12 text-slate-500 gap-3">
+                <div className="flex justify-center py-12 text-subtle gap-3">
                     <Spinner size={5} /> 불러오는 중...
                 </div>
             ) : (
-                <div className="rounded-2xl border overflow-hidden" style={{borderColor: 'rgba(255,255,255,0.07)'}}>
+                <div className="rounded-2xl border overflow-hidden" style={{borderColor: 'var(--color-line)'}}>
                     <table className="min-w-full">
                         <thead>
                         <tr style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            borderBottom: '1px solid rgba(255,255,255,0.06)'
+                            background: 'var(--color-surface)',
+                            borderBottom: '1px solid var(--color-line)'
                         }}>
-                            <th className="px-5 py-3.5 text-left text-[10px] font-black text-slate-500 tracking-widest uppercase">시즌
+                            <th className="px-5 py-3.5 text-left text-[10px] font-black text-subtle tracking-widest uppercase">시즌
                                 정보
                             </th>
-                            <th className="px-5 py-3.5 text-center text-[10px] font-black text-slate-500 tracking-widest uppercase">상태</th>
-                            <th className="px-5 py-3.5 text-right text-[10px] font-black text-slate-500 tracking-widest uppercase">제어</th>
+                            <th className="px-5 py-3.5 text-center text-[10px] font-black text-subtle tracking-widest uppercase">상태</th>
+                            <th className="px-5 py-3.5 text-right text-[10px] font-black text-subtle tracking-widest uppercase">제어</th>
                         </tr>
                         </thead>
                         <tbody>
                         {seasons.map((s) => (
                             <tr key={s.id} /* ... 기존 스타일 ... */ >
                                 <td className="px-5 py-4">
-                                    <p className="font-bold text-white text-sm">{s.season_name}</p>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">Set {s.set_number}</p>
+                                    <p className="font-bold text-fg text-sm">{s.season_name}</p>
+                                    <p className="text-xs text-subtle font-medium mt-0.5">Set {s.set_number}</p>
                                 </td>
                                 <td className="px-5 py-4 text-center">
                                     {/* ... 상태 배지 ... */}
@@ -232,7 +232,7 @@ export default function AdminSeasonManagementPage() {
                                         <button
                                             onClick={() => handleDeleteRecords(s.id, s.season_name)}
                                             disabled={processingId === s.id}
-                                            className="p-2 rounded-lg text-slate-600 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                            className="p-2 rounded-lg text-faint hover:text-danger-ink hover:bg-red-500/10 transition-all"
                                             title="시즌 기록 전체 삭제"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor"
@@ -249,12 +249,12 @@ export default function AdminSeasonManagementPage() {
                                             <button
                                                 onClick={() => handleUpdateStatus(s.id, true)}
                                                 disabled={processingId === s.id}
-                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20"
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 bg-red-500/10 border border-red-500/25 text-danger-ink hover:bg-red-500/20"
                                             >
                                                 {processingId === s.id ? '...' : '시즌 종료'}
                                             </button>
                                         ) : s.end_date ? (
-                                            <span className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-slate-500 bg-white/[0.03] border border-line">
+                                            <span className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-subtle bg-surface border border-line">
                                                 종료됨
                                             </span>
                                         ) : (
@@ -284,17 +284,17 @@ export default function AdminSeasonManagementPage() {
                 >
                     <div
                         className="w-full max-w-md rounded-2xl border p-8 animate-in zoom-in-95 duration-200"
-                        style={{background: '#0d1117', borderColor: 'rgba(255,255,255,0.1)'}}
+                        style={{background: 'var(--color-panel)', borderColor: 'var(--color-line)'}}
                     >
                         {/* 모달 헤더 */}
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h3 className="text-xl font-black text-white">새 시즌 등록</h3>
-                                <p className="text-sm text-slate-500 mt-0.5">새로운 롤체 시즌 정보를 입력하세요</p>
+                                <h3 className="text-xl font-black text-fg">새 시즌 등록</h3>
+                                <p className="text-sm text-subtle mt-0.5">새로운 롤체 시즌 정보를 입력하세요</p>
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-subtle hover:text-muted hover:bg-surface transition-all"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                      strokeWidth={2.5} strokeLinecap="round">
@@ -306,7 +306,7 @@ export default function AdminSeasonManagementPage() {
                         <form onSubmit={handleCreateSeason} className="space-y-4">
                             <div className="space-y-1.5">
                                 <label
-                                    className="block text-[10px] font-black text-slate-400 tracking-widest uppercase">시즌
+                                    className="block text-[10px] font-black text-muted tracking-widest uppercase">시즌
                                     이름</label>
                                 <input
                                     type="text"
@@ -319,7 +319,7 @@ export default function AdminSeasonManagementPage() {
                             </div>
                             <div className="space-y-1.5">
                                 <label
-                                    className="block text-[10px] font-black text-slate-400 tracking-widest uppercase">세트
+                                    className="block text-[10px] font-black text-muted tracking-widest uppercase">세트
                                     번호</label>
                                 <input
                                     type="number"
@@ -335,7 +335,7 @@ export default function AdminSeasonManagementPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-400 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all"
+                                    className="flex-1 py-3 rounded-xl text-sm font-bold text-muted bg-surface-2 border border-line hover:bg-surface-2 transition-all"
                                 >
                                     취소
                                 </button>

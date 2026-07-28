@@ -165,8 +165,8 @@ export default async function ProfilePage() {
                         />
                     ) : (
                         <section className={`${CARD} p-6`}>
-                            <div className="text-slate-100 font-extrabold">프로필 이미지 · 프레임</div>
-                            <p className="mt-2 text-sm text-slate-400">
+                            <div className="text-fg font-extrabold">프로필 이미지 · 프레임</div>
+                            <p className="mt-2 text-sm text-muted">
                                 관리자 승인이 완료되면 이곳에서 프로필 이미지와 프레임을 설정할 수 있어요.
                             </p>
                         </section>

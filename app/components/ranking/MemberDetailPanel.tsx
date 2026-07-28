@@ -112,38 +112,38 @@ function AccountCard({
       className={`w-full text-left rounded-xl border px-3 py-3 transition-colors ${
         selected
           ? 'border-indigo-400/60 bg-indigo-500/10'
-          : 'border-white/[0.07] bg-white/[0.03] hover:border-white/20'
+          : 'border-line bg-surface hover:border-line-strong'
       }`}
     >
       <div className="flex items-center gap-2">
-        <span className="text-sm font-black text-white truncate">
+        <span className="text-sm font-black text-fg truncate">
           {account.riot_game_name}
-          <span className="text-slate-500 font-bold">#{account.riot_tagline}</span>
+          <span className="text-subtle font-bold">#{account.riot_tagline}</span>
         </span>
         {account.is_primary && (
-          <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+          <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-brand-ink">
             대표
           </span>
         )}
       </div>
 
-      <div className="mt-1.5 text-xs text-slate-300">
+      <div className="mt-1.5 text-xs text-muted">
         {r.tier ? (
           <>
             {r.tier} {r.rank} · {r.lp ?? 0} LP
             {total > 0 && (
-              <span className="text-slate-500">
+              <span className="text-subtle">
                 {' '}
                 · {r.wins ?? 0}승 {r.losses ?? 0}패
               </span>
             )}
           </>
         ) : (
-          <span className="text-slate-600">{account.synced ? '언랭크' : '동기화 대기'}</span>
+          <span className="text-faint">{account.synced ? '언랭크' : '동기화 대기'}</span>
         )}
       </div>
 
-      <p className="mt-1 text-[10px] text-slate-600">
+      <p className="mt-1 text-[10px] text-faint">
         마지막 동기화 {formatSyncedAt(account.last_synced_at)}
       </p>
     </button>
@@ -159,10 +159,10 @@ function StatBox({
   value: string
   tone?: 'ok' | 'warn'
 }) {
-  const color = tone === 'ok' ? 'text-emerald-400' : tone === 'warn' ? 'text-amber-400' : 'text-white'
+  const color = tone === 'ok' ? 'text-ok-ink' : tone === 'warn' ? 'text-warn-ink' : 'text-fg'
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-3 py-2">
-      <p className="text-[10px] text-slate-500 leading-none mb-1">{label}</p>
+    <div className="rounded-xl bg-surface border border-line px-3 py-2">
+      <p className="text-[10px] text-subtle leading-none mb-1">{label}</p>
       <p className={`text-sm font-black leading-none ${color}`}>{value}</p>
     </div>
   )
@@ -198,8 +198,8 @@ type MemberInfo = {
 
 function placementColor(p: number) {
   if (p === 1) return 'text-yellow-400'
-  if (p <= 4) return 'text-emerald-400'
-  return 'text-slate-500'
+  if (p <= 4) return 'text-ok-ink'
+  return 'text-subtle'
 }
 
 function placementLabel(p: number) {
@@ -248,7 +248,7 @@ function UnitIcon({ unit }: { unit: ProcessedUnit }) {
 
   return (
     <div className="flex flex-col items-center gap-0.5" title={unit.name}>
-      <div className={`relative w-8 h-8 rounded overflow-hidden border-2 ${border} bg-white/5`}>
+      <div className={`relative w-8 h-8 rounded overflow-hidden border-2 ${border} bg-surface`}>
         {!imgError ? (
           <Image
             src={unit.imageUrl}
@@ -260,7 +260,7 @@ function UnitIcon({ unit }: { unit: ProcessedUnit }) {
             unoptimized
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-500 leading-none text-center px-0.5">
+          <div className="w-full h-full flex items-center justify-center text-[8px] text-subtle leading-none text-center px-0.5">
             {unit.name}
           </div>
         )}
@@ -281,7 +281,7 @@ function MatchCard({ match }: { match: MatchRow }) {
   const units = match.units ?? []
 
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3 flex gap-3">
+    <div className="rounded-xl bg-surface border border-line p-3 flex gap-3">
       {/* 순위 */}
       <div className={`flex-shrink-0 w-12 text-center font-black text-2xl leading-none pt-1 ${placementColor(placement)}`}>
         {placementLabel(placement)}
@@ -289,10 +289,10 @@ function MatchCard({ match }: { match: MatchRow }) {
 
       <div className="flex-1 min-w-0 space-y-1.5">
         {/* 날짜 + 게임 길이 */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+        <div className="flex items-center gap-2 text-[11px] text-subtle">
           <span>{formatDate(match.game_datetime)}</span>
           {match.game_length_seconds && (
-            <span className="text-slate-600">{formatGameLength(match.game_length_seconds)}</span>
+            <span className="text-faint">{formatGameLength(match.game_length_seconds)}</span>
           )}
         </div>
 
@@ -309,7 +309,7 @@ function MatchCard({ match }: { match: MatchRow }) {
         {augments.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {augments.map((a, i) => (
-              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 leading-tight">
+              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-brand-ink leading-tight">
                 {a}
               </span>
             ))}
@@ -320,7 +320,7 @@ function MatchCard({ match }: { match: MatchRow }) {
         {traits.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {traits.map((t, i) => (
-              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 leading-tight">
+              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-warn-ink leading-tight">
                 {t.name} ×{t.units}
               </span>
             ))}
@@ -488,17 +488,17 @@ export default function MemberDetailPanel({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="fixed right-0 top-0 bottom-0 w-full max-w-sm sm:max-w-lg bg-[#0d1117] border-l border-white/[0.08] z-50 flex flex-col overflow-hidden"
+          className="fixed right-0 top-0 bottom-0 w-full max-w-sm sm:max-w-lg bg-panel border-l border-line z-50 flex flex-col overflow-hidden"
         >
           {/* 헤더 */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div>
-              <p className="font-black text-white text-base leading-tight">{member.member_name}</p>
+              <p className="font-black text-fg text-base leading-tight">{member.member_name}</p>
               {headerRank.tier ? (
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-subtle mt-0.5">
                   {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
                   {subAccountSelected && selectedAccount && (
-                    <span className="text-slate-600">
+                    <span className="text-faint">
                       {' '}
                       · {selectedAccount.riot_game_name}#{selectedAccount.riot_tagline}
                     </span>
@@ -510,22 +510,22 @@ export default function MemberDetailPanel({
               type="button"
               onClick={onClose}
               aria-label="닫기"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-surface-2 transition-colors"
             >
               ✕
             </button>
           </div>
 
           {/* 탭 */}
-          <div className="flex border-b border-white/[0.06] px-3">
+          <div className="flex border-b border-line px-3">
             {visibleTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={`px-4 py-3 text-xs font-black tracking-wide transition-colors border-b-2 -mb-px ${
                   tab === t.key
-                    ? 'text-white border-indigo-400'
-                    : 'text-slate-500 border-transparent hover:text-slate-300'
+                    ? 'text-fg border-indigo-400'
+                    : 'text-subtle border-transparent hover:text-muted'
                 }`}
               >
                 {t.label}
@@ -537,7 +537,7 @@ export default function MemberDetailPanel({
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
             {tab !== 'accounts' && subAccountSelected && (
-              <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300">
+              <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-warn-ink">
                 {ACCOUNT_SCOPE_NOTICE}
               </p>
             )}
@@ -545,26 +545,26 @@ export default function MemberDetailPanel({
             {tab === 'overview' && (
               <>
                 <section>
-                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                     랭크 그래프 ({queueLabel})
                   </h3>
                   {history === null ? (
-                    <div className="h-40 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
+                    <div className="h-40 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
                   ) : (
                     <RankLineChart history={history} queue={queue} />
                   )}
                 </section>
 
-                <div className="h-px bg-white/[0.05]" />
+                <div className="h-px bg-surface" />
 
                 <section>
-                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                     전적 요약 ({queueLabel})
                   </h3>
                   {stats === null ? (
-                    <div className="text-slate-600 text-xs text-center py-4">불러오는 중…</div>
+                    <div className="text-faint text-xs text-center py-4">불러오는 중…</div>
                   ) : stats.total === 0 ? (
-                    <div className="text-slate-600 text-xs text-center py-4">매치 데이터 없음</div>
+                    <div className="text-faint text-xs text-center py-4">매치 데이터 없음</div>
                   ) : (
                     <>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -575,12 +575,12 @@ export default function MemberDetailPanel({
                       </div>
                       {stats.recentForm.length > 0 && (
                         <div className="mt-3">
-                          <p className="text-[10px] text-slate-600 mb-1.5">최근 {stats.recentForm.length}판</p>
+                          <p className="text-[10px] text-faint mb-1.5">최근 {stats.recentForm.length}판</p>
                           <div className="flex gap-1 flex-wrap">
                             {stats.recentForm.map((p, i) => (
                               <span
                                 key={i}
-                                className={`w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center bg-white/[0.04] ${placementColor(p)}`}
+                                className={`w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center bg-surface-2 ${placementColor(p)}`}
                               >
                                 {p}
                               </span>
@@ -597,11 +597,11 @@ export default function MemberDetailPanel({
             {tab === 'matches' && (
               <>
                 <section>
-                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                     등수 분포
                   </h3>
                   {stats === null ? (
-                    <div className="h-28 flex items-center justify-center text-slate-600 text-xs">불러오는 중…</div>
+                    <div className="h-28 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
                   ) : (
                     <PlacementHistogram distribution={stats.distribution} />
                   )}
@@ -609,32 +609,32 @@ export default function MemberDetailPanel({
 
                 {stats && stats.topUnits.length > 0 && (
                   <section>
-                    <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                    <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                       자주 쓴 기물
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {stats.topUnits.map((u) => (
                         <div key={u.character_id} className="flex flex-col items-center gap-0.5 w-12" title={`${u.name} · ${u.count}회 · 평균 ${u.avgPlacement}위`}>
-                          <div className="relative w-8 h-8 rounded overflow-hidden border border-white/10 bg-white/5">
+                          <div className="relative w-8 h-8 rounded overflow-hidden border border-line bg-surface">
                             <Image src={u.imageUrl} alt={u.name} fill sizes="32px" className="object-cover" unoptimized />
                           </div>
-                          <span className="text-[9px] text-slate-500 leading-none">{u.count}회</span>
+                          <span className="text-[9px] text-subtle leading-none">{u.count}회</span>
                         </div>
                       ))}
                     </div>
                   </section>
                 )}
 
-                <div className="h-px bg-white/[0.05]" />
+                <div className="h-px bg-surface" />
 
                 <section>
-                  <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                     최근 매치
                   </h3>
                   {matches === null ? (
-                    <div className="text-slate-600 text-xs text-center py-4">불러오는 중…</div>
+                    <div className="text-faint text-xs text-center py-4">불러오는 중…</div>
                   ) : matches.length === 0 ? (
-                    <div className="text-slate-600 text-xs text-center py-4">매치 데이터 없음</div>
+                    <div className="text-faint text-xs text-center py-4">매치 데이터 없음</div>
                   ) : (
                     <div className="space-y-2">
                       {matches.map((m) => (
@@ -648,7 +648,7 @@ export default function MemberDetailPanel({
 
             {tab === 'accounts' && accounts && (
               <section>
-                <h3 className="text-[11px] font-black tracking-widest text-slate-500 uppercase mb-3">
+                <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                   라이엇 계정 ({queueLabel})
                 </h3>
                 <div className="space-y-2">
@@ -662,7 +662,7 @@ export default function MemberDetailPanel({
                     />
                   ))}
                 </div>
-                <p className="mt-3 text-[11px] text-slate-500">{ACCOUNT_SCOPE_NOTICE}</p>
+                <p className="mt-3 text-[11px] text-subtle">{ACCOUNT_SCOPE_NOTICE}</p>
               </section>
             )}
 

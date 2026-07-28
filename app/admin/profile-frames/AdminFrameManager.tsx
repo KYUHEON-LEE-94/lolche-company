@@ -16,9 +16,9 @@ function Spinner({ size = 4 }: { size?: number }) {
 
 // 동일한 입력창 스타일
 const inputCls = `
-  w-full px-4 py-2.5 rounded-xl text-sm font-medium text-white
-  bg-white/[0.04] border border-white/[0.08]
-  placeholder:text-slate-600
+  w-full px-4 py-2.5 rounded-xl text-sm font-medium text-fg
+  bg-surface-2 border border-line
+  placeholder:text-faint
   focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5
   transition-all duration-200
 `
@@ -126,28 +126,28 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             {/* ── 헤더 ── */}
             <header className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight mb-1">프레임 관리</h1>
-                    <p className="text-sm text-slate-500">프로필을 꾸며줄 전용 프레임을 추가하거나 삭제합니다</p>
+                    <h1 className="text-2xl font-black text-fg tracking-tight mb-1">프레임 관리</h1>
+                    <p className="text-sm text-subtle">프로필을 꾸며줄 전용 프레임을 추가하거나 삭제합니다</p>
                 </div>
             </header>
 
             {/* ── 알림 (Toast) ── */}
             {toast && (
-                <div className="animate-in fade-in slide-in-from-top-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-400 font-bold">
+                <div className="animate-in fade-in slide-in-from-top-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-warn-ink font-bold">
                     {toast}
                 </div>
             )}
 
             {/* ── 업로드 폼 ── */}
-            <section className="rounded-2xl border p-6 bg-white/[0.02]" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            <section className="rounded-2xl border p-6 bg-surface" style={{ borderColor: 'var(--color-line)' }}>
                 <div className="flex items-center gap-2 mb-6">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    <h2 className="text-xs font-black text-slate-400 tracking-widest uppercase">New Frame</h2>
+                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">New Frame</h2>
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Key (고유이름)</label>
+                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Key (고유이름)</label>
                         <input
                             value={key}
                             onChange={(e) => setKey(e.target.value)}
@@ -157,7 +157,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Label (표시이름)</label>
+                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Label (표시이름)</label>
                         <input
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
@@ -167,7 +167,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Sort Order (정렬)</label>
+                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Sort Order (정렬)</label>
                         <input
                             type="number"
                             value={sortOrder}
@@ -177,12 +177,12 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-slate-500 tracking-widest uppercase ml-1">Image File</label>
+                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Image File</label>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                            className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-slate-300 hover:file:bg-white/20`}
+                            className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-muted hover:file:bg-surface-2`}
                         />
                     </div>
                 </div>
@@ -201,40 +201,40 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             <section className="space-y-4">
                 <div className="flex items-center gap-2 px-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                    <h2 className="text-xs font-black text-slate-400 tracking-widest uppercase">Frame List</h2>
-                    <span className="text-[10px] font-bold text-slate-600 ml-auto">{frames.length} items</span>
+                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">Frame List</h2>
+                    <span className="text-[10px] font-bold text-faint ml-auto">{frames.length} items</span>
                 </div>
 
                 <div className="grid gap-3">
                     {frames.map((f, idx) => (
                         <div
                             key={f.id}
-                            className="flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-white/[0.02]"
+                            className="flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-surface"
                             style={{
-                                background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
-                                borderColor: 'rgba(255,255,255,0.05)'
+                                background: idx % 2 === 0 ? 'var(--color-surface)' : 'transparent',
+                                borderColor: 'var(--color-line)'
                             }}
                         >
                             <div className="flex items-center gap-4">
                                 {/* 프레임 미리보기 */}
-                                <div className="relative w-14 h-14 rounded-xl bg-slate-900 border border-white/5 flex-shrink-0">
+                                <div className="relative w-14 h-14 rounded-xl bg-slate-900 border border-line flex-shrink-0">
                                     <Image src={frameUrl(f.image_path)} alt={f.label} fill className="object-contain p-2" />
                                 </div>
 
                                 <div className="min-w-0">
-                                    <div className="text-white font-bold text-sm truncate">{f.label}</div>
-                                    <div className="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
-                                        <span className="bg-white/5 px-1.5 py-0.5 rounded text-slate-400">key: {f.key}</span>
+                                    <div className="text-fg font-bold text-sm truncate">{f.label}</div>
+                                    <div className="text-[11px] text-subtle font-medium flex items-center gap-2 mt-0.5">
+                                        <span className="bg-surface px-1.5 py-0.5 rounded text-muted">key: {f.key}</span>
                                         <span>order: {f.sort_order}</span>
                                     </div>
-                                    <div className="text-[10px] text-slate-700 truncate max-w-[150px] sm:max-w-xs mt-1">{f.image_path}</div>
+                                    <div className="text-[10px] text-faint truncate max-w-[150px] sm:max-w-xs mt-1">{f.image_path}</div>
                                 </div>
                             </div>
 
                             <button
                                 disabled={busy}
                                 onClick={() => deleteFrame(f)}
-                                className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 disabled:opacity-30 transition-all"
+                                className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-danger-ink bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-danger-ink disabled:opacity-30 transition-all"
                             >
                                 삭제
                             </button>
@@ -243,7 +243,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
 
                     {frames.length === 0 && (
                         <div className="text-center py-12 rounded-2xl border border-dashed border-slate-800">
-                            <p className="text-sm text-slate-600 font-medium italic">등록된 프레임이 없습니다.</p>
+                            <p className="text-sm text-faint font-medium italic">등록된 프레임이 없습니다.</p>
                         </div>
                     )}
                 </div>

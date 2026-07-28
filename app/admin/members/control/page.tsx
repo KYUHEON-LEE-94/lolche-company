@@ -14,19 +14,19 @@ function Field({
                }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
       <div className="space-y-1.5">
-        <label className="block text-xs font-black text-slate-400 tracking-widest uppercase">
+        <label className="block text-xs font-black text-muted tracking-widest uppercase">
           {label}
         </label>
         {children}
-        {hint && <p className="text-[11px] text-slate-600">{hint}</p>}
+        {hint && <p className="text-[11px] text-faint">{hint}</p>}
       </div>
   )
 }
 
 const inputCls = `
-  w-full px-4 py-3 rounded-xl text-sm font-medium text-white
-  bg-white/[0.04] border border-white/[0.08]
-  placeholder:text-slate-600
+  w-full px-4 py-3 rounded-xl text-sm font-medium text-fg
+  bg-surface-2 border border-line
+  placeholder:text-faint
   focus:outline-none focus:border-indigo-500/50 focus:bg-indigo-500/5
   transition-all duration-200
 `
@@ -57,9 +57,9 @@ type MemberListItem = {
 type Tab = 'pending' | 'all'
 
 const STATUS_BADGE: Record<MemberStatus, { label: string; cls: string }> = {
-  pending: { label: '대기', cls: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
-  approved: { label: '승인', cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' },
-  rejected: { label: '거절', cls: 'bg-red-500/10 text-red-300 border-red-500/30' },
+  pending: { label: '대기', cls: 'bg-amber-500/10 text-warn-ink border-amber-500/30' },
+  approved: { label: '승인', cls: 'bg-emerald-500/10 text-ok-ink border-emerald-500/30' },
+  rejected: { label: '거절', cls: 'bg-red-500/10 text-danger-ink border-red-500/30' },
 }
 
 const DELETE_WARNING = [
@@ -232,15 +232,15 @@ export default function AdminMemberControlPage() {
         <div className="lg:col-span-4 space-y-6">
           <div className="sticky top-24">
             <div className="mb-6">
-              <h1 className="text-2xl font-black text-white tracking-tight mb-1">
+              <h1 className="text-2xl font-black text-fg tracking-tight mb-1">
                 {editingId ? '멤버 정보 수정' : '새 멤버 등록'}
               </h1>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-subtle">
                 {editingId ? '기존 멤버의 라이엇 계정 정보를 변경합니다' : '관리자가 등록한 멤버는 즉시 승인 상태가 됩니다'}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-surface border border-line space-y-5">
               <Field label="단톡방 아이디">
                 <input type="text" value={memberName} maxLength={MEMBER_NAME_MAX}
                        onChange={(e) => setMemberName(e.target.value)} className={inputCls} required />
@@ -251,7 +251,7 @@ export default function AdminMemberControlPage() {
               </Field>
               <Field label="태그라인" hint="영문/숫자 2~10자">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-bold">#</span>
+                  <span className="text-subtle font-bold">#</span>
                   <input type="text" value={riotTagline} maxLength={RIOT_TAGLINE_MAX}
                          onChange={(e) => setRiotTagline(e.target.value)} className={inputCls} required />
                 </div>
@@ -262,15 +262,15 @@ export default function AdminMemberControlPage() {
                   {loading ? '처리 중...' : editingId ? '정보 수정하기' : '멤버 등록하기'}
                 </button>
                 {editingId && (
-                    <button type="button" onClick={resetForm} className="w-full py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-colors">
+                    <button type="button" onClick={resetForm} className="w-full py-3 rounded-xl text-sm font-bold text-muted hover:text-fg transition-colors">
                       취소하고 새로 등록하기
                     </button>
                 )}
               </div>
             </form>
 
-            {message && <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">{message}</div>}
-            {error && <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">{error}</div>}
+            {message && <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-ok-ink text-xs font-bold">{message}</div>}
+            {error && <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-danger-ink text-xs font-bold">{error}</div>}
           </div>
         </div>
 
@@ -282,8 +282,8 @@ export default function AdminMemberControlPage() {
                   onClick={() => setTab('pending')}
                   className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
                       tab === 'pending'
-                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                          : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                          ? 'bg-amber-500/15 text-warn-ink border border-amber-500/30'
+                          : 'text-subtle hover:text-muted border border-transparent'
                   }`}
               >
                 대기 중 ({pendingCount})
@@ -292,8 +292,8 @@ export default function AdminMemberControlPage() {
                   onClick={() => setTab('all')}
                   className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
                       tab === 'all'
-                          ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
-                          : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                          ? 'bg-indigo-500/15 text-brand-ink border border-indigo-500/30'
+                          : 'text-subtle hover:text-muted border border-transparent'
                   }`}
               >
                 전체 멤버 ({members.length})
@@ -308,29 +308,29 @@ export default function AdminMemberControlPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`${inputCls} !py-2 !pl-10 !w-64`}
               />
-              <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <svg className="absolute left-3 top-2.5 w-4 h-4 text-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
           </div>
 
           <div className="grid gap-3">
             {visibleMembers.map((m) => (
                 <div key={m.id}
-                     className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all">
+                     className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-line hover:border-line transition-all">
 
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-500 uppercase">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-slate-800 flex items-center justify-center font-bold text-subtle uppercase">
                       {m.member_name[0]}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-bold truncate">{m.member_name}</span>
+                        <span className="text-fg font-bold truncate">{m.member_name}</span>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${STATUS_BADGE[m.status].cls}`}>
                           {STATUS_BADGE[m.status].label}
                         </span>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
                             m.login_linked
                                 ? 'bg-sky-500/10 text-sky-300 border-sky-500/30'
-                                : 'bg-slate-700/30 text-slate-500 border-slate-600/30'
+                                : 'bg-slate-700/30 text-subtle border-slate-600/30'
                         }`}>
                           {m.login_linked ? '로그인 연결됨' : '미로그인'}
                         </span>
@@ -347,8 +347,8 @@ export default function AdminMemberControlPage() {
                                     key={a.id}
                                     className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
                                         i === 0
-                                            ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
-                                            : 'bg-slate-700/20 text-slate-400 border-slate-600/30'
+                                            ? 'bg-indigo-500/10 text-brand-ink border-indigo-500/30'
+                                            : 'bg-slate-700/20 text-muted border-slate-600/30'
                                     }`}
                                 >
                                   {i === 0 && <span className="mr-1 text-[10px] font-black">대표</span>}
@@ -358,12 +358,12 @@ export default function AdminMemberControlPage() {
                             ))}
                           </div>
                       ) : (
-                          <div className="text-xs text-slate-500 mt-0.5 truncate">
-                            {m.riot_game_name} <span className="text-slate-700">#{m.riot_tagline}</span>
+                          <div className="text-xs text-subtle mt-0.5 truncate">
+                            {m.riot_game_name} <span className="text-faint">#{m.riot_tagline}</span>
                           </div>
                       )}
                       {m.status === 'rejected' && m.rejected_reason && (
-                          <div className="text-[11px] text-red-400/80 mt-0.5 truncate">거절 사유: {m.rejected_reason}</div>
+                          <div className="text-[11px] text-danger-ink/80 mt-0.5 truncate">거절 사유: {m.rejected_reason}</div>
                       )}
                     </div>
                   </div>
@@ -373,7 +373,7 @@ export default function AdminMemberControlPage() {
                         <button
                             onClick={() => handleApprove(m)}
                             disabled={busyId === m.id}
-                            className="px-4 py-2 rounded-lg text-xs font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white disabled:opacity-50 transition-all"
+                            className="px-4 py-2 rounded-lg text-xs font-bold text-ok-ink bg-emerald-500/10 hover:bg-emerald-500 hover:text-white disabled:opacity-50 transition-all"
                         >
                           승인
                         </button>
@@ -382,21 +382,21 @@ export default function AdminMemberControlPage() {
                         <button
                             onClick={() => handleReject(m)}
                             disabled={busyId === m.id}
-                            className="px-4 py-2 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500 hover:text-white disabled:opacity-50 transition-all"
+                            className="px-4 py-2 rounded-lg text-xs font-bold text-warn-ink bg-amber-500/10 hover:bg-amber-500 hover:text-white disabled:opacity-50 transition-all"
                         >
                           거절
                         </button>
                     )}
                     <button
                         onClick={() => handleEditStart(m)}
-                        className="px-4 py-2 rounded-lg text-xs font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-brand-ink bg-indigo-500/10 hover:bg-indigo-500 hover:text-white transition-all"
                     >
                       수정
                     </button>
                     <button
                         onClick={() => { setDeleteTarget(m); setConfirmName('') }}
                         disabled={busyId === m.id}
-                        className="px-4 py-2 rounded-lg text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500 hover:text-white disabled:opacity-50 transition-all"
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-danger-ink bg-red-500/10 hover:bg-red-500 hover:text-white disabled:opacity-50 transition-all"
                     >
                       추방
                     </button>
@@ -404,7 +404,7 @@ export default function AdminMemberControlPage() {
                 </div>
             ))}
             {visibleMembers.length === 0 && (
-                <div className="text-center py-20 text-slate-600 border-2 border-dashed border-white/5 rounded-3xl">
+                <div className="text-center py-20 text-faint border-2 border-dashed border-line rounded-3xl">
                   {tab === 'pending' ? '대기 중인 신청이 없습니다.' : '검색 결과가 없습니다.'}
                 </div>
             )}
@@ -414,25 +414,25 @@ export default function AdminMemberControlPage() {
         {/* ── 추방 확인 모달 ── */}
         {deleteTarget && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-              <div className="w-full max-w-md rounded-2xl bg-[#0d1117] border border-red-500/30 p-6">
-                <h3 className="text-lg font-black text-white">멤버 추방</h3>
-                <p className="mt-2 text-sm text-slate-400">
-                  <span className="font-bold text-white">{deleteTarget.member_name}</span> 멤버를 완전히 삭제합니다.
-                  이 작업은 <span className="text-red-400 font-bold">되돌릴 수 없습니다.</span>
+              <div className="w-full max-w-md rounded-2xl bg-panel border border-red-500/30 p-6">
+                <h3 className="text-lg font-black text-fg">멤버 추방</h3>
+                <p className="mt-2 text-sm text-muted">
+                  <span className="font-bold text-fg">{deleteTarget.member_name}</span> 멤버를 완전히 삭제합니다.
+                  이 작업은 <span className="text-danger-ink font-bold">되돌릴 수 없습니다.</span>
                 </p>
 
                 <div className="mt-4 rounded-xl bg-red-500/5 border border-red-500/20 p-4">
-                  <div className="text-xs font-black text-red-300 uppercase tracking-widest">함께 삭제되는 데이터</div>
-                  <ul className="mt-2 text-xs text-red-200/80 list-disc pl-5 space-y-1">
+                  <div className="text-xs font-black text-danger-ink uppercase tracking-widest">함께 삭제되는 데이터</div>
+                  <ul className="mt-2 text-xs text-danger-ink/80 list-disc pl-5 space-y-1">
                     {DELETE_WARNING.map((w) => <li key={w}>{w}</li>)}
                   </ul>
-                  <div className="mt-3 text-[11px] text-slate-400">
+                  <div className="mt-3 text-[11px] text-muted">
                     명예의 전당 시즌 기록은 이름 스냅샷으로 보존됩니다.
                   </div>
                 </div>
 
                 <div className="mt-5 space-y-1.5">
-                  <label className="block text-xs font-black text-slate-400 tracking-widest uppercase">
+                  <label className="block text-xs font-black text-muted tracking-widest uppercase">
                     확인을 위해 멤버명을 입력하세요
                   </label>
                   <input
@@ -447,7 +447,7 @@ export default function AdminMemberControlPage() {
                 <div className="mt-5 flex gap-2">
                   <button
                       onClick={() => { setDeleteTarget(null); setConfirmName('') }}
-                      className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-all"
+                      className="flex-1 py-3 rounded-xl text-sm font-bold text-muted bg-surface hover:bg-surface-2 transition-all"
                   >
                     취소
                   </button>

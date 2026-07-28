@@ -117,7 +117,7 @@ export default function AuthButtons() {
   }
 
   if (loading) {
-    return <div className="text-xs text-slate-500">로딩...</div>
+    return <div className="text-xs text-subtle">로딩...</div>
   }
 
   // 비로그인: 로그인 버튼만
@@ -152,7 +152,7 @@ export default function AuthButtons() {
                   className="h-9 w-9 rounded-full object-cover"
               />
           ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/20 text-sm font-black text-indigo-200">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/20 text-sm font-black text-brand-ink">
                 {initial}
               </span>
           )}
@@ -161,12 +161,12 @@ export default function AuthButtons() {
         {menuOpen && (
             <div
                 role="menu"
-                className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-line bg-[#0d1117]/95 backdrop-blur-sm shadow-2xl z-50"
+                className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-line bg-panel/95 backdrop-blur-sm shadow-2xl z-50"
             >
               {displayName && (
                   <div className="px-4 py-3 border-b border-line">
-                    <p className="text-xs font-semibold text-slate-400">로그인 계정</p>
-                    <p className="mt-0.5 text-sm font-bold text-white truncate">{displayName}</p>
+                    <p className="text-xs font-semibold text-muted">로그인 계정</p>
+                    <p className="mt-0.5 text-sm font-bold text-fg truncate">{displayName}</p>
                   </div>
               )}
 
@@ -174,7 +174,7 @@ export default function AuthButtons() {
                   type="button"
                   role="menuitem"
                   onClick={() => go('/profile')}
-                  className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-slate-200 hover:bg-surface-2 transition-colors"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-fg hover:bg-surface-2 transition-colors"
               >
                 프로필
               </button>
@@ -184,7 +184,7 @@ export default function AuthButtons() {
                       type="button"
                       role="menuitem"
                       onClick={() => go('/admin/members/sync')}
-                      className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-indigo-300 hover:bg-surface-2 transition-colors"
+                      className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-brand-ink hover:bg-surface-2 transition-colors"
                   >
                     관리
                   </button>
@@ -194,7 +194,7 @@ export default function AuthButtons() {
                   type="button"
                   role="menuitem"
                   onClick={handleLogout}
-                  className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-red-400 hover:bg-surface-2 transition-colors border-t border-line"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-danger-ink hover:bg-surface-2 transition-colors border-t border-line"
               >
                 로그아웃
               </button>

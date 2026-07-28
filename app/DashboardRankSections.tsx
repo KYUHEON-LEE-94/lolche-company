@@ -53,14 +53,14 @@ export default function DashboardRankSections({
       {/* ① 리더보드 TOP5 */}
       <section className={`${CARD} p-5 lg:col-span-2`}>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-black text-white">롤체 TOP 5</h2>
-          <Link href="/tft" className="text-xs font-bold text-indigo-300 hover:text-indigo-200">
+          <h2 className="text-sm font-black text-fg">롤체 TOP 5</h2>
+          <Link href="/tft" className="text-xs font-bold text-brand-ink hover:text-brand-ink">
             전체 보기 →
           </Link>
         </div>
 
         {leaderboard.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">아직 랭크 기록이 없어요.</p>
+          <p className="mt-4 text-sm text-subtle">아직 랭크 기록이 없어요.</p>
         ) : (
           <ol className="mt-3 divide-y divide-line">
             {leaderboard.map((m, i) => (
@@ -73,7 +73,7 @@ export default function DashboardRankSections({
                   aria-label={`${m.member_name} 상세 전적 보기`}
                   className={`flex w-full items-center gap-3 py-2.5 min-h-[44px] text-left rounded-lg transition-colors hover:bg-surface-2 ${TRIGGER_FOCUS}`}
                 >
-                  <span className="w-5 shrink-0 text-center text-sm font-black text-slate-500">{i + 1}</span>
+                  <span className="w-5 shrink-0 text-center text-sm font-black text-subtle">{i + 1}</span>
                   {m.avatarUrl ? (
                     <Image
                       src={m.avatarUrl}
@@ -85,8 +85,8 @@ export default function DashboardRankSections({
                   ) : (
                     <span className="h-8 w-8 shrink-0 rounded-full bg-surface-2" aria-hidden />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{m.member_name}</span>
-                  <span className="shrink-0 text-xs font-bold text-slate-400">{m.rankLabel}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-fg">{m.member_name}</span>
+                  <span className="shrink-0 text-xs font-bold text-muted">{m.rankLabel}</span>
                 </button>
               </li>
             ))}
@@ -96,10 +96,10 @@ export default function DashboardRankSections({
 
       {/* ② 최근 랭크 변동 */}
       <section className={`${CARD} p-5`}>
-        <h2 className="text-sm font-black text-white">최근 랭크 변동</h2>
+        <h2 className="text-sm font-black text-fg">최근 랭크 변동</h2>
 
         {movers.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">직전 동기화 대비 변동이 없어요.</p>
+          <p className="mt-4 text-sm text-subtle">직전 동기화 대비 변동이 없어요.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {movers.map(({ member, delta, prevLabel }) => {
@@ -114,12 +114,12 @@ export default function DashboardRankSections({
                     className={`w-full min-h-[44px] text-left rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:border-line-strong ${TRIGGER_FOCUS}`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-sm font-bold text-white">{member.member_name}</span>
-                      <span className={`shrink-0 text-xs font-black ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className="min-w-0 truncate text-sm font-bold text-fg">{member.member_name}</span>
+                      <span className={`shrink-0 text-xs font-black ${up ? 'text-ok-ink' : 'text-danger-ink'}`}>
                         {up ? '▲' : '▼'} {Math.abs(delta)}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500 truncate">
+                    <p className="mt-1 text-xs text-subtle truncate">
                       {prevLabel}
                       {' → '}
                       {member.rankLabel}

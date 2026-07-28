@@ -12,33 +12,96 @@
  */
 @source not "../_workspace*/**";
 
+/*
+ * ⚠ @theme inline 을 쓰지 않는다. inline 은 값을 유틸에 굳혀 넣어
+ *    [data-theme] 재정의가 먹지 않는다. 일반 @theme 로 "이름만" 등록하면
+ *    유틸이 var(--color-*) 참조로 컴파일되고, 아래 셀렉터에서 값을 뒤집는다.
+ *    @theme 의 값은 다크 기준(=현행 픽셀). 실제 적용값은 :root/[data-theme] 에서 온다.
+ */
 @theme {
-  /* ── 서피스 ── 실측 3종(0.02/0.03/0.04) → 2단계로 축약 */
-  --color-canvas: #07090f;                     /* 페이지 배경 */
-  --color-surface: rgba(255, 255, 255, 0.03);  /* 카드 기본 */
-  --color-surface-2: rgba(255, 255, 255, 0.06);/* hover / 인풋 / 중첩 */
-  --color-line: rgba(255, 255, 255, 0.08);     /* 보더 단일값 */
+  /* ── 서피스 (다크 기준값 = 현행) ── */
+  --color-canvas: #07090f;                      /* 페이지 배경 */
+  --color-surface: rgba(255, 255, 255, 0.03);   /* 카드 기본 */
+  --color-surface-2: rgba(255, 255, 255, 0.06); /* hover / 인풋 / 중첩 */
+  --color-line: rgba(255, 255, 255, 0.08);      /* 보더 단일값 */
   --color-line-strong: rgba(255, 255, 255, 0.2);/* hover 보더 */
+  --color-panel: #0d1117;                       /* 불투명 패널/모달 */
 
-  /* ── 역할색 ── */
+  /* ── 텍스트 4단계 (다크 기준값 = 현행 slate) ── */
+  --color-fg: #f8fafc;      /* 본문 최상 (구 text-white / slate-100·200) */
+  --color-muted: #94a3b8;   /* 보조 (구 slate-300·400) */
+  --color-subtle: #64748b;  /* 약함 (구 slate-500) */
+  --color-faint: #475569;   /* 최약/장식 (구 slate-600·700·800) */
+
+  /* ── 역할색 텍스트(ink) — 필 토큰과 분리. 라이트에서 대비 확보 ── */
+  --color-brand-ink: #a5b4fc;   /* indigo-200~500 텍스트 */
+  --color-ok-ink: #6ee7b7;      /* emerald-300·400 텍스트 */
+  --color-warn-ink: #fbbf24;    /* amber 텍스트 */
+  --color-danger-ink: #f87171;  /* red/rose 텍스트 */
+
+  /* ── 역할색 필 ── 양 테마 동일(버튼·틴트용) */
   --color-brand: oklch(0.585 0.233 277.117);  /* indigo-500 : 주 강조·포커스·내비 active */
   --color-ok: oklch(0.696 0.17 162.48);       /* emerald-500 : 성공 */
   --color-warn: oklch(0.769 0.188 70.08);     /* amber-500 : 경고 */
   --color-danger: oklch(0.637 0.237 25.331);  /* red-500 : 위험 (rose 폐기) */
 
-  /* ── 위 역할색의 별칭. 새 체계를 만들지 않고 의미만 좁힌다 ── */
-  --color-up: var(--color-ok);       /* 랭크 상승 */
-  --color-down: var(--color-danger); /* 랭크 하락 */
+  /* ── 위 ink 의 별칭. 랭크 상승/하락 텍스트 ── */
+  --color-up: var(--color-ok-ink);       /* 랭크 상승 */
+  --color-down: var(--color-danger-ink); /* 랭크 하락 */
 
   /* 상단 네비 높이. SHELL 의 min-h 계산과 동일한 3.5rem */
   --color-nav-h: 3.5rem;
+}
+
+/* ── 라이트 (기본) ──
+   FOUC 스크립트가 항상 data-theme 를 심지만, 미설정 상태의 폴백으로 :root 에도 둔다. */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --color-canvas: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef1f5;
+  --color-line: rgba(15, 23, 42, 0.1);
+  --color-line-strong: rgba(15, 23, 42, 0.22);
+  --color-panel: #ffffff;
+
+  --color-fg: #0f172a;
+  --color-muted: #475569;
+  --color-subtle: #64748b;
+  --color-faint: #94a3b8;
+
+  --color-brand-ink: #4338ca;
+  --color-ok-ink: #047857;
+  --color-warn-ink: #b45309;
+  --color-danger-ink: #dc2626;
+}
+
+/* ── 다크 (현행 픽셀 유지) ── */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --color-canvas: #07090f;
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-surface-2: rgba(255, 255, 255, 0.06);
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.2);
+  --color-panel: #0d1117;
+
+  --color-fg: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-subtle: #64748b;
+  --color-faint: #475569;
+
+  --color-brand-ink: #a5b4fc;
+  --color-ok-ink: #6ee7b7;
+  --color-warn-ink: #fbbf24;
+  --color-danger-ink: #f87171;
 }
 
 /* ⚠ font-family 에 Arial 을 강제하지 않는다 — layout.tsx 가 주입한 Geist 변수를 덮어쓴다.
    Geist 는 latin 서브셋만 로드되므로 한글 폴백을 명시한다. */
 body {
   background: var(--color-canvas);
-  color: #ededed;
+  color: var(--color-fg);
   font-family: var(--font-geist-sans), 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
     ui-sans-serif, system-ui, sans-serif;
 }

@@ -38,7 +38,7 @@ export default function LpSparkline({
   )
   if (valid.length < 2) {
     return (
-      <div className="flex items-center justify-center h-20 text-slate-600 text-xs">
+      <div className="flex items-center justify-center h-20 text-faint text-xs">
         히스토리 데이터 없음 (동기화 후 누적)
       </div>
     )
@@ -125,13 +125,13 @@ export default function LpSparkline({
       {/* 툴팁 */}
       {hoverIdx !== null && (
         <div
-          className="absolute -top-9 text-[11px] font-bold bg-[#0d1117] border border-white/10 rounded-lg px-2 py-1 pointer-events-none whitespace-nowrap z-10"
+          className="absolute -top-9 text-[11px] font-bold bg-panel border border-line rounded-lg px-2 py-1 pointer-events-none whitespace-nowrap z-10"
           style={{
             left: `${(toX(hoverIdx) / W) * 100}%`,
             transform: hoverIdx > scores.length / 2 ? 'translateX(-100%)' : 'translateX(0)',
           }}
         >
-          <span className="text-slate-400 mr-1">{formatDate(valid[hoverIdx].recorded_at)}</span>
+          <span className="text-muted mr-1">{formatDate(valid[hoverIdx].recorded_at)}</span>
           <span style={{ color: lineColor }}>
             {isDoubleup
               ? tierLabel(valid[hoverIdx].tft_doubleup_tier, valid[hoverIdx].tft_doubleup_rank, valid[hoverIdx].tft_doubleup_lp)
@@ -141,7 +141,7 @@ export default function LpSparkline({
       )}
 
       {/* 첫/마지막 날짜 */}
-      <div className="flex justify-between text-[10px] text-slate-600 mt-0.5 px-1">
+      <div className="flex justify-between text-[10px] text-faint mt-0.5 px-1">
         <span>{formatDate(valid[0].recorded_at)}</span>
         <span>{formatDate(valid[valid.length - 1].recorded_at)}</span>
       </div>

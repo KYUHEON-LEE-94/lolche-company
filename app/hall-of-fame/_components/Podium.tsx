@@ -109,18 +109,18 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
                 <div className="absolute inset-0 z-10 pointer-events-none">
                     <Image src={cfg.frameImg} alt={`Rank ${displayRank}`} fill className="object-contain" />
                 </div>
-                <div className="absolute inset-0 rounded-full bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 blur-xl" />
+                <div className="absolute inset-0 rounded-full bg-surface opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 blur-xl" />
             </div>
 
             {/* ── 이름 + 정보 ── */}
             <div className="flex flex-col items-center gap-1 text-center px-4 mb-6 z-30">
-                <h3 className="text-xl font-black text-white line-clamp-2 break-keep min-h-[3rem] flex items-center justify-center drop-shadow-lg">
+                <h3 className="text-xl font-black text-fg line-clamp-2 break-keep min-h-[3rem] flex items-center justify-center drop-shadow-lg">
                     {displayName}
                 </h3>
-                <span className={`text-[10px] font-black px-3 py-1 rounded-lg bg-black/60 border border-white/10 uppercase tracking-widest ${cfg.tierColor}`}>
+                <span className={`text-[10px] font-black px-3 py-1 rounded-lg bg-black/60 border border-line uppercase tracking-widest ${cfg.tierColor}`}>
                     {data.tier} {data.rank}
                 </span>
-                <span className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-tighter">
+                <span className="text-[11px] font-bold text-subtle mt-1 uppercase tracking-tighter">
                     {(data.lp ?? 0).toLocaleString()} LP
                 </span>
             </div>

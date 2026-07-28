@@ -12,7 +12,7 @@ export default function PlacementHistogram({
   const total = distribution.reduce((a, b) => a + b, 0)
   if (total === 0) {
     return (
-      <div className="flex items-center justify-center h-24 text-slate-600 text-xs">
+      <div className="flex items-center justify-center h-24 text-faint text-xs">
         매치 데이터 없음
       </div>
     )
@@ -43,7 +43,7 @@ export default function PlacementHistogram({
             <span className="text-[10px] font-bold leading-none" style={{ color }}>
               {count}
             </span>
-            <span className="text-[10px] text-slate-600 leading-none">{placement}</span>
+            <span className="text-[10px] text-faint leading-none">{placement}</span>
           </div>
         )
       })}

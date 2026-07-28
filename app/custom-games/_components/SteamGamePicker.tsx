@@ -182,7 +182,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
           disabled={disabled}
           className={INPUT}
         />
-        {notice && <p className="text-xs text-amber-400/80">{notice}</p>}
+        {notice && <p className="text-xs text-warn-ink/80">{notice}</p>}
         <button
           type="button"
           onClick={() => {
@@ -190,7 +190,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
             setNotice(null)
           }}
           disabled={disabled}
-          className="text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+          className="text-xs font-bold text-brand-ink hover:text-brand-ink disabled:opacity-50"
         >
           ← 목록에서 고르기
         </button>
@@ -214,12 +214,12 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
               />
             </div>
           )}
-          <p className="min-w-0 flex-1 truncate text-sm font-bold text-white">{value.label}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-bold text-fg">{value.label}</p>
           <button
             type="button"
             onClick={() => onChange({ label: '', appId: null })}
             disabled={disabled}
-            className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[11px] font-bold text-muted hover:text-fg disabled:opacity-50"
           >
             변경
           </button>
@@ -246,8 +246,8 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                   aria-pressed={source === s}
                   className={`rounded-[6px] px-2.5 py-1 text-[11px] font-bold transition-colors disabled:opacity-50 ${
                     source === s
-                      ? 'bg-brand/15 text-indigo-300'
-                      : 'text-slate-500 hover:text-slate-300'
+                      ? 'bg-brand/15 text-brand-ink'
+                      : 'text-subtle hover:text-muted'
                   }`}
                 >
                   {s === 'owned' ? '멤버 보유' : '스팀 전체'}
@@ -261,8 +261,8 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                 disabled={disabled}
                 className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold transition-colors disabled:opacity-50 ${
                   multiplayerOnly
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                    : 'border-line bg-surface text-slate-400'
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-ok-ink'
+                    : 'border-line bg-surface text-muted'
                 }`}
               >
                 멀티플레이만 {multiplayerOnly ? 'ON' : 'OFF'}
@@ -272,7 +272,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
               type="button"
               onClick={() => setManual(true)}
               disabled={disabled}
-              className="ml-auto text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+              className="ml-auto text-xs font-bold text-brand-ink hover:text-brand-ink disabled:opacity-50"
             >
               직접 입력
             </button>
@@ -280,15 +280,15 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
 
           <div className="max-h-56 overflow-y-auto rounded-xl border border-line">
             {loading ? (
-              <p className="px-3 py-4 text-xs text-slate-500">불러오는 중...</p>
+              <p className="px-3 py-4 text-xs text-subtle">불러오는 중...</p>
             ) : options.length === 0 ? (
               <div className="space-y-2 px-3 py-4">
                 {unavailable ? (
-                  <p className="text-xs text-amber-400/80">
+                  <p className="text-xs text-warn-ink/80">
                     스팀 스토어에 연결할 수 없습니다. 게임 이름을 직접 입력해주세요.
                   </p>
                 ) : (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-subtle">
                     {notice ??
                       (source === 'owned'
                         ? '멤버 보유 게임에 없습니다.'
@@ -302,7 +302,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                     type="button"
                     onClick={() => switchSource('catalog')}
                     disabled={disabled}
-                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+                    className="text-xs font-bold text-brand-ink hover:text-brand-ink disabled:opacity-50"
                   >
                     스팀 전체에서 “{query.trim()}” 찾기 →
                   </button>
@@ -311,7 +311,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                     type="button"
                     onClick={() => setManual(true)}
                     disabled={disabled}
-                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+                    className="text-xs font-bold text-brand-ink hover:text-brand-ink disabled:opacity-50"
                   >
                     직접 입력 →
                   </button>
@@ -339,14 +339,14 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <p className="truncate text-xs font-bold text-slate-200">{opt.name}</p>
+                          <p className="truncate text-xs font-bold text-fg">{opt.name}</p>
                           {opt.ownerCount !== null && opt.isMultiplayer === null && (
-                            <span className="shrink-0 rounded border border-line bg-slate-700/40 px-1 py-0.5 text-[9px] font-bold text-slate-400">
+                            <span className="shrink-0 rounded border border-line bg-slate-700/40 px-1 py-0.5 text-[9px] font-bold text-muted">
                               분류 미확인
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-500">
+                        <p className="text-[10px] text-subtle">
                           {opt.ownerCount !== null ? `보유 ${opt.ownerCount}명` : '스팀 스토어'}
                         </p>
                       </div>

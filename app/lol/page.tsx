@@ -33,20 +33,20 @@ type LolMember = Pick<
 
 const TIER_STYLES: Record<string, { text: string; badge: string; icon: string }> = {
   CHALLENGER:  { text: 'text-yellow-400',  badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-500/20',    icon: '👑' },
-  GRANDMASTER: { text: 'text-red-400',     badge: 'bg-red-500/10 text-red-300 border-red-500/20',             icon: '♦' },
+  GRANDMASTER: { text: 'text-danger-ink',     badge: 'bg-red-500/10 text-danger-ink border-red-500/20',             icon: '♦' },
   MASTER:      { text: 'text-purple-400',  badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20',    icon: '◆' },
   DIAMOND:     { text: 'text-blue-400',    badge: 'bg-blue-500/10 text-blue-300 border-blue-500/20',          icon: '◇' },
-  EMERALD:     { text: 'text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', icon: '◈' },
+  EMERALD:     { text: 'text-ok-ink', badge: 'bg-emerald-500/10 text-ok-ink border-emerald-500/20', icon: '◈' },
   PLATINUM:    { text: 'text-cyan-400',    badge: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',          icon: '◉' },
-  GOLD:        { text: 'text-amber-400',   badge: 'bg-amber-500/10 text-amber-300 border-amber-500/20',       icon: '○' },
-  SILVER:      { text: 'text-slate-400',   badge: 'bg-slate-400/10 text-slate-300 border-slate-400/20',       icon: '○' },
+  GOLD:        { text: 'text-warn-ink',   badge: 'bg-amber-500/10 text-warn-ink border-amber-500/20',       icon: '○' },
+  SILVER:      { text: 'text-muted',   badge: 'bg-slate-400/10 text-muted border-slate-400/20',       icon: '○' },
   BRONZE:      { text: 'text-orange-400',  badge: 'bg-orange-500/10 text-orange-300 border-orange-500/20',    icon: '○' },
   IRON:        { text: 'text-gray-400',    badge: 'bg-gray-500/10 text-gray-300 border-gray-500/20',          icon: '◌' },
 }
 
 const FALLBACK_STYLE = {
-  text: 'text-slate-400',
-  badge: 'bg-slate-700/50 text-slate-400 border-slate-600/30',
+  text: 'text-muted',
+  badge: 'bg-slate-700/50 text-muted border-slate-600/30',
   icon: '?',
 }
 
@@ -128,7 +128,7 @@ export default async function LolPage() {
                     unranked ? 'bg-surface opacity-70' : 'bg-surface'
                   }`}
                 >
-                  <div className="flex w-8 shrink-0 items-center justify-center text-xs font-bold text-slate-500">
+                  <div className="flex w-8 shrink-0 items-center justify-center text-xs font-bold text-subtle">
                     {unranked ? '-' : `#${idx + 1}`}
                   </div>
 
@@ -143,15 +143,15 @@ export default async function LolPage() {
                         unoptimized
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center text-sm text-slate-500">
+                      <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
                         {m.member_name.slice(0, 1)}
                       </span>
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-white">{m.member_name}</p>
-                    <p className="truncate text-[11px] text-slate-500">
+                    <p className="truncate text-sm font-bold text-fg">{m.member_name}</p>
+                    <p className="truncate text-[11px] text-subtle">
                       {m.riot_game_name}#{m.riot_tagline}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ export default async function LolPage() {
                     <div className="flex items-center justify-end gap-1.5">
                       {!unranked && <span className="text-sm leading-none">{style.icon}</span>}
                       <span
-                        className={`text-sm font-black ${unranked ? 'text-slate-500' : style.text}`}
+                        className={`text-sm font-black ${unranked ? 'text-subtle' : style.text}`}
                       >
                         {formatTier(m.lol_tier, m.lol_rank)}
                       </span>
@@ -172,7 +172,7 @@ export default async function LolPage() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-500">{record ?? '전적 없음'}</p>
+                    <p className="mt-1 text-[11px] text-subtle">{record ?? '전적 없음'}</p>
                   </div>
                 </li>
               )

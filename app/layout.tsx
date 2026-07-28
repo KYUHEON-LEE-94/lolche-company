@@ -25,6 +25,19 @@ export default function RootLayout({
 }>) {
   return (
       <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* FOUC 방지: paint 이전에 localStorage → 없으면 matchMedia 로 data-theme 를 심는다.
+            next/script 는 실행 시점 보장이 약해 flash 가 생기므로 raw 인라인 스크립트를 쓴다. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              `(function(){try{var t=localStorage.getItem('theme');` +
+              `var d=t||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');` +
+              `document.documentElement.setAttribute('data-theme',d);}catch(e){` +
+              `document.documentElement.setAttribute('data-theme','dark');}})();`,
+          }}
+        />
+      </head>
       <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning

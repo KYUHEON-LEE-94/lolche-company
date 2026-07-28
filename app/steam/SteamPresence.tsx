@@ -138,13 +138,13 @@ function Body({ state }: { state: LoadState }) {
             >
               <Avatar member={m} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{m.member_name}</p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-sm font-bold text-fg">{m.member_name}</p>
+                <p className="truncate text-xs text-subtle">
                   {m.game_name ?? PERSONA_LABEL[m.persona_state ?? 1] ?? '온라인'}
                 </p>
               </div>
               {m.game_name && (
-                <span className="shrink-0 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-300">
+                <span className="shrink-0 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-ok-ink">
                   게임 중
                 </span>
               )}
@@ -154,7 +154,7 @@ function Body({ state }: { state: LoadState }) {
       )}
 
       {unavailable.length > 0 && (
-        <p className="text-[11px] text-amber-300/80">
+        <p className="text-[11px] text-warn-ink/80">
           표시 불가 — 스팀 프로필이 비공개라 접속 상태를 알 수 없습니다:{' '}
           {unavailable.map((m) => m.member_name).join(', ')}
         </p>
@@ -171,7 +171,7 @@ function Avatar({ member }: { member: PresenceMember }) {
         {imageUrl ? (
           <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-sm text-slate-500">
+          <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
             {member.member_name.slice(0, 1)}
           </span>
         )}

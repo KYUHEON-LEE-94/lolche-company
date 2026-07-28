@@ -96,15 +96,15 @@ type TeamDraft = [string | null, string | null][]
 
 const PLACEMENT_STYLE: Record<number, { bg: string; text: string }> = {
   1: { bg: 'bg-yellow-500/15 border border-yellow-500/30', text: 'text-yellow-300' },
-  2: { bg: 'bg-slate-400/15 border border-slate-400/30', text: 'text-slate-300' },
+  2: { bg: 'bg-slate-400/15 border border-slate-400/30', text: 'text-muted' },
   3: { bg: 'bg-orange-500/15 border border-orange-500/30', text: 'text-orange-300' },
 }
 
 const TEAM_COLORS = [
-  { bg: 'bg-rose-500/15 border-rose-500/30', text: 'text-rose-300', dot: 'bg-rose-500', label: '팀 1' },
+  { bg: 'bg-rose-500/15 border-rose-500/30', text: 'text-danger-ink', dot: 'bg-rose-500', label: '팀 1' },
   { bg: 'bg-sky-500/15 border-sky-500/30', text: 'text-sky-300', dot: 'bg-sky-500', label: '팀 2' },
-  { bg: 'bg-emerald-500/15 border-emerald-500/30', text: 'text-emerald-300', dot: 'bg-emerald-500', label: '팀 3' },
-  { bg: 'bg-amber-500/15 border-amber-500/30', text: 'text-amber-300', dot: 'bg-amber-500', label: '팀 4' },
+  { bg: 'bg-emerald-500/15 border-emerald-500/30', text: 'text-ok-ink', dot: 'bg-emerald-500', label: '팀 3' },
+  { bg: 'bg-amber-500/15 border-amber-500/30', text: 'text-warn-ink', dot: 'bg-amber-500', label: '팀 4' },
 ]
 
 const EMPTY_DRAFT: TeamDraft = [[null, null], [null, null], [null, null], [null, null]]
@@ -123,10 +123,10 @@ function PlacementCell({ result, teamIndex }: {
   result: { placement: number; points: number } | undefined
   teamIndex?: number
 }) {
-  if (!result) return <span className="text-slate-700 text-xs">-</span>
+  if (!result) return <span className="text-faint text-xs">-</span>
   const s = PLACEMENT_STYLE[result.placement] ?? {
     bg: 'bg-surface-2 border border-line',
-    text: 'text-slate-400',
+    text: 'text-muted',
   }
   const tc = teamIndex !== undefined ? TEAM_COLORS[teamIndex - 1] : undefined
   return (
@@ -134,7 +134,7 @@ function PlacementCell({ result, teamIndex }: {
       <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${s.bg} ${s.text}`}>
         {result.placement}등
       </span>
-      <span className="text-[10px] text-slate-600 font-medium">{result.points}점</span>
+      <span className="text-[10px] text-faint font-medium">{result.points}점</span>
       {tc && (
         <span className={`inline-flex items-center px-1.5 py-0 rounded text-[9px] font-black border ${tc.bg} ${tc.text}`}>
           {tc.label}
@@ -188,7 +188,7 @@ function TeamAssignPanel({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-black text-violet-300">{roundNumber}라운드 팀 배정</h3>
-          <p className="text-xs text-slate-500 mt-0.5">각 팀에 2명씩 배정하세요</p>
+          <p className="text-xs text-subtle mt-0.5">각 팀에 2명씩 배정하세요</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -220,7 +220,7 @@ function TeamAssignPanel({
       </div>
 
       {validationError && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
+        <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-danger-ink text-xs font-medium">
           {validationError}
         </div>
       )}
@@ -241,8 +241,8 @@ function TeamAssignPanel({
                     value={currentKey ?? ''}
                     onChange={(e) => handleSlotChange(teamIdx, slotIdx, e.target.value || null)}
                     disabled={saving}
-                    className="w-full mb-1.5 last:mb-0 px-2 py-1.5 rounded-lg text-xs font-medium text-white
-                      bg-black/20 border border-white/10
+                    className="w-full mb-1.5 last:mb-0 px-2 py-1.5 rounded-lg text-xs font-medium text-fg
+                      bg-black/20 border border-line
                       focus:outline-none focus:border-violet-500/50
                       disabled:opacity-50 transition-colors"
                   >
@@ -269,7 +269,7 @@ function TeamAssignPanel({
             }`}
           />
         ))}
-        <span className="text-[10px] text-slate-600 ml-1">{assignedKeys.size}/{TFT_TEAM_CAPACITY}명 배정</span>
+        <span className="text-[10px] text-faint ml-1">{assignedKeys.size}/{TFT_TEAM_CAPACITY}명 배정</span>
       </div>
     </div>
   )
@@ -655,26 +655,26 @@ export default function CustomGameDetailPage() {
       key={p.id}
       className="flex items-center gap-2 px-3 py-2 rounded-xl border"
       style={{
-        background: tone === 'confirmed' ? 'rgba(255,255,255,0.03)' : 'rgba(249,115,22,0.05)',
-        borderColor: tone === 'confirmed' ? 'rgba(255,255,255,0.07)' : 'rgba(249,115,22,0.15)',
+        background: tone === 'confirmed' ? 'var(--color-surface)' : 'rgba(249,115,22,0.05)',
+        borderColor: tone === 'confirmed' ? 'var(--color-line)' : 'rgba(249,115,22,0.15)',
       }}
     >
-      <span className={`text-[10px] font-black w-5 text-center ${tone === 'confirmed' ? 'text-slate-600' : 'text-orange-400'}`}>
+      <span className={`text-[10px] font-black w-5 text-center ${tone === 'confirmed' ? 'text-faint' : 'text-orange-400'}`}>
         {tone === 'confirmed' ? p.position : p.position - confirmedList.length}
       </span>
       <div>
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-bold text-white leading-tight">{p.member_name}</p>
+          <p className="text-sm font-bold text-fg leading-tight">{p.member_name}</p>
           {p.is_host && (
-            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/25 text-indigo-400">
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/25 text-brand-ink">
               주최
             </span>
           )}
         </div>
-        <p className="text-[10px] text-slate-600">{p.riot_game_name}#{p.riot_tagline}</p>
+        <p className="text-[10px] text-faint">{p.riot_game_name}#{p.riot_tagline}</p>
       </div>
       {isTft && tone === 'confirmed' && !p.riot_puuid && (
-        <span className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded font-bold">
+        <span className="text-[10px] text-danger-ink bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded font-bold">
           PUUID 없음
         </span>
       )}
@@ -684,7 +684,7 @@ export default function CustomGameDetailPage() {
           onClick={() => handleKick(p)}
           disabled={kickingId === p.id}
           className="ml-1 w-5 h-5 flex items-center justify-center rounded-md
-            text-slate-600 hover:text-red-400 hover:bg-red-500/10
+            text-faint hover:text-danger-ink hover:bg-red-500/10
             disabled:opacity-40 transition-colors"
           title="명단에서 제외"
         >
@@ -707,7 +707,7 @@ export default function CustomGameDetailPage() {
           <div className="flex items-center gap-4 min-w-0">
             <Link
               href="/custom-games"
-              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-white transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 text-sm font-bold text-muted hover:text-fg transition-colors flex-shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
                 <path d="M15 19l-7-7 7-7" />
@@ -716,8 +716,8 @@ export default function CustomGameDetailPage() {
             </Link>
             {game && (
               <>
-                <span className="text-slate-700 flex-shrink-0">·</span>
-                <span className="text-sm font-black text-white truncate">{game.title}</span>
+                <span className="text-faint flex-shrink-0">·</span>
+                <span className="text-sm font-black text-fg truncate">{game.title}</span>
               </>
             )}
           </div>
@@ -731,8 +731,8 @@ export default function CustomGameDetailPage() {
                   disabled={joining}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
-                    hover:bg-emerald-500/20 hover:text-emerald-300
+                    bg-emerald-500/10 border border-emerald-500/30 text-ok-ink
+                    hover:bg-emerald-500/20 hover:text-ok-ink
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {joining ? <Spinner size={4} /> : null}
@@ -746,8 +746,8 @@ export default function CustomGameDetailPage() {
                   disabled={joining}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-surface-2 border border-line text-slate-400
-                    hover:text-slate-200 hover:bg-surface-2
+                    bg-surface-2 border border-line text-muted
+                    hover:text-fg hover:bg-surface-2
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {joining ? <Spinner size={4} /> : null}
@@ -760,8 +760,8 @@ export default function CustomGameDetailPage() {
                   onClick={handleOpenEdit}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-surface-2 border border-line text-slate-400
-                    hover:text-slate-200 hover:bg-surface-2"
+                    bg-surface-2 border border-line text-muted
+                    hover:text-fg hover:bg-surface-2"
                 >
                   수정
                 </button>
@@ -773,8 +773,8 @@ export default function CustomGameDetailPage() {
                   disabled={addingRound || ending || !canAddRound}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-indigo-500/10 border border-indigo-500/30 text-indigo-400
-                    hover:bg-indigo-500/20 hover:text-indigo-300
+                    bg-indigo-500/10 border border-indigo-500/30 text-brand-ink
+                    hover:bg-indigo-500/20 hover:text-brand-ink
                     disabled:opacity-40 disabled:cursor-not-allowed"
                   title={isTeam && !teamsAssigned ? '팀 배정을 먼저 저장하세요' : undefined}
                 >
@@ -788,8 +788,8 @@ export default function CustomGameDetailPage() {
                   disabled={addingRound || ending}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
-                    bg-red-500/10 border border-red-500/20 text-red-400
-                    hover:bg-red-500/20 hover:text-red-300
+                    bg-red-500/10 border border-red-500/20 text-danger-ink
+                    hover:bg-red-500/20 hover:text-danger-ink
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {ending ? <><Spinner size={4} /> 종료 중...</> : '내전 종료'}
@@ -803,7 +803,7 @@ export default function CustomGameDetailPage() {
       <main className={`relative z-10 flex-1 w-full px-4 py-8 ${CONTAINER}`}>
         <div className={PANEL}>
           {loading && (
-            <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-subtle">
               <Spinner size={6} />
               <p className="text-sm font-semibold">로딩 중...</p>
             </div>
@@ -811,8 +811,8 @@ export default function CustomGameDetailPage() {
 
           {!loading && !game && (
             <div className="text-center py-20">
-              <p className="text-slate-400 font-bold">{loadError ?? '내전을 찾을 수 없습니다'}</p>
-              <Link href="/custom-games" className="text-indigo-400 text-sm mt-2 inline-block hover:underline">← 목록으로</Link>
+              <p className="text-muted font-bold">{loadError ?? '내전을 찾을 수 없습니다'}</p>
+              <Link href="/custom-games" className="text-brand-ink text-sm mt-2 inline-block hover:underline">← 목록으로</Link>
             </div>
           )}
 
@@ -833,7 +833,7 @@ export default function CustomGameDetailPage() {
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h1 className="text-2xl font-black text-white tracking-tight">{game.title}</h1>
+                  <h1 className="text-2xl font-black text-fg tracking-tight">{game.title}</h1>
                   <Badge className={gameKindBadgeClass(game.game_kind)}>
                     {gameKindLabel(game.game_kind, game.game_kind_label)}
                   </Badge>
@@ -847,16 +847,16 @@ export default function CustomGameDetailPage() {
                   <Badge className={statusBadgeClass(game.status)}>{statusLabel(game.status)}</Badge>
                   {myParticipation && (
                     <Badge className={myParticipation.confirmed
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink'
                       : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}>
                       {myParticipation.confirmed ? '참가 확정' : `대기 ${myParticipation.position - confirmedList.length}번`}
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-subtle">
                   {formatKstSchedule(game.scheduled_at)} · 주최 {game.host_member_name ?? '알 수 없음'}
                 </p>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-subtle mt-0.5">
                   {seatsTaken}/{game.capacity}명
                   {guests.length > 0 && ` (게스트 ${guests.length}명 포함)`}
                   {waitlist.length > 0 && ` · 대기 ${waitlist.length}명`}
@@ -865,22 +865,22 @@ export default function CustomGameDetailPage() {
               </div>
 
               {addingRound && (
-                <div className="mb-6 flex items-center gap-3 px-4 py-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm">
+                <div className="mb-6 flex items-center gap-3 px-4 py-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-brand-ink text-sm">
                   <Spinner size={4} />
                   <div>
                     <p className="font-bold">Riot API에서 게임 정보를 가져오는 중입니다</p>
-                    <p className="text-indigo-400/70 text-xs mt-0.5">참가자 전원이 함께한 최근 게임을 탐색합니다. 10~20초 정도 걸릴 수 있습니다.</p>
+                    <p className="text-brand-ink/70 text-xs mt-0.5">참가자 전원이 함께한 최근 게임을 탐색합니다. 10~20초 정도 걸릴 수 있습니다.</p>
                   </div>
                 </div>
               )}
 
               {error && (
-                <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
+                <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-danger-ink text-sm font-medium">
                   {error}
                 </div>
               )}
               {successMsg && (
-                <div className="mb-6 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+                <div className="mb-6 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-ok-ink text-sm font-medium">
                   {successMsg}
                 </div>
               )}
@@ -888,7 +888,7 @@ export default function CustomGameDetailPage() {
               {/* 명단 */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xs font-black text-slate-500 tracking-widest uppercase">
+                  <h2 className="text-xs font-black text-subtle tracking-widest uppercase">
                     확정 명단 ({seatsTaken}/{game.capacity})
                   </h2>
                   {isTft && !isClosed && canManage && canAddGuest && !showGuestForm && (
@@ -897,8 +897,8 @@ export default function CustomGameDetailPage() {
                       onClick={() => setShowGuestForm(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                         text-xs font-bold transition-all duration-150
-                        bg-amber-500/10 border border-amber-500/20 text-amber-400
-                        hover:bg-amber-500/20 hover:text-amber-300"
+                        bg-amber-500/10 border border-amber-500/20 text-warn-ink
+                        hover:bg-amber-500/20 hover:text-warn-ink"
                     >
                       게스트 추가
                     </button>
@@ -910,7 +910,7 @@ export default function CustomGameDetailPage() {
                     className="mb-4 p-4 rounded-xl border"
                     style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}
                   >
-                    <p className="text-xs font-black text-amber-400 tracking-widest uppercase mb-3">게스트 추가</p>
+                    <p className="text-xs font-black text-warn-ink tracking-widest uppercase mb-3">게스트 추가</p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
@@ -918,9 +918,9 @@ export default function CustomGameDetailPage() {
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="표시 이름 (예: 홍길동 부계)"
                         disabled={addingGuest}
-                        className="flex-1 px-3 py-2 rounded-lg text-sm text-white
+                        className="flex-1 px-3 py-2 rounded-lg text-sm text-fg
                           bg-surface-2 border border-line
-                          placeholder:text-slate-600
+                          placeholder:text-faint
                           focus:outline-none focus:border-amber-500/40
                           disabled:opacity-50 transition-colors"
                       />
@@ -931,9 +931,9 @@ export default function CustomGameDetailPage() {
                         placeholder="Riot ID (닉네임#태그)"
                         disabled={addingGuest}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleAddGuest() }}
-                        className="flex-1 px-3 py-2 rounded-lg text-sm text-white
+                        className="flex-1 px-3 py-2 rounded-lg text-sm text-fg
                           bg-surface-2 border border-line
-                          placeholder:text-slate-600
+                          placeholder:text-faint
                           focus:outline-none focus:border-amber-500/40
                           disabled:opacity-50 transition-colors"
                       />
@@ -944,8 +944,8 @@ export default function CustomGameDetailPage() {
                           disabled={addingGuest || !guestName.trim() || !guestRiotId.trim()}
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg
                             text-sm font-bold transition-all duration-150
-                            bg-amber-500/15 border border-amber-500/25 text-amber-400
-                            hover:bg-amber-500/25 hover:text-amber-300
+                            bg-amber-500/15 border border-amber-500/25 text-warn-ink
+                            hover:bg-amber-500/25 hover:text-warn-ink
                             disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {addingGuest ? <Spinner size={4} /> : '추가'}
@@ -955,7 +955,7 @@ export default function CustomGameDetailPage() {
                           onClick={() => { setShowGuestForm(false); setGuestName(''); setGuestRiotId('') }}
                           disabled={addingGuest}
                           className="px-3 py-2 rounded-lg text-sm font-bold
-                            text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]
+                            text-subtle hover:text-muted hover:bg-surface-2
                             disabled:opacity-40 transition-colors"
                         >
                           취소
@@ -967,7 +967,7 @@ export default function CustomGameDetailPage() {
 
                 <div className="flex flex-wrap gap-2">
                   {confirmedList.length === 0 && guests.length === 0 && (
-                    <p className="text-sm text-slate-600">아직 참가자가 없습니다</p>
+                    <p className="text-sm text-faint">아직 참가자가 없습니다</p>
                   )}
                   {confirmedList.map((p) => renderParticipantRow(p, 'confirmed'))}
 
@@ -980,12 +980,12 @@ export default function CustomGameDetailPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-bold text-white leading-tight">{g.display_name}</p>
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-amber-400">
+                          <p className="text-sm font-bold text-fg leading-tight">{g.display_name}</p>
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-warn-ink">
                             게스트
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-600 font-mono">{g.riot_puuid.slice(0, 16)}…</p>
+                        <p className="text-[10px] text-faint font-mono">{g.riot_puuid.slice(0, 16)}…</p>
                       </div>
                       {canManage && !isClosed && (
                         <button
@@ -993,7 +993,7 @@ export default function CustomGameDetailPage() {
                           onClick={() => handleRemoveGuest(g.id, g.display_name)}
                           disabled={removingGuestId === g.id}
                           className="ml-1 w-5 h-5 flex items-center justify-center rounded-md
-                            text-slate-600 hover:text-red-400 hover:bg-red-500/10
+                            text-faint hover:text-danger-ink hover:bg-red-500/10
                             disabled:opacity-40 transition-colors"
                           title="게스트 삭제"
                         >
@@ -1012,10 +1012,10 @@ export default function CustomGameDetailPage() {
               {/* 대기 명단 */}
               {waitlist.length > 0 && (
                 <div className="mb-8">
-                  <h2 className="text-xs font-black text-slate-500 tracking-widest uppercase mb-3">
+                  <h2 className="text-xs font-black text-subtle tracking-widest uppercase mb-3">
                     대기 명단 ({waitlist.length}명)
                   </h2>
-                  <p className="text-xs text-slate-600 mb-2">
+                  <p className="text-xs text-faint mb-2">
                     확정 인원이 취소하면 순번대로 자동 확정됩니다
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -1043,34 +1043,34 @@ export default function CustomGameDetailPage() {
                   {rounds.length === 0 && (
                     <div
                       className="flex flex-col items-center justify-center py-16 border border-dashed rounded-2xl mb-6"
-                      style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+                      style={{ borderColor: 'var(--color-line)' }}
                     >
-                      <p className="text-slate-400 font-bold mb-1">아직 기록된 라운드가 없습니다</p>
-                      <p className="text-slate-600 text-sm text-center">
+                      <p className="text-muted font-bold mb-1">아직 기록된 라운드가 없습니다</p>
+                      <p className="text-faint text-sm text-center">
                         {isTeam ? '팀을 배정하고 저장한 뒤 [라운드 추가] 버튼을 눌러 결과를 기록하세요' : 'TFT 게임 플레이 후 [라운드 추가] 버튼을 눌러 결과를 기록하세요'}
                       </p>
                     </div>
                   )}
 
                   {rounds.length > 0 && (
-                    <div className="rounded-2xl border overflow-hidden mb-8" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                    <div className="rounded-2xl border overflow-hidden mb-8" style={{ borderColor: 'var(--color-line)' }}>
                       <div className="overflow-x-auto">
                         <table className="min-w-full border-collapse">
                           <thead>
-                            <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                              <th className="px-4 py-3.5 text-left text-[10px] font-black text-slate-500 tracking-widest uppercase w-8">순위</th>
-                              <th className="px-4 py-3.5 text-left text-[10px] font-black text-slate-500 tracking-widest uppercase">참가자</th>
+                            <tr style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-line)' }}>
+                              <th className="px-4 py-3.5 text-left text-[10px] font-black text-subtle tracking-widest uppercase w-8">순위</th>
+                              <th className="px-4 py-3.5 text-left text-[10px] font-black text-subtle tracking-widest uppercase">참가자</th>
                               {rounds.map((r) => (
-                                <th key={r.id} className="px-4 py-3.5 text-center text-[10px] font-black text-slate-500 tracking-widest uppercase min-w-[90px]">
+                                <th key={r.id} className="px-4 py-3.5 text-center text-[10px] font-black text-subtle tracking-widest uppercase min-w-[90px]">
                                   {r.round_number}판
                                 </th>
                               ))}
                               {Array.from({ length: Math.max(0, game.max_rounds - rounds.length) }).map((_, i) => (
-                                <th key={`empty-${i}`} className="px-4 py-3.5 text-center text-[10px] font-black text-slate-700 tracking-widest uppercase min-w-[90px]">
+                                <th key={`empty-${i}`} className="px-4 py-3.5 text-center text-[10px] font-black text-faint tracking-widest uppercase min-w-[90px]">
                                   {rounds.length + i + 1}판
                                 </th>
                               ))}
-                              <th className="px-4 py-3.5 text-center text-[10px] font-black text-indigo-500 tracking-widest uppercase min-w-[72px]">총점</th>
+                              <th className="px-4 py-3.5 text-center text-[10px] font-black text-brand-ink tracking-widest uppercase min-w-[72px]">총점</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1081,23 +1081,23 @@ export default function CustomGameDetailPage() {
                                 <tr
                                   key={p.key}
                                   style={{
-                                    background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                    background: idx % 2 === 0 ? 'transparent' : 'var(--color-surface)',
+                                    borderBottom: '1px solid var(--color-line)',
                                   }}
                                 >
                                   <td className="px-4 py-3.5 text-center">
                                     <span className={`text-sm font-black ${
-                                      rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-orange-400' : 'text-slate-600'
+                                      rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-muted' : rank === 3 ? 'text-orange-400' : 'text-faint'
                                     }`}>{rank}</span>
                                   </td>
                                   <td className="px-4 py-3.5">
                                     <div className="flex items-center gap-2">
                                       <div>
-                                        <p className="text-sm font-bold text-white leading-tight">{p.name}</p>
-                                        <p className="text-xs text-slate-600">{p.subLabel}</p>
+                                        <p className="text-sm font-bold text-fg leading-tight">{p.name}</p>
+                                        <p className="text-xs text-faint">{p.subLabel}</p>
                                       </div>
                                       {p.isGuest && (
-                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-amber-400">
+                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-warn-ink">
                                           게스트
                                         </span>
                                       )}
@@ -1113,14 +1113,14 @@ export default function CustomGameDetailPage() {
                                   })}
                                   {Array.from({ length: Math.max(0, game.max_rounds - rounds.length) }).map((_, i) => (
                                     <td key={`empty-${i}`} className="px-4 py-3.5 text-center">
-                                      <span className="text-slate-800 text-xs">-</span>
+                                      <span className="text-faint text-xs">-</span>
                                     </td>
                                   ))}
                                   <td className="px-4 py-3.5 text-center">
                                     <span className={`text-base font-black ${
-                                      rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-orange-400' : 'text-white'
+                                      rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-muted' : rank === 3 ? 'text-orange-400' : 'text-fg'
                                     }`}>{totalPoints}</span>
-                                    <span className="text-slate-600 text-xs ml-0.5">점</span>
+                                    <span className="text-faint text-xs ml-0.5">점</span>
                                   </td>
                                 </tr>
                               )
@@ -1128,12 +1128,12 @@ export default function CustomGameDetailPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
-                        <span className="text-xs text-slate-600 font-medium">
+                      <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-line)', background: 'var(--color-surface)' }}>
+                        <span className="text-xs text-faint font-medium">
                           {rounds.length}/{game.max_rounds}판 완료 · {isTeam ? '팀 합산점수 (1등=8점 기준)' : '1등=8점, 8등=1점'}
                         </span>
                         {isClosed && game.ended_at && (
-                          <span className="text-xs text-slate-600">종료: {formatKstShort(game.ended_at)}</span>
+                          <span className="text-xs text-subtle">종료: {formatKstShort(game.ended_at)}</span>
                         )}
                       </div>
                     </div>
@@ -1141,7 +1141,7 @@ export default function CustomGameDetailPage() {
 
                   {isTeam && rounds.length > 0 && (
                     <div className="mb-8">
-                      <h2 className="text-xs font-black text-slate-500 tracking-widest uppercase mb-3">라운드별 팀 구성</h2>
+                      <h2 className="text-xs font-black text-subtle tracking-widest uppercase mb-3">라운드별 팀 구성</h2>
                       <div className="flex flex-col gap-3">
                         {rounds.map((r) => {
                           const roundTeamMap = teamMapByRound.get(r.round_number)
@@ -1156,8 +1156,8 @@ export default function CustomGameDetailPage() {
                             }
                           })
                           return (
-                            <div key={r.id} className="rounded-xl border p-3" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-                              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{r.round_number}라운드</div>
+                            <div key={r.id} className="rounded-xl border p-3" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-line)' }}>
+                              <div className="text-[10px] font-black text-subtle uppercase tracking-widest mb-2">{r.round_number}라운드</div>
                               <div className="flex flex-wrap gap-2">
                                 {[1, 2, 3, 4].map((ti) => {
                                   const teamMembers = teamGroups.get(ti) ?? []
@@ -1170,7 +1170,7 @@ export default function CustomGameDetailPage() {
                                     >
                                       <div className={`w-1.5 h-1.5 rounded-full ${tc.dot}`} />
                                       <span className={`text-xs font-black ${tc.text}`}>{tc.label}</span>
-                                      <span className="text-xs text-white/70">
+                                      <span className="text-xs text-muted">
                                         {teamMembers.map((m) => m.name).join(' + ')}
                                       </span>
                                     </div>
@@ -1187,7 +1187,7 @@ export default function CustomGameDetailPage() {
               )}
 
               {!isTft && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-faint">
                   {gameKindLabel(game.game_kind, game.game_kind_label)} 내전은 모집·참가 관리만 지원합니다.
                 </p>
               )}
@@ -1206,19 +1206,19 @@ export default function CustomGameDetailPage() {
           />
           <div
             className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
-            style={{ background: 'rgb(13,17,23)', borderColor: 'rgba(255,255,255,0.1)' }}
+            style={{ background: 'var(--color-panel)', borderColor: 'var(--color-line)' }}
           >
-            <h2 className="text-lg font-black text-white">내전 수정</h2>
+            <h2 className="text-lg font-black text-fg">내전 수정</h2>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">제목</label>
+              <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">제목</label>
               <input
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 maxLength={60}
                 disabled={savingEdit}
-                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-fg
                   bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
               />
@@ -1226,27 +1226,27 @@ export default function CustomGameDetailPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">일자</label>
+                <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">일자</label>
                 <input
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
                   onClick={openNativePicker}
                   disabled={savingEdit}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">시간 (KST)</label>
+                <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">시간 (KST)</label>
                 <input
                   type="time"
                   value={editTime}
                   onChange={(e) => setEditTime(e.target.value)}
                   onClick={openNativePicker}
                   disabled={savingEdit}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
@@ -1255,7 +1255,7 @@ export default function CustomGameDetailPage() {
 
             {game.game_kind === 'steam' && !migrationRequired && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">게임</label>
+                <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">게임</label>
                 <SteamGamePicker
                   value={editSteamGame}
                   onChange={setEditSteamGame}
@@ -1265,7 +1265,7 @@ export default function CustomGameDetailPage() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">정원</label>
+              <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">정원</label>
               <input
                 type="number"
                 min={2}
@@ -1273,12 +1273,12 @@ export default function CustomGameDetailPage() {
                 value={editCapacity}
                 onChange={(e) => setEditCapacity(Number(e.target.value))}
                 disabled={savingEdit || isTeam}
-                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-fg
                   bg-surface-2 border border-line
                   focus:outline-none focus:border-indigo-500/50
                   disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              {isTeam && <p className="mt-1.5 text-xs text-slate-600">팀전은 8명 고정입니다</p>}
+              {isTeam && <p className="mt-1.5 text-xs text-faint">팀전은 8명 고정입니다</p>}
               {demotedCount > 0 && (
                 <p className="mt-1.5 text-xs text-orange-400">
                   정원을 줄이면 확정자 {demotedCount}명이 대기자로 이동합니다
@@ -1288,7 +1288,7 @@ export default function CustomGameDetailPage() {
 
             {isTft && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 tracking-widest uppercase">최대 판수</label>
+                <label className="block text-xs font-bold text-muted mb-2 tracking-widest uppercase">최대 판수</label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
@@ -1298,8 +1298,8 @@ export default function CustomGameDetailPage() {
                       disabled={savingEdit}
                       className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
                         editMaxRounds === n
-                          ? 'bg-indigo-500/25 border border-indigo-500/50 text-indigo-300'
-                          : 'bg-white/[0.03] border border-white/[0.07] text-slate-500 hover:text-slate-300 hover:bg-white/[0.06]'
+                          ? 'bg-indigo-500/25 border border-indigo-500/50 text-brand-ink'
+                          : 'bg-surface border border-line text-subtle hover:text-muted hover:bg-surface-2'
                       } disabled:opacity-50`}
                     >
                       {n}판
@@ -1315,8 +1315,8 @@ export default function CustomGameDetailPage() {
                 onClick={() => setShowEdit(false)}
                 disabled={savingEdit}
                 className="flex-1 py-3 rounded-xl text-sm font-bold
-                  bg-surface-2 border border-line text-slate-400
-                  hover:text-slate-200 hover:bg-surface-2
+                  bg-surface-2 border border-line text-muted
+                  hover:text-fg hover:bg-surface-2
                   disabled:opacity-40 transition-all"
               >
                 취소
@@ -1327,8 +1327,8 @@ export default function CustomGameDetailPage() {
                 disabled={savingEdit || !editTitle.trim() || !editDate || !editTime}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl
                   text-sm font-bold transition-all duration-200
-                  bg-indigo-500/20 border border-indigo-500/40 text-indigo-300
-                  hover:bg-indigo-500/30 hover:text-indigo-200
+                  bg-indigo-500/20 border border-indigo-500/40 text-brand-ink
+                  hover:bg-indigo-500/30 hover:text-brand-ink
                   disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {savingEdit ? <><Spinner size={4} /> 저장 중...</> : '저장'}

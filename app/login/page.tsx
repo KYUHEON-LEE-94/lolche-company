@@ -65,8 +65,8 @@ function LoginInner() {
       <div className="min-h-screen bg-canvas px-4 py-20 flex items-start justify-center">
         <div className="w-full max-w-md">
           <div className={`${CARD} p-8`}>
-            <h1 className="text-2xl font-black text-white mb-2">로그인</h1>
-            <p className="text-slate-300 text-sm mb-6">
+            <h1 className="text-2xl font-black text-fg mb-2">로그인</h1>
+            <p className="text-muted text-sm mb-6">
               랭킹을 보려면 Discord 로그인이 필요합니다.
             </p>
 

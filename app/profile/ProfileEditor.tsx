@@ -143,9 +143,9 @@ export default function ProfileEditor({ member }: Props) {
             <section className="rounded-3xl bg-slate-900/40 ring-1 ring-slate-700/50 p-6 shadow-xl">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <div className="text-lg font-bold text-slate-100">{member.member_name}</div>
-                        <div className="mt-1 text-sm text-slate-300">{member.riot_id}</div>
-                        <div className="mt-2 text-xs text-slate-400">
+                        <div className="text-lg font-bold text-fg">{member.member_name}</div>
+                        <div className="mt-1 text-sm text-muted">{member.riot_id}</div>
+                        <div className="mt-2 text-xs text-muted">
                             프로필 사진은 Discord 프로필을 사용해요(프레임은 선택).
                         </div>
                     </div>
@@ -158,7 +158,7 @@ export default function ProfileEditor({ member }: Props) {
                             {displayUrl ? (
                                 <Image src={displayUrl} alt="profile image" fill className="object-cover"/>
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <div className="w-full h-full flex items-center justify-center text-muted">
                                     <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
                                         <path
                                             d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4 0-7 2-7 4v1h14v-1c0-2-3-4-7-4Z"
@@ -183,7 +183,7 @@ export default function ProfileEditor({ member }: Props) {
                 {/* 토스트 */}
                 {toast && (
                     <div
-                        className="mt-4 rounded-2xl bg-slate-800/50 ring-1 ring-slate-700/50 px-4 py-3 text-sm text-slate-200">
+                        className="mt-4 rounded-2xl bg-slate-800/50 ring-1 ring-slate-700/50 px-4 py-3 text-sm text-fg">
                         {toast}
                     </div>
                 )}
@@ -196,13 +196,13 @@ export default function ProfileEditor({ member }: Props) {
                         {displayUrl ? (
                             <Image src={displayUrl} alt="avatar preview" fill className="object-cover" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">없음</div>
+                            <div className="w-full h-full flex items-center justify-center text-muted text-xs">없음</div>
                         )}
                     </div>
 
                     <div>
-                        <div className="text-slate-100 font-extrabold">프로필 사진</div>
-                        <div className="mt-1 text-xs text-slate-400">{avatarNotice}</div>
+                        <div className="text-fg font-extrabold">프로필 사진</div>
+                        <div className="mt-1 text-xs text-muted">{avatarNotice}</div>
                     </div>
                 </div>
             </section>
@@ -211,8 +211,8 @@ export default function ProfileEditor({ member }: Props) {
             <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <div className="text-slate-100 font-extrabold">프레임 선택</div>
-                        <div className="mt-1 text-xs text-slate-400">프레임은 프리셋 중에서 선택해요.</div>
+                        <div className="text-fg font-extrabold">프레임 선택</div>
+                        <div className="mt-1 text-xs text-muted">프레임은 프리셋 중에서 선택해요.</div>
                     </div>
 
                     {/* ✅ 오른쪽 액션 버튼들 */}
@@ -221,7 +221,7 @@ export default function ProfileEditor({ member }: Props) {
                             <button
                                 type="button"
                                 onClick={() => router.push('/admin/profile-frames')}
-                                className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 transition"
+                                className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-fg hover:bg-slate-700 transition"
                             >
                                 프레임 관리
                             </button>
@@ -230,7 +230,7 @@ export default function ProfileEditor({ member }: Props) {
                         <button
                             disabled={savingFrame}
                             onClick={() => saveFrame(null)}
-                            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-fg hover:bg-slate-700 disabled:opacity-50"
                         >
                             해제
                         </button>
@@ -239,7 +239,7 @@ export default function ProfileEditor({ member }: Props) {
 
                 <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {framesLoading ? (
-                        <div className="text-xs text-slate-400">프레임 불러오는 중...</div>
+                        <div className="text-xs text-muted">프레임 불러오는 중...</div>
                     ) : (
                         frames.map((f) => {
                             const selected = framePath === f.image_path
@@ -262,8 +262,8 @@ export default function ProfileEditor({ member }: Props) {
                                             <Image src={url} alt={f.label} fill className="object-contain"/>
                                         </div>
                                         <div className="text-left">
-                                            <div className="text-slate-100 font-bold">{f.label}</div>
-                                            <div className="text-xs text-slate-400">{selected ? '선택됨' : '선택'}</div>
+                                            <div className="text-fg font-bold">{f.label}</div>
+                                            <div className="text-xs text-muted">{selected ? '선택됨' : '선택'}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -272,7 +272,7 @@ export default function ProfileEditor({ member }: Props) {
                     )}
                 </div>
 
-                {savingFrame && <div className="mt-4 text-xs text-slate-400">저장 중...</div>}
+                {savingFrame && <div className="mt-4 text-xs text-muted">저장 중...</div>}
             </section>
         </div>
     )

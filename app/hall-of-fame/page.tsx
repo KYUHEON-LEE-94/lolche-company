@@ -35,7 +35,7 @@ export default async function HallOfFamePage({
         .select('*')
         .order('set_number', { ascending: false });
 
-    if (!seasons || seasons.length === 0) return <div className="text-white p-10">시즌 정보가 없습니다.</div>;
+    if (!seasons || seasons.length === 0) return <div className="text-fg p-10">시즌 정보가 없습니다.</div>;
 
     const currentSeasonId = seasonParam ? parseInt(seasonParam) : seasons[0].id;
     const currentSeason = seasons.find((s) => s.id === currentSeasonId) || seasons[0];

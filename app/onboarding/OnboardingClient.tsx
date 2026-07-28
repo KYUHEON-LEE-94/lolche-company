@@ -19,10 +19,10 @@ export default function OnboardingClient() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center gap-2 text-xs font-black tracking-widest uppercase text-slate-500">
-        <span className={step === 'riot' ? 'text-indigo-300' : 'text-slate-600'}>1. 라이엇</span>
-        <span className="text-slate-700">→</span>
-        <span className={step === 'steam' ? 'text-indigo-300' : 'text-slate-600'}>2. 스팀</span>
+      <div className="flex items-center gap-2 text-xs font-black tracking-widest uppercase text-subtle">
+        <span className={step === 'riot' ? 'text-brand-ink' : 'text-faint'}>1. 라이엇</span>
+        <span className="text-faint">→</span>
+        <span className={step === 'steam' ? 'text-brand-ink' : 'text-faint'}>2. 스팀</span>
       </div>
 
       {step === 'riot' ? (
@@ -41,7 +41,7 @@ export default function OnboardingClient() {
         </>
       ) : (
         <>
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm font-bold text-emerald-300">
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm font-bold text-ok-ink">
             라이엇 등록이 접수되었어요. 관리자 승인 후 랭킹에 표시됩니다. 이어서 스팀 계정도 연결해볼까요?
           </div>
           <SteamLinkForm />

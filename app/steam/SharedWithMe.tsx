@@ -52,7 +52,7 @@ function capsuleUrl(appid: number) {
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-6 py-8 text-center text-sm text-slate-400">
+    <div className="rounded-2xl border border-line bg-surface px-6 py-8 text-center text-sm text-muted">
       {children}
     </div>
   )
@@ -125,8 +125,8 @@ export default function SharedWithMe() {
     <section>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-white">나와 같은 게임을 가진 사람들</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <h2 className="text-lg font-black text-fg">나와 같은 게임을 가진 사람들</h2>
+          <p className="mt-1 text-xs text-subtle">
             내 보유 게임과 겹치는 멤버입니다. 이름을 누르면 겹치는 게임을 모두 볼 수 있습니다.
           </p>
         </div>
@@ -135,8 +135,8 @@ export default function SharedWithMe() {
           onClick={() => setMultiplayerOnly((v) => !v)}
           className={`shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-colors ${
             multiplayerOnly
-              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-              : 'border-white/10 bg-white/[0.03] text-slate-400 hover:text-slate-200'
+              ? 'border-emerald-500/40 bg-emerald-500/10 text-ok-ink'
+              : 'border-line bg-surface text-muted hover:text-fg'
           }`}
         >
           멀티플레이만 {multiplayerOnly ? 'ON' : 'OFF'}
@@ -169,7 +169,7 @@ function Body({
     return (
       <Notice>
         로그인하면 나와 겹치는 게임을 가진 멤버를 볼 수 있습니다.{' '}
-        <Link href="/login" className="font-bold text-emerald-300 hover:underline">
+        <Link href="/login" className="font-bold text-ok-ink hover:underline">
           로그인
         </Link>
       </Notice>
@@ -182,7 +182,7 @@ function Body({
     return (
       <Notice>
         멤버 등록 후 이용할 수 있습니다.{' '}
-        <Link href="/profile" className="font-bold text-emerald-300 hover:underline">
+        <Link href="/profile" className="font-bold text-ok-ink hover:underline">
           프로필로 이동
         </Link>
       </Notice>
@@ -216,49 +216,49 @@ function Body({
         return (
           <li
             key={m.member_id}
-            className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03]"
+            className="overflow-hidden rounded-2xl border border-line bg-surface"
           >
             <button
               type="button"
               onClick={() => onToggle(m.member_id)}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface"
             >
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06]">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
                 {imageUrl ? (
                   <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center text-sm text-slate-500">
+                  <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
                     {m.member_name.slice(0, 1)}
                   </span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{m.member_name}</p>
-                <p className="truncate text-[11px] text-slate-500">
+                <p className="truncate text-sm font-bold text-fg">{m.member_name}</p>
+                <p className="truncate text-[11px] text-subtle">
                   {m.preview_names.length > 0 ? m.preview_names.join(' · ') : '겹치는 게임'}
                 </p>
               </div>
-              <span className="shrink-0 text-sm font-black text-emerald-300">
+              <span className="shrink-0 text-sm font-black text-ok-ink">
                 {m.shared_count.toLocaleString('ko-KR')}개
               </span>
-              <span className={`shrink-0 text-xs text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}>
+              <span className={`shrink-0 text-xs text-subtle transition-transform ${open ? 'rotate-180' : ''}`}>
                 ▾
               </span>
             </button>
 
             {open && (
-              <div className="border-t border-white/[0.06] px-4 py-3">
+              <div className="border-t border-line px-4 py-3">
                 {detail === 'loading' || detail === undefined ? (
-                  <p className="text-xs text-slate-500">불러오는 중...</p>
+                  <p className="text-xs text-subtle">불러오는 중...</p>
                 ) : detail === 'error' ? (
-                  <p className="text-xs text-red-300">목록을 불러오지 못했습니다.</p>
+                  <p className="text-xs text-danger-ink">목록을 불러오지 못했습니다.</p>
                 ) : detail.length === 0 ? (
-                  <p className="text-xs text-slate-500">겹치는 게임이 없습니다.</p>
+                  <p className="text-xs text-subtle">겹치는 게임이 없습니다.</p>
                 ) : (
                   <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {detail.map((g) => (
                       <li key={g.appid} className="flex items-center gap-3">
-                        <div className="relative h-[32px] w-[84px] shrink-0 overflow-hidden rounded-md border border-white/10 bg-white/[0.06]">
+                        <div className="relative h-[32px] w-[84px] shrink-0 overflow-hidden rounded-md border border-line bg-surface-2">
                           <Image
                             src={capsuleUrl(g.appid)}
                             alt=""
@@ -270,14 +270,14 @@ function Body({
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <p className="truncate text-xs font-bold text-slate-200">{g.name}</p>
+                            <p className="truncate text-xs font-bold text-fg">{g.name}</p>
                             {g.is_multiplayer === null && (
-                              <span className="shrink-0 rounded border border-white/10 bg-slate-700/40 px-1 py-0.5 text-[9px] font-bold text-slate-400">
+                              <span className="shrink-0 rounded border border-line bg-slate-700/40 px-1 py-0.5 text-[9px] font-bold text-muted">
                                 분류 미확인
                               </span>
                             )}
                           </div>
-                          <p className="truncate text-[10px] text-slate-500">
+                          <p className="truncate text-[10px] text-subtle">
                             나 {formatHours(g.my_playtime_forever)} · 상대{' '}
                             {formatHours(g.their_playtime_forever)}
                           </p>

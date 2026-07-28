@@ -15,7 +15,7 @@ type SteamPayload = {
 }
 
 const inputCls =
-  'w-full px-4 py-3 rounded-xl text-sm font-medium text-white bg-white/[0.04] border border-white/[0.08] placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 focus:bg-emerald-500/5 transition-all'
+  'w-full px-4 py-3 rounded-xl text-sm font-medium text-fg bg-surface-2 border border-line placeholder:text-faint focus:outline-none focus:border-emerald-500/50 focus:bg-emerald-500/5 transition-all'
 
 export default function SteamLinkForm() {
   const router = useRouter()
@@ -95,26 +95,26 @@ export default function SteamLinkForm() {
   }
 
   return (
-    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
+    <section className="rounded-2xl border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-black text-white">내 스팀 계정</h2>
-          <p className="mt-1 text-xs text-slate-400">
+          <h2 className="text-base font-black text-fg">내 스팀 계정</h2>
+          <p className="mt-1 text-xs text-muted">
             프로필 주소나 SteamID64 를 입력하면 보유 게임과 플레이타임이 집계됩니다.
           </p>
         </div>
       </div>
 
       {!loaded ? (
-        <p className="mt-5 text-xs text-slate-500">불러오는 중...</p>
+        <p className="mt-5 text-xs text-subtle">불러오는 중...</p>
       ) : !hasMember ? (
-        <p className="mt-5 text-xs text-slate-400">
+        <p className="mt-5 text-xs text-muted">
           먼저 프로필에서 멤버 등록을 완료해주세요.
         </p>
       ) : steam ? (
         <div className="mt-5 space-y-3">
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06]">
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
               {steam.steam_avatar_url && (
                 <Image
                   src={steam.steam_avatar_url}
@@ -127,23 +127,23 @@ export default function SteamLinkForm() {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-white">
+              <p className="truncate text-sm font-bold text-fg">
                 {steam.steam_persona ?? '이름 없음'}
               </p>
-              <p className="truncate text-[11px] text-slate-500">{steam.steam_id64}</p>
+              <p className="truncate text-[11px] text-subtle">{steam.steam_id64}</p>
             </div>
             <button
               type="button"
               onClick={handleUnlink}
               disabled={loading}
-              className="shrink-0 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-300 transition-colors hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
+              className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-[11px] font-bold text-muted transition-colors hover:border-red-500/40 hover:text-danger-ink disabled:opacity-50"
             >
               연결 해제
             </button>
           </div>
 
           {steam.is_private && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-bold text-amber-200/90">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-bold text-warn-ink/90">
               프로필 비공개 — 게임 데이터가 표시되지 않습니다. 스팀 프로필 설정에서 &ldquo;내 프로필&rdquo;과
               &ldquo;게임 상세 정보&rdquo;를 공개로 바꿔주세요.
             </div>
@@ -159,7 +159,7 @@ export default function SteamLinkForm() {
             placeholder="https://steamcommunity.com/id/myname 또는 76561198000000000"
             required
           />
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-faint">
             프로필 주소(/id/… 또는 /profiles/…), SteamID64, 사용자 이름 모두 인식합니다.
           </p>
           <button
@@ -173,12 +173,12 @@ export default function SteamLinkForm() {
       )}
 
       {message && (
-        <div className="mt-4 rounded-xl bg-emerald-500/10 p-3 text-xs font-bold text-emerald-300 ring-1 ring-emerald-500/20">
+        <div className="mt-4 rounded-xl bg-emerald-500/10 p-3 text-xs font-bold text-ok-ink ring-1 ring-emerald-500/20">
           {message}
         </div>
       )}
       {error && (
-        <div className="mt-4 rounded-xl bg-red-500/10 p-3 text-xs font-bold text-red-300 ring-1 ring-red-500/20">
+        <div className="mt-4 rounded-xl bg-red-500/10 p-3 text-xs font-bold text-danger-ink ring-1 ring-red-500/20">
           {error}
         </div>
       )}

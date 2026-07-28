@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { CONTAINER, PANEL } from '@/lib/ui/styles'
+import ThemeToggle from '@/app/components/ThemeToggle'
 
 const navItems = [
     { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
@@ -66,8 +67,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white leading-tight">롤체 컴퍼니</p>
-                            <p className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase leading-tight">Admin</p>
+                            <p className="text-sm font-bold text-fg leading-tight">롤체 컴퍼니</p>
+                            <p className="text-[10px] font-bold text-brand-ink tracking-widest uppercase leading-tight">Admin</p>
                         </div>
                     </Link>
 
@@ -82,8 +83,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                     className={[
                                         'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors',
                                         active
-                                            ? 'bg-brand/15 text-indigo-300'
-                                            : 'text-slate-400 hover:text-white hover:bg-surface-2',
+                                            ? 'bg-brand/15 text-brand-ink'
+                                            : 'text-muted hover:text-fg hover:bg-surface-2',
                                     ].join(' ')}
                                     aria-current={active ? 'page' : undefined}
                                 >
@@ -96,13 +97,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         {/* 어드민 밖으로 나가는 명시적 경로 */}
                         <Link
                             href="/"
-                            className="ml-1 inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-slate-300 transition-colors hover:text-white hover:bg-surface-2"
+                            className="ml-1 inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-muted transition-colors hover:text-fg hover:bg-surface-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
                             </svg>
                             사이트로
                         </Link>
+
+                        <ThemeToggle className="ml-1" />
                     </nav>
                 </div>
             </header>
@@ -114,7 +117,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
             {/* ── 푸터 ── */}
             <footer className="relative z-10 py-5 text-center">
-                <p className="text-xs font-medium" style={{ color: '#334155' }}>
+                <p className="text-xs font-medium text-faint">
                     © 2025 롤체 컴퍼니 · Powered by Riot Games API
                 </p>
             </footer>

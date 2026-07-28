@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AuthButtons from '@/app/components/AuthButtons'
+import ThemeToggle from '@/app/components/ThemeToggle'
 import { LOL_ENABLED } from '@/lib/constants/features'
 
 type IconKey = 'home' | 'tft' | 'lol' | 'steam' | 'custom' | 'trophy'
@@ -154,21 +155,21 @@ export default function SiteNav() {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-label="전체 메뉴 열기"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 hover:bg-surface-2 transition-colors"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 transition-colors"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <Link href="/" className="shrink-0 text-sm font-black tracking-tight text-white">
+            <Link href="/" className="shrink-0 text-sm font-black tracking-tight text-fg">
               롤토 컴퍼니
             </Link>
 
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute left-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-line bg-[#0d1117]/95 backdrop-blur-sm shadow-2xl z-50"
+                className="absolute left-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-line bg-panel/95 backdrop-blur-sm shadow-2xl z-50"
               >
                 {NAV_ITEMS.map((item) => {
                   const active = isActive(pathname, item)
@@ -180,7 +181,7 @@ export default function SiteNav() {
                       onClick={() => setMenuOpen(false)}
                       aria-current={active ? 'page' : undefined}
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
-                        active ? 'bg-brand/15 text-indigo-300' : 'text-slate-200 hover:bg-surface-2'
+                        active ? 'bg-brand/15 text-brand-ink' : 'text-fg hover:bg-surface-2'
                       }`}
                     >
                       <NavIcon name={item.icon} className="h-[18px] w-[18px]" />
@@ -207,8 +208,8 @@ export default function SiteNav() {
                     item.iconOnlyOnTop ? 'h-9 w-9 shrink-0' : 'px-3 py-2'
                   } ${
                     active
-                      ? 'bg-brand/15 text-indigo-300'
-                      : 'text-slate-400 hover:text-white hover:bg-surface-2'
+                      ? 'bg-brand/15 text-brand-ink'
+                      : 'text-muted hover:text-fg hover:bg-surface-2'
                   }`}
                 >
                   {item.iconOnlyOnTop ? (
@@ -221,7 +222,10 @@ export default function SiteNav() {
             })}
           </div>
 
-          <AuthButtons />
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <AuthButtons />
+          </div>
         </div>
       </nav>
 
@@ -240,7 +244,7 @@ export default function SiteNav() {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 transition-colors ${
-                    active ? 'text-indigo-300' : 'text-slate-500'
+                    active ? 'text-brand-ink' : 'text-subtle'
                   }`}
                 >
                   <NavIcon name={item.icon} className="h-5 w-5" />

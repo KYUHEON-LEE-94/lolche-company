@@ -47,10 +47,10 @@ export function steamCapsuleUrl(appid: number): string {
 }
 
 export const GAME_KIND_BADGE: Record<GameKind, string> = {
-  tft: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+  tft: 'bg-amber-500/10 border-amber-500/20 text-warn-ink',
   lol: 'bg-sky-500/10 border-sky-500/20 text-sky-400',
-  steam: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-  etc: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
+  steam: 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink',
+  etc: 'bg-slate-500/10 border-slate-500/20 text-muted',
 }
 
 export function gameKindBadgeClass(kind: string | null | undefined): string {
@@ -66,10 +66,10 @@ export const STATUS_LABELS: Record<GameStatus, string> = {
 }
 
 export const STATUS_BADGE: Record<GameStatus, string> = {
-  recruiting: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
-  in_progress: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-  ended: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
-  cancelled: 'bg-red-500/10 border-red-500/20 text-red-400',
+  recruiting: 'bg-indigo-500/10 border-indigo-500/20 text-brand-ink',
+  in_progress: 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink',
+  ended: 'bg-slate-500/10 border-slate-500/20 text-muted',
+  cancelled: 'bg-red-500/10 border-red-500/20 text-danger-ink',
 }
 
 export function statusLabel(status: string): string {

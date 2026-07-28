@@ -222,8 +222,8 @@ export default async function DashboardPage() {
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           {stats.map((stat) => (
             <div key={stat.label} className={`${CARD} px-5 py-4`}>
-              <p className="text-xs font-black tracking-[0.15em] uppercase text-slate-500">{stat.label}</p>
-              <p className="mt-2 text-lg font-bold text-white truncate">{stat.value}</p>
+              <p className="text-xs font-black tracking-[0.15em] uppercase text-subtle">{stat.label}</p>
+              <p className="mt-2 text-lg font-bold text-fg truncate">{stat.value}</p>
             </div>
           ))}
         </section>
@@ -237,14 +237,14 @@ export default async function DashboardPage() {
           {/* ③ 모집 중 내전 */}
           <section className={`${CARD} p-5`}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-black text-white">모집 중 내전</h2>
-              <Link href="/custom-games" className="text-xs font-bold text-indigo-300 hover:text-indigo-200">
+              <h2 className="text-sm font-black text-fg">모집 중 내전</h2>
+              <Link href="/custom-games" className="text-xs font-bold text-brand-ink hover:text-brand-ink">
                 전체 보기 →
               </Link>
             </div>
 
             {recruiting.rows.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">
+              <p className="mt-4 text-sm text-subtle">
                 {recruiting.count > 0 ? `모집 중 ${recruiting.count}건` : '지금 모집 중인 내전이 없어요.'}
               </p>
             ) : (
@@ -256,12 +256,12 @@ export default async function DashboardPage() {
                       className="block min-h-[44px] rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:border-line-strong"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="min-w-0 truncate text-sm font-bold text-white">{game.title}</span>
-                        <span className="shrink-0 text-xs font-bold text-indigo-300">
+                        <span className="min-w-0 truncate text-sm font-bold text-fg">{game.title}</span>
+                        <span className="shrink-0 text-xs font-bold text-brand-ink">
                           {gameKindLabel(game.game_kind, game.game_kind_label)}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-subtle">
                         {game.scheduled_at ? formatKstShort(game.scheduled_at) : '일정 미정'}
                         {game.capacity ? ` · 정원 ${game.capacity}명` : ''}
                       </p>
@@ -274,10 +274,10 @@ export default async function DashboardPage() {
 
           {/* ④ 최근 매치 */}
           <section className={`${CARD} p-5 lg:col-span-2`}>
-            <h2 className="text-sm font-black text-white">최근 매치</h2>
+            <h2 className="text-sm font-black text-fg">최근 매치</h2>
 
             {recentMatches.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">아직 수집된 매치가 없어요.</p>
+              <p className="mt-4 text-sm text-subtle">아직 수집된 매치가 없어요.</p>
             ) : (
               <ul className="mt-3 divide-y divide-line">
                 {recentMatches.map((match) => {
@@ -288,10 +288,10 @@ export default async function DashboardPage() {
                   return (
                     <li key={match.match_id} className="py-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-400">
+                        <span className="text-xs font-bold text-muted">
                           {match.queue_id !== null ? QUEUE_LABELS[match.queue_id] ?? '기타' : '기타'}
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-subtle">
                           {match.game_datetime ? formatKstShort(match.game_datetime) : ''}
                         </span>
                       </div>
@@ -299,10 +299,10 @@ export default async function DashboardPage() {
                         {results.map((p, i) => (
                           <span
                             key={`${match.match_id}-${p.member_id}-${i}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs font-bold text-white"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs font-bold text-fg"
                           >
                             {memberNameById.get(p.member_id as string)}
-                            <span className={p.placement === 1 ? 'text-amber-400' : (p.placement ?? 9) <= 4 ? 'text-emerald-400' : 'text-slate-500'}>
+                            <span className={p.placement === 1 ? 'text-warn-ink' : (p.placement ?? 9) <= 4 ? 'text-ok-ink' : 'text-subtle'}>
                               {p.placement ?? '-'}위
                             </span>
                           </span>
@@ -329,8 +329,8 @@ export default async function DashboardPage() {
                 {card.icon}
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-black text-white">{card.title}</span>
-                <span className="block truncate text-xs text-slate-500">{card.description}</span>
+                <span className="block text-sm font-black text-fg">{card.title}</span>
+                <span className="block truncate text-xs text-subtle">{card.description}</span>
               </span>
             </Link>
           ))}

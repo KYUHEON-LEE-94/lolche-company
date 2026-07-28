@@ -82,7 +82,7 @@ function calcLpDelta(member: Member): LpDelta | null {
 
 function LpDeltaBadge({ delta }: { delta: LpDelta }) {
   const up = delta.value >= 0
-  const color = up ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-red-400 border-red-500/30 bg-red-500/10'
+  const color = up ? 'text-ok-ink border-emerald-500/30 bg-emerald-500/10' : 'text-danger-ink border-red-500/30 bg-red-500/10'
   const sign = up ? '+' : ''
 
   if (delta.tierChanged && delta.prevLabel && delta.currLabel) {
@@ -120,22 +120,22 @@ const TIER_STYLES: Record<
     { strip: string; text: string; glow: string; badge: string; icon: string }
 > = {
   CHALLENGER:  { strip: 'from-yellow-400 to-amber-500',  text: 'text-yellow-400',  glow: 'hover:shadow-yellow-500/20  hover:border-yellow-500/25',  badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-500/20',  icon: '👑' },
-  GRANDMASTER: { strip: 'from-red-500 to-rose-600',      text: 'text-red-400',     glow: 'hover:shadow-red-500/20    hover:border-red-500/25',      badge: 'bg-red-500/10   text-red-300   border-red-500/20',      icon: '♦' },
+  GRANDMASTER: { strip: 'from-red-500 to-rose-600',      text: 'text-danger-ink',     glow: 'hover:shadow-red-500/20    hover:border-red-500/25',      badge: 'bg-red-500/10   text-danger-ink   border-red-500/20',      icon: '♦' },
   MASTER:      { strip: 'from-purple-500 to-violet-600', text: 'text-purple-400',  glow: 'hover:shadow-purple-500/20 hover:border-purple-500/25',  badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20', icon: '◆' },
   DIAMOND:     { strip: 'from-blue-400 to-blue-600',     text: 'text-blue-400',    glow: 'hover:shadow-blue-500/20   hover:border-blue-500/25',    badge: 'bg-blue-500/10   text-blue-300   border-blue-500/20',    icon: '◇' },
-  EMERALD:     { strip: 'from-emerald-400 to-emerald-600',text:'text-emerald-400', glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/25',badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',icon: '◈' },
+  EMERALD:     { strip: 'from-emerald-400 to-emerald-600',text:'text-ok-ink', glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/25',badge: 'bg-emerald-500/10 text-ok-ink border-emerald-500/20',icon: '◈' },
   PLATINUM:    { strip: 'from-cyan-400 to-teal-500',     text: 'text-cyan-400',    glow: 'hover:shadow-cyan-500/20   hover:border-cyan-500/25',    badge: 'bg-cyan-500/10   text-cyan-300   border-cyan-500/20',    icon: '◉' },
-  GOLD:        { strip: 'from-amber-400 to-yellow-500',  text: 'text-amber-400',   glow: 'hover:shadow-amber-500/20  hover:border-amber-500/25',   badge: 'bg-amber-500/10  text-amber-300  border-amber-500/20',   icon: '○' },
-  SILVER:      { strip: 'from-slate-400 to-slate-500',   text: 'text-slate-400',   glow: 'hover:shadow-slate-400/20  hover:border-slate-400/25',   badge: 'bg-slate-400/10  text-slate-300  border-slate-400/20',   icon: '○' },
+  GOLD:        { strip: 'from-amber-400 to-yellow-500',  text: 'text-warn-ink',   glow: 'hover:shadow-amber-500/20  hover:border-amber-500/25',   badge: 'bg-amber-500/10  text-warn-ink  border-amber-500/20',   icon: '○' },
+  SILVER:      { strip: 'from-slate-400 to-slate-500',   text: 'text-muted',   glow: 'hover:shadow-slate-400/20  hover:border-slate-400/25',   badge: 'bg-slate-400/10  text-muted  border-slate-400/20',   icon: '○' },
   BRONZE:      { strip: 'from-orange-500 to-orange-700', text: 'text-orange-400',  glow: 'hover:shadow-orange-500/20 hover:border-orange-500/25',  badge: 'bg-orange-500/10 text-orange-300 border-orange-500/20', icon: '○' },
   IRON:        { strip: 'from-gray-500 to-gray-600',     text: 'text-gray-400',    glow: 'hover:shadow-gray-500/20   hover:border-gray-500/25',    badge: 'bg-gray-500/10   text-gray-300   border-gray-500/20',    icon: '◌' },
 }
 
 const FALLBACK_STYLE = {
   strip: 'from-slate-600 to-slate-700',
-  text: 'text-slate-400',
+  text: 'text-muted',
   glow: '',
-  badge: 'bg-slate-700/50 text-slate-400 border-slate-600/30',
+  badge: 'bg-slate-700/50 text-muted border-slate-600/30',
   icon: '?',
 }
 
@@ -185,7 +185,7 @@ function RankBadge({ idx }: { idx: number }) {
         </div>
     )
   return (
-      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/5 border border-white/8 text-xs font-bold text-slate-400">
+      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface border border-line text-xs font-bold text-muted">
         #{idx + 1}
       </div>
   )
@@ -212,8 +212,8 @@ function SyncButton({
           title={remainSec > 0 ? `쿨다운 중 · ${formatRemain(remainSec)}` : '동기화'}
           className="
         inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-        bg-indigo-500/10 border border-indigo-500/25 text-indigo-400
-        hover:bg-indigo-500/20 hover:text-indigo-300 transition-all duration-200
+        bg-indigo-500/10 border border-indigo-500/25 text-brand-ink
+        hover:bg-indigo-500/20 hover:text-brand-ink transition-all duration-200
         disabled:opacity-40 disabled:cursor-not-allowed
       "
       >
@@ -312,7 +312,7 @@ const MemberRow = memo(function MemberRow({
             {profileUrl ? (
                 <Image src={profileUrl} alt={`${member.member_name} 프로필`} fill sizes="36px" className="object-cover" />
             ) : (
-                <svg className="w-5 h-5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-subtle" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
             )}
@@ -321,10 +321,10 @@ const MemberRow = memo(function MemberRow({
 
         {/* 이름 · 라이엇 ID */}
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-white text-sm leading-tight truncate">{member.member_name}</p>
-          <p className="text-[11px] text-slate-500 leading-tight truncate">
+          <p className="font-bold text-fg text-sm leading-tight truncate">{member.member_name}</p>
+          <p className="text-[11px] text-subtle leading-tight truncate">
             {member.riot_game_name}
-            <span className="text-slate-600">#{member.riot_tagline}</span>
+            <span className="text-faint">#{member.riot_tagline}</span>
           </p>
         </div>
 
@@ -349,7 +349,7 @@ const MemberRow = memo(function MemberRow({
           <span className={`text-base leading-none ${style.text}`}>{style.icon}</span>
           <div className="leading-tight">
             <p className={`text-xs font-black ${style.text}`}>{shortTierLabel(tier, rank)}</p>
-            <p className="text-[11px] font-bold text-slate-300 tabular-nums">{lp} LP</p>
+            <p className="text-[11px] font-bold text-muted tabular-nums">{lp} LP</p>
           </div>
         </div>
 
@@ -364,9 +364,9 @@ const MemberRow = memo(function MemberRow({
               onSync={() => onSync(member.id)}
           />
           {syncMsg ? (
-              <span className="text-[10px] text-amber-400 max-w-[110px] truncate leading-tight">{syncMsg}</span>
+              <span className="text-[10px] text-warn-ink max-w-[110px] truncate leading-tight">{syncMsg}</span>
           ) : effectiveLastSyncedAt && nowMs > 0 ? (
-              <span className="hidden sm:block text-[10px] text-slate-600 leading-tight">
+              <span className="hidden sm:block text-[10px] text-faint leading-tight">
                 {formatAgo(nowMs - new Date(effectiveLastSyncedAt).getTime())}
               </span>
           ) : null}
@@ -459,19 +459,19 @@ export default function MemberRanking({
                     <>
                       <div className="inline-flex items-center gap-3 mb-2">
                         <div className="h-px w-10 bg-gradient-to-r from-transparent to-amber-500/50" />
-                        <span className="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase">
+                        <span className="text-[10px] font-black tracking-[0.4em] text-warn-ink uppercase">
                       Now Playing
                     </span>
                       </div>
-                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-fg leading-tight">
                         {currentSeason.season_name}
                       </h1>
-                      <p className="mt-1 text-sm font-bold text-amber-500 tracking-[0.2em]">
+                      <p className="mt-1 text-sm font-bold text-warn-ink tracking-[0.2em]">
                         SET {currentSeason.set_number}
                       </p>
                     </>
                 ) : (
-                    <span className="text-slate-500 font-bold tracking-widest uppercase text-xs">
+                    <span className="text-subtle font-bold tracking-widest uppercase text-xs">
                   No Active Season
                 </span>
                 )}
@@ -482,7 +482,7 @@ export default function MemberRanking({
                 <div className="relative group w-full max-w-[320px]">
                   {/* glow */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-600/30 blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-                  <div className="relative h-[68px] rounded-2xl bg-[#0d1117] border border-line overflow-hidden flex items-center justify-center px-6">
+                  <div className="relative h-[68px] rounded-2xl bg-panel border border-line overflow-hidden flex items-center justify-center px-6">
                     {/* 상단 하이라이트 */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                     <Image
@@ -508,7 +508,7 @@ export default function MemberRanking({
                     flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200
                     ${queueType === q
                             ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-[#1a0a00] shadow-lg shadow-amber-500/30'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-muted hover:text-fg'
                         }
                   `}
                     >

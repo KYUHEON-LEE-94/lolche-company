@@ -11,25 +11,26 @@ export const CONTAINER = 'max-w-6xl mx-auto'
 
 export const CARD = 'rounded-2xl border border-line bg-surface'
 export const CARD_HOVER = `${CARD} transition-colors hover:border-line-strong`
-export const PANEL = 'rounded-2xl border border-line bg-[#0d1117]/90 backdrop-blur-sm p-8'
+export const PANEL = 'rounded-2xl border border-line bg-panel/90 backdrop-blur-sm p-8'
 
 export const INPUT =
-  'w-full px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-surface-2 border border-line placeholder:text-slate-600 focus:outline-none focus:border-brand/60 disabled:opacity-50'
+  'w-full px-4 py-2.5 rounded-xl text-sm font-medium text-fg bg-surface-2 border border-line placeholder:text-faint focus:outline-none focus:border-brand/60 disabled:opacity-50'
 
 const BTN_BASE =
   'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50'
+// ⚠ BTN_PRIMARY/BTN_DANGER 의 text-white 는 필(brand/danger) 위 글자라 양 테마 흰색 유지.
 export const BTN_PRIMARY = `${BTN_BASE} bg-brand text-white hover:bg-brand/85`
-export const BTN_GHOST = `${BTN_BASE} bg-brand/10 border border-brand/30 text-indigo-300 hover:bg-brand/20`
-export const BTN_NEUTRAL = `${BTN_BASE} bg-slate-700/60 text-slate-200 hover:bg-slate-700`
+export const BTN_GHOST = `${BTN_BASE} bg-brand/10 border border-brand/30 text-brand-ink hover:bg-brand/20`
+export const BTN_NEUTRAL = `${BTN_BASE} bg-surface-2 text-fg hover:bg-surface-2`
 export const BTN_DANGER = `${BTN_BASE} bg-danger/90 text-white hover:bg-danger`
 
 export const ALERT = {
-  warn: 'px-4 py-3 rounded-xl text-sm font-medium bg-warn/10 border border-warn/20 text-amber-400',
-  error: 'px-4 py-3 rounded-xl text-sm font-medium bg-danger/10 border border-danger/20 text-red-400',
-  ok: 'px-4 py-3 rounded-xl text-sm font-medium bg-ok/10 border border-ok/20 text-emerald-400',
+  warn: 'px-4 py-3 rounded-xl text-sm font-medium bg-warn/10 border border-warn/20 text-warn-ink',
+  error: 'px-4 py-3 rounded-xl text-sm font-medium bg-danger/10 border border-danger/20 text-danger-ink',
+  ok: 'px-4 py-3 rounded-xl text-sm font-medium bg-ok/10 border border-ok/20 text-ok-ink',
 } as const
 
-export const H1 = 'text-3xl sm:text-4xl font-black tracking-tight text-white'
-export const H2 = 'text-lg font-black text-white'
+export const H1 = 'text-3xl sm:text-4xl font-black tracking-tight text-fg'
+export const H2 = 'text-lg font-black text-fg'
 export const KICKER = 'text-[10px] font-black tracking-[0.4em] uppercase'
-export const MUTED = 'text-sm text-slate-400'
+export const MUTED = 'text-sm text-muted'

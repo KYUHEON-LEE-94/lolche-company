@@ -279,14 +279,14 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-bold text-white">{game.name}</p>
+                    <p className="truncate text-sm font-bold text-fg">{game.name}</p>
                     {game.isMultiplayer === null && (
-                      <span className="shrink-0 rounded-md border border-white/10 bg-slate-700/40 px-1.5 py-0.5 text-[10px] font-bold text-slate-400">
+                      <span className="shrink-0 rounded-md border border-line bg-slate-700/40 px-1.5 py-0.5 text-[10px] font-bold text-muted">
                         분류 미확인
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 truncate text-[11px] text-slate-500">
+                  <p className="mt-1 truncate text-[11px] text-subtle">
                     {game.ownerNames.length}명 보유 · {game.ownerNames.join(', ')}
                   </p>
                 </div>
@@ -309,12 +309,12 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
               >
                 <MemberAvatar member={stat.member} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-white">{stat.member.member_name}</p>
-                  <p className="truncate text-[11px] text-slate-500">
+                  <p className="truncate text-sm font-bold text-fg">{stat.member.member_name}</p>
+                  <p className="truncate text-[11px] text-subtle">
                     {stat.recentGames.map((g) => `${g.name} ${formatHours(g.minutes)}`).join(' · ')}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm font-black text-emerald-300">
+                <span className="shrink-0 text-sm font-black text-ok-ink">
                   {formatHours(stat.recentMinutes)}
                 </span>
               </li>
@@ -324,13 +324,13 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
       </section>
 
       {privateMembers.length > 0 && (
-        <p className="text-[11px] text-amber-300/80">
+        <p className="text-[11px] text-warn-ink/80">
           프로필 비공개 — 게임 데이터가 표시되지 않습니다:{' '}
           {privateMembers.map((m) => m.member_name).join(', ')}
         </p>
       )}
 
-      <p className="text-[11px] text-slate-600">
+      <p className="text-[11px] text-subtle">
         마지막 동기화 {formatSyncedAt(lastSyncedAt ?? null) ?? '기록 없음'}
       </p>
     </div>
@@ -345,7 +345,7 @@ function MemberAvatar({ member }: { member: SteamMemberRow }) {
       {imageUrl ? (
         <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-sm text-slate-500">
+        <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
           {member.member_name.slice(0, 1)}
         </span>
       )}

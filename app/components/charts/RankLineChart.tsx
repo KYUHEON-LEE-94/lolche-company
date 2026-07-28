@@ -45,7 +45,7 @@ export default function RankLineChart({
   if (valid.length < 2) {
     return (
       <div
-        className="flex items-center justify-center text-slate-600 text-xs"
+        className="flex items-center justify-center text-faint text-xs"
         style={{ height }}
       >
         히스토리 데이터 없음 (동기화 후 누적)
@@ -102,7 +102,7 @@ export default function RankLineChart({
               x2={W - 10}
               y1={toY(m.score)}
               y2={toY(m.score)}
-              stroke="rgba(255,255,255,0.08)"
+              stroke="var(--color-line)"
               strokeWidth="1"
               strokeDasharray="3 3"
             />
@@ -157,13 +157,13 @@ export default function RankLineChart({
 
       {hoverIdx !== null && (
         <div
-          className="absolute -top-2 text-[11px] font-bold bg-[#0d1117] border border-white/10 rounded-lg px-2 py-1 pointer-events-none whitespace-nowrap z-10"
+          className="absolute -top-2 text-[11px] font-bold bg-panel border border-line rounded-lg px-2 py-1 pointer-events-none whitespace-nowrap z-10"
           style={{
             left: `${(toX(hoverIdx) / W) * 100}%`,
             transform: hoverIdx > scores.length / 2 ? 'translateX(-100%)' : 'translateX(0)',
           }}
         >
-          <span className="text-slate-400 mr-1">{formatDate(valid[hoverIdx].recorded_at)}</span>
+          <span className="text-muted mr-1">{formatDate(valid[hoverIdx].recorded_at)}</span>
           <span style={{ color: lineColor }}>
             {isDoubleup
               ? tierLabel(valid[hoverIdx].tft_doubleup_tier, valid[hoverIdx].tft_doubleup_rank, valid[hoverIdx].tft_doubleup_lp)
@@ -172,7 +172,7 @@ export default function RankLineChart({
         </div>
       )}
 
-      <div className="flex justify-between text-[10px] text-slate-600 mt-1 px-1">
+      <div className="flex justify-between text-[10px] text-faint mt-1 px-1">
         {xTickIdx.map((i) => (
           <span key={i}>{formatDate(valid[i].recorded_at)}</span>
         ))}

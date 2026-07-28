@@ -13,10 +13,10 @@ const LINE: Record<Accent, string> = {
 }
 
 const TEXT: Record<Accent, string> = {
-  amber: 'text-amber-500',
-  emerald: 'text-emerald-400',
+  amber: 'text-warn-ink',
+  emerald: 'text-ok-ink',
   sky: 'text-sky-400',
-  indigo: 'text-indigo-400',
+  indigo: 'text-brand-ink',
 }
 
 export default function PageHeader({

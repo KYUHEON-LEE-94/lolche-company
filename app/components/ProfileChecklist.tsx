@@ -89,14 +89,14 @@ export default function ProfileChecklist() {
   return (
     <section className={`${CARD} p-5`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black text-white">프로필 완성도</h2>
-        <span className="text-xs font-bold text-slate-400">
+        <h2 className="text-sm font-black text-fg">프로필 완성도</h2>
+        <span className="text-xs font-bold text-muted">
           {doneCount} / {items.length}
         </span>
       </div>
 
       <div
-        className="mt-3 h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden"
+        className="mt-3 h-1.5 w-full rounded-full bg-surface-2 overflow-hidden"
         role="progressbar"
         aria-valuenow={doneCount}
         aria-valuemin={0}
@@ -117,23 +117,23 @@ export default function ProfileChecklist() {
             <span
               aria-hidden
               className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
-                item.done ? 'bg-ok/20 text-emerald-400' : 'bg-white/[0.06] text-slate-500'
+                item.done ? 'bg-ok/20 text-ok-ink' : 'bg-surface-2 text-subtle'
               }`}
             >
               {item.done ? '✓' : '·'}
             </span>
 
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-bold ${item.done ? 'text-slate-400 line-through' : 'text-white'}`}>
+              <p className={`text-sm font-bold ${item.done ? 'text-muted line-through' : 'text-fg'}`}>
                 {item.label}
               </p>
-              {!item.done && <p className="mt-0.5 text-xs text-slate-500">{item.hint}</p>}
+              {!item.done && <p className="mt-0.5 text-xs text-subtle">{item.hint}</p>}
             </div>
 
             {!item.done && (
               <Link
                 href={item.href}
-                className="shrink-0 self-center rounded-lg bg-brand/10 border border-brand/30 px-2.5 py-1.5 text-xs font-bold text-indigo-300 hover:bg-brand/20 transition-colors"
+                className="shrink-0 self-center rounded-lg bg-brand/10 border border-brand/30 px-2.5 py-1.5 text-xs font-bold text-brand-ink hover:bg-brand/20 transition-colors"
               >
                 {item.cta}
               </Link>
@@ -143,7 +143,7 @@ export default function ProfileChecklist() {
       </ul>
 
       {status.hasSteam && !status.steamVisibilityOk && (
-        <p className="mt-3 text-xs text-amber-400">
+        <p className="mt-3 text-xs text-warn-ink">
           스팀 프로필이 비공개예요. 공개로 바꾸면 보유 게임을 같이 찾아볼 수 있어요.
         </p>
       )}
