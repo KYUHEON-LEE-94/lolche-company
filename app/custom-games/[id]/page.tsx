@@ -8,6 +8,7 @@ import Image from 'next/image'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import LolTeamAssignPanel, {
   EMPTY_LOL_DRAFT,
+  type LolSlot,
   type LolTeamDraft,
 } from '@/app/custom-games/_components/LolTeamAssignPanel'
 import { LOL_POSITIONS, TFT_TEAM_CAPACITY } from '@/lib/customGames/constants'
@@ -98,6 +99,7 @@ type LolTeamRow = {
   team_index: number
   member_id: string | null
   guest_id: string | null
+  guest_name: string | null
   position: string | null
 }
 
@@ -426,22 +428,34 @@ export default function CustomGameDetailPage() {
       [null, null, null, null, null],
     ]
     lolTeams.forEach((t) => {
-      const memberKey = t.member_id
-      if (!memberKey) return
+      // 슬롯은 확정 멤버(member_id) 또는 외부인 라벨(guest_name) 중 하나로 채워진다.
+      const slotValue: LolSlot = t.member_id
+        ? {
+            kind: 'member',
+            key: t.member_id,
+            name:
+              confirmedList.find((p) => p.member_id === t.member_id)?.member_name
+              ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
+              ?? '알 수 없음',
+          }
+        : t.guest_name
+          ? { kind: 'guest', name: t.guest_name }
+          : null
+      if (!slotValue) return
       const teamIdx = t.team_index - 1
       if (teamIdx !== 0 && teamIdx !== 1) return
       // 협곡은 포지션으로 슬롯을 고정하고, 증바람은 빈 슬롯 순서대로 채운다.
-      const slot = isRift && t.position ? LOL_POSITIONS.indexOf(t.position as (typeof LOL_POSITIONS)[number]) : -1
-      if (slot >= 0) {
-        next[teamIdx][slot] = memberKey
+      const slotPos = isRift && t.position ? LOL_POSITIONS.indexOf(t.position as (typeof LOL_POSITIONS)[number]) : -1
+      if (slotPos >= 0) {
+        next[teamIdx][slotPos] = slotValue
       } else {
         const empty = next[teamIdx].findIndex((v) => v === null)
-        if (empty >= 0) next[teamIdx][empty] = memberKey
+        if (empty >= 0) next[teamIdx][empty] = slotValue
       }
     })
     setLolDraft(next)
     setLolTeamError(null)
-  }, [lolTeams, isLol, isRift])
+  }, [lolTeams, isLol, isRift, confirmedList, waitlist])
 
   // ── 데이터 계산 ───────────────────────────────────────────────────
 
@@ -681,11 +695,13 @@ export default function CustomGameDetailPage() {
     setLolTeamError(null)
     const assignments = lolDraft.flatMap((team, teamIdx) =>
       team
-        .map((key, slotIdx) => ({ key, slotIdx }))
-        .filter((s): s is { key: string; slotIdx: number } => s.key !== null)
+        .map((slot, slotIdx) => ({ slot, slotIdx }))
+        .filter((s): s is { slot: NonNullable<LolSlot>; slotIdx: number } => s.slot !== null)
         .map((s) => ({
           team_index: teamIdx + 1,
-          member_id: s.key,
+          ...(s.slot.kind === 'member'
+            ? { member_id: s.slot.key }
+            : { guest_name: s.slot.name }),
           ...(isRift ? { position: LOL_POSITIONS[s.slotIdx] } : {}),
         })),
     )
@@ -1439,7 +1455,7 @@ export default function CustomGameDetailPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {([1, 2] as const).map((teamIndex) => {
                           const rows = lolTeams
-                            .filter((t) => t.team_index === teamIndex && t.member_id)
+                            .filter((t) => t.team_index === teamIndex && (t.member_id || t.guest_name))
                             .sort((a, b) => {
                               if (!isRift) return 0
                               return LOL_POSITIONS.indexOf(a.position as (typeof LOL_POSITIONS)[number]) -
@@ -1457,17 +1473,24 @@ export default function CustomGameDetailPage() {
                               <div className="flex flex-col gap-1">
                                 {rows.length === 0 && <p className="text-xs text-faint">미배정</p>}
                                 {rows.map((t) => (
-                                  <div key={`${t.member_id}-${t.position ?? ''}`} className="flex items-center gap-2 text-sm">
+                                  <div key={`${t.member_id ?? t.guest_name}-${t.position ?? ''}`} className="flex items-center gap-2 text-sm">
                                     {isRift && (
                                       <span className="w-10 text-[10px] font-bold text-muted shrink-0">
                                         {positionLabel(t.position)}
                                       </span>
                                     )}
                                     <span className="font-bold text-fg">
-                                      {confirmedList.find((p) => p.member_id === t.member_id)?.member_name
-                                        ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
-                                        ?? '알 수 없음'}
+                                      {t.member_id
+                                        ? confirmedList.find((p) => p.member_id === t.member_id)?.member_name
+                                          ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
+                                          ?? '알 수 없음'
+                                        : t.guest_name ?? '알 수 없음'}
                                     </span>
+                                    {!t.member_id && t.guest_name && (
+                                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-warn-ink">
+                                        외부인
+                                      </span>
+                                    )}
                                   </div>
                                 ))}
                               </div>

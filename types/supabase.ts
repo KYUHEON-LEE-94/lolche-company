@@ -272,6 +272,7 @@ export type CustomGameTeam = {
   team_index: number
   member_id: string | null
   guest_id: string | null
+  guest_name: string | null // 롤 외부인 자유 텍스트 라벨(FK 없음). member_id/guest_id 와 상호배타
   position: string | null // 협곡 포지션 슬롯(top/jungle/mid/adc/support). 증바람·TFT는 null
   created_at: string
 }

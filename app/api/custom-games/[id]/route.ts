@@ -151,23 +151,24 @@ export async function GET(_req: Request, ctx: Ctx) {
     team_index: number
     member_id: string | null
     guest_id: string | null
+    guest_name: string | null
     position: string | null
   }[] = []
   if (game.game_kind === 'lol') {
     const withPosition = await supabaseAdmin
       .from('custom_game_teams')
-      .select('team_index, member_id, guest_id, position')
+      .select('team_index, member_id, guest_id, guest_name, position')
       .eq('custom_game_id', id)
       .order('team_index')
     if (withPosition.error) {
-      // 20260731(position) 미적용 → position 없이 재조회해 degrade.
+      // 20260731(position)/20260732(guest_name) 미적용 → 없이 재조회해 degrade.
       if (isMissingColumnError(withPosition.error)) {
         const { data: legacyRows } = await supabaseAdmin
           .from('custom_game_teams')
           .select('team_index, member_id, guest_id')
           .eq('custom_game_id', id)
           .order('team_index')
-        lolTeams = (legacyRows ?? []).map((t) => ({ ...t, position: null }))
+        lolTeams = (legacyRows ?? []).map((t) => ({ ...t, position: null, guest_name: null }))
       }
     } else {
       lolTeams = withPosition.data ?? []
