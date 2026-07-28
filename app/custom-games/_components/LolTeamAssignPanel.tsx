@@ -133,8 +133,12 @@ function SlotCombobox({
               <button
                 type="button"
                 // input blur 보다 먼저 처리해 선택이 커밋되도록 mousedown 에서 막는다.
+                // ★ preventDefault 가 input 포커스를 유지시키므로, 로컬 text 를 선택 멤버 이름으로
+                //    동기화하지 않으면 이후 blur 의 commit() 이 빈 text 를 보고 onClear() 로
+                //    방금 넣은 멤버를 지워버린다(선택이 안 되는 것처럼 보이는 버그).
                 onMouseDown={(e) => {
                   e.preventDefault()
+                  setText(s.name)
                   setOpen(false)
                   onPickMember(s)
                 }}

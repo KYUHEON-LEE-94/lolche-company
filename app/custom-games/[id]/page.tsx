@@ -351,12 +351,13 @@ export default function CustomGameDetailPage() {
   const [savingLolTeams, setSavingLolTeams] = useState(false)
   const [lolTeamError, setLolTeamError] = useState<string | null>(null)
 
-  // 관리자 멤버 추가 상태
+  // 관리자 멤버 추가 상태 (다중 선택 → 한 번에 추가)
   const [showMemberAdd, setShowMemberAdd] = useState(false)
   const [memberQuery, setMemberQuery] = useState('')
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([])
   const [loadingOptions, setLoadingOptions] = useState(false)
-  const [addingMemberId, setAddingMemberId] = useState<string | null>(null)
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set())
+  const [addingMembers, setAddingMembers] = useState(false)
 
   const showMsg = useCallback((type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
@@ -747,20 +748,39 @@ export default function CustomGameDetailPage() {
     finally { setLoadingOptions(false) }
   }, [gameId, showMsg])
 
-  const handleAddMember = async (memberId: string) => {
-    setAddingMemberId(memberId)
+  const toggleMemberSelect = (memberId: string) => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(memberId)) next.delete(memberId)
+      else next.add(memberId)
+      return next
+    })
+  }
+
+  // 선택한 멤버를 한 번의 요청으로 모두 추가한다(클릭마다 재조회하던 문제 해소).
+  const handleAddSelectedMembers = async () => {
+    if (selectedMemberIds.size === 0) return
+    setAddingMembers(true)
     try {
       const res = await fetch(`/api/custom-games/${gameId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ member_id: memberId }),
+        body: JSON.stringify({ member_ids: [...selectedMemberIds] }),
       })
       const body = await res.json()
       if (!res.ok) { showMsg('error', body.error ?? '추가 실패'); return }
-      showMsg('success', '멤버가 추가되었습니다')
+      const added: number = body.added ?? 0
+      const skipped: number = body.skipped ?? 0
+      showMsg(
+        'success',
+        added > 0
+          ? `${added}명이 추가되었습니다${skipped > 0 ? ` (${skipped}명은 이미 참가 중)` : ''}`
+          : '추가할 새 멤버가 없습니다',
+      )
+      setSelectedMemberIds(new Set())
       await Promise.all([loadDetail(), loadMemberOptions(memberQuery)])
     } catch { showMsg('error', '추가 중 오류가 발생했습니다') }
-    finally { setAddingMemberId(null) }
+    finally { setAddingMembers(false) }
   }
 
   // 관리자 멤버 추가 패널이 열려 있는 동안만 후보를 조회한다(검색어 디바운스).
@@ -1098,7 +1118,7 @@ export default function CustomGameDetailPage() {
                       <p className="text-xs font-black text-brand-ink tracking-widest uppercase">승인 멤버 추가</p>
                       <button
                         type="button"
-                        onClick={() => { setShowMemberAdd(false); setMemberQuery('') }}
+                        onClick={() => { setShowMemberAdd(false); setMemberQuery(''); setSelectedMemberIds(new Set()) }}
                         className="text-xs font-bold text-subtle hover:text-muted transition-colors"
                       >
                         닫기
@@ -1121,33 +1141,75 @@ export default function CustomGameDetailPage() {
                     ) : memberOptions.length === 0 ? (
                       <p className="text-sm text-faint py-2">추가할 수 있는 승인 멤버가 없습니다</p>
                     ) : (
-                      <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
-                        {memberOptions.map((m) => (
-                          <div
-                            key={m.id}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-line bg-surface-2"
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allSelected = memberOptions.every((m) => selectedMemberIds.has(m.id))
+                              setSelectedMemberIds((prev) => {
+                                const next = new Set(prev)
+                                memberOptions.forEach((m) => (allSelected ? next.delete(m.id) : next.add(m.id)))
+                                return next
+                              })
+                            }}
+                            className="text-[11px] font-bold text-brand-ink hover:underline"
                           >
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-fg leading-tight truncate">{m.member_name}</p>
-                              <p className="text-[10px] text-faint truncate">
-                                {m.riot_game_name ? `${m.riot_game_name}#${m.riot_tagline}` : '라이엇 ID 미등록'}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleAddMember(m.id)}
-                              disabled={addingMemberId === m.id}
-                              className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                                text-xs font-bold transition-all duration-150
-                                bg-emerald-500/10 border border-emerald-500/25 text-ok-ink
-                                hover:bg-emerald-500/20 hover:text-ok-ink
-                                disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                              {addingMemberId === m.id ? <Spinner size={3} /> : '추가'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                            {memberOptions.every((m) => selectedMemberIds.has(m.id)) ? '전체 해제' : '전체 선택'}
+                          </button>
+                          <span className="text-[11px] text-subtle">{selectedMemberIds.size}명 선택됨</span>
+                        </div>
+                        <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                          {memberOptions.map((m) => {
+                            const checked = selectedMemberIds.has(m.id)
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => toggleMemberSelect(m.id)}
+                                aria-pressed={checked}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left transition-colors ${
+                                  checked ? 'border-brand/40 bg-brand/10' : 'border-line bg-surface-2 hover:bg-surface'
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`shrink-0 w-4 h-4 rounded flex items-center justify-center border ${
+                                    checked ? 'bg-brand border-brand text-white' : 'border-line-strong'
+                                  }`}
+                                >
+                                  {checked && (
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="block text-sm font-bold text-fg leading-tight truncate">{m.member_name}</span>
+                                  <span className="block text-[10px] text-faint truncate">
+                                    {m.riot_game_name ? `${m.riot_game_name}#${m.riot_tagline}` : '라이엇 ID 미등록'}
+                                  </span>
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleAddSelectedMembers}
+                            disabled={addingMembers || selectedMemberIds.size === 0}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg
+                              text-xs font-bold transition-all duration-150
+                              bg-emerald-500/10 border border-emerald-500/25 text-ok-ink
+                              hover:bg-emerald-500/20 hover:text-ok-ink
+                              disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {addingMembers ? <Spinner size={3} /> : null}
+                            선택 {selectedMemberIds.size}명 추가
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
