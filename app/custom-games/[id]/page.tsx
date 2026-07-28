@@ -13,6 +13,7 @@ import {
   formatKstShort,
   gameKindBadgeClass,
   gameKindLabel,
+  openNativePicker,
   statusBadgeClass,
   statusLabel,
   steamCapsuleUrl,
@@ -1230,8 +1231,9 @@ export default function CustomGameDetailPage() {
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
+                  onClick={openNativePicker}
                   disabled={savingEdit}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
@@ -1242,8 +1244,9 @@ export default function CustomGameDetailPage() {
                   type="time"
                   value={editTime}
                   onChange={(e) => setEditTime(e.target.value)}
+                  onClick={openNativePicker}
                   disabled={savingEdit}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />

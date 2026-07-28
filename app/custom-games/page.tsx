@@ -12,6 +12,7 @@ import {
   formatKstSchedule,
   gameKindBadgeClass,
   gameKindLabel,
+  openNativePicker,
   statusBadgeClass,
   statusLabel,
   steamCapsuleUrl,
@@ -415,8 +416,9 @@ export default function CustomGamesPage() {
                   type="date"
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
+                  onClick={openNativePicker}
                   disabled={creating}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
@@ -427,8 +429,9 @@ export default function CustomGamesPage() {
                   type="time"
                   value={timeInput}
                   onChange={(e) => setTimeInput(e.target.value)}
+                  onClick={openNativePicker}
                   disabled={creating}
-                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white
+                  className="w-full px-3 py-3 rounded-xl text-sm font-medium text-white cursor-pointer
                     bg-surface-2 border border-line
                     focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
