@@ -428,7 +428,7 @@ export default function CustomGamesPage() {
                   type="date"
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
-                  onClick={openNativePicker}
+                  onMouseDown={openNativePicker}
                   disabled={creating}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line
@@ -441,7 +441,7 @@ export default function CustomGamesPage() {
                   type="time"
                   value={timeInput}
                   onChange={(e) => setTimeInput(e.target.value)}
-                  onClick={openNativePicker}
+                  onMouseDown={openNativePicker}
                   disabled={creating}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line

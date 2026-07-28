@@ -1610,7 +1610,7 @@ export default function CustomGameDetailPage() {
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  onClick={openNativePicker}
+                  onMouseDown={openNativePicker}
                   disabled={savingEdit}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line
@@ -1623,7 +1623,7 @@ export default function CustomGameDetailPage() {
                   type="time"
                   value={editTime}
                   onChange={(e) => setEditTime(e.target.value)}
-                  onClick={openNativePicker}
+                  onMouseDown={openNativePicker}
                   disabled={savingEdit}
                   className="w-full px-3 py-3 rounded-xl text-sm font-medium text-fg cursor-pointer
                     bg-surface-2 border border-line

@@ -14,8 +14,14 @@ import { GAME_KINDS, type GameKind, type GameStatus, type LolMode, type LolPosit
  * 미지원 브라우저는 기존 아이콘 클릭 동작으로 자연 degrade 된다.
  */
 export function openNativePicker(e: MouseEvent<HTMLInputElement>) {
+  const input = e.currentTarget
+  // ⚠ onMouseDown 으로 연결해야 한다(onClick 아님).
+  //   mousedown 은 focus 이전에 발화하므로, 이미 포커스된 입력을 다시 클릭한 경우
+  //   (시/분 세그먼트 편집·스피너 조작)에는 activeElement 가 이 입력이라 피커를 재오픈하지 않는다.
+  //   매 클릭마다 showPicker() 를 부르면 피커가 닫혔다 다시 열리며 편집을 가로챈다.
+  if (document.activeElement === input) return
   try {
-    e.currentTarget.showPicker?.()
+    input.showPicker?.()
   } catch {
     // NotAllowedError / InvalidStateError 등은 무시 — 아이콘 클릭으로 폴백
   }
