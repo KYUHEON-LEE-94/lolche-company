@@ -15,8 +15,9 @@ import {
   gameKindLabel,
   lolModeLabel,
   openNativePicker,
-  statusBadgeClass,
-  statusLabel,
+  effectiveStatusBadgeClass,
+  effectiveStatusLabel,
+  isRecruitClosed,
   steamCapsuleUrl,
   todayKstDate,
 } from '@/lib/customGames/display'
@@ -253,7 +254,8 @@ export default function CustomGamesPage() {
                 const taken = (g.confirmed_count ?? 0) + (g.guest_count ?? 0)
                 const waitlistCount = g.waitlist_count ?? 0
                 const mine = g.my_participation ?? null
-                const joinable = g.status === 'recruiting'
+                // 예정 시각이 지난 recruiting 은 "마감"으로 보고 참가를 막는다.
+                const joinable = g.status === 'recruiting' && !isRecruitClosed(g.status, g.scheduled_at)
                 const busy = busyId === g.id
 
                 return (
@@ -263,7 +265,7 @@ export default function CustomGamesPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="text-base font-black text-fg leading-snug break-all">{g.title}</h2>
-                      <Badge className={statusBadgeClass(g.status)}>{statusLabel(g.status)}</Badge>
+                      <Badge className={effectiveStatusBadgeClass(g.status, g.scheduled_at)}>{effectiveStatusLabel(g.status, g.scheduled_at)}</Badge>
                     </div>
 
                     {g.game_kind === 'steam' && g.steam_app_id != null && (

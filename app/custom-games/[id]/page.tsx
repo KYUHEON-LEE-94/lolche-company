@@ -24,8 +24,9 @@ import {
   lolTierClass,
   openNativePicker,
   positionLabel,
-  statusBadgeClass,
-  statusLabel,
+  effectiveStatusBadgeClass,
+  effectiveStatusLabel,
+  isRecruitClosed,
   steamCapsuleUrl,
   toKstDateInput,
   toKstTimeInput,
@@ -404,7 +405,9 @@ export default function CustomGameDetailPage() {
   const isLol = game?.game_kind === 'lol'
   const isRift = isLol && game?.lol_mode === 'rift'
   const isClosed = game?.status === 'ended' || game?.status === 'cancelled'
-  const isRecruiting = game?.status === 'recruiting'
+  // 예정 시각이 지난 recruiting 은 "마감"으로 보고 참가/취소 버튼을 감춘다(로스터 고정).
+  const isRecruiting =
+    game?.status === 'recruiting' && !isRecruitClosed(game.status, game.scheduled_at)
 
   // ── 팀 드래프트 초기화 ─────────────────────────────────────────────
   useEffect(() => {
@@ -1068,7 +1071,7 @@ export default function CustomGameDetailPage() {
                       {lolModeLabel(game.lol_mode)}
                     </Badge>
                   )}
-                  <Badge className={statusBadgeClass(game.status)}>{statusLabel(game.status)}</Badge>
+                  <Badge className={effectiveStatusBadgeClass(game.status, game.scheduled_at)}>{effectiveStatusLabel(game.status, game.scheduled_at)}</Badge>
                   {myParticipation && (
                     <Badge className={myParticipation.confirmed
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink'

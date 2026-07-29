@@ -144,6 +144,27 @@ export function statusBadgeClass(status: string): string {
   return status in STATUS_BADGE ? STATUS_BADGE[status as GameStatus] : STATUS_BADGE.ended
 }
 
+/**
+ * 모집 마감 여부(표시·참가 게이팅용 파생값).
+ * status 는 예정 시각이 지나도 자동 전환되지 않는다(자동 전환 크론 없음).
+ * recruiting 인데 예정 시각이 이미 지났으면 모집이 닫힌 것으로 보고 "마감"으로 표시하고
+ * 참가 버튼을 감춘다. DB status 는 recruiting 그대로 둔다(주최자가 수동 종료 가능).
+ */
+export function isRecruitClosed(status: string, scheduledAt: string | null | undefined): boolean {
+  if (status !== 'recruiting') return false
+  const d = toDate(scheduledAt)
+  return d ? d.getTime() <= Date.now() : false
+}
+
+export function effectiveStatusLabel(status: string, scheduledAt: string | null | undefined): string {
+  return isRecruitClosed(status, scheduledAt) ? '마감' : statusLabel(status)
+}
+
+export function effectiveStatusBadgeClass(status: string, scheduledAt: string | null | undefined): string {
+  // 마감은 종료와 같은 뉴트럴 톤을 쓴다.
+  return isRecruitClosed(status, scheduledAt) ? STATUS_BADGE.ended : statusBadgeClass(status)
+}
+
 // 표시 타임존은 뷰어 브라우저와 무관하게 항상 KST로 고정한다.
 const KST = 'Asia/Seoul'
 
