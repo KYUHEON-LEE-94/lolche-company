@@ -494,15 +494,17 @@ export default function CustomGameDetailPage() {
     })),
   ], [confirmedList, guests])
 
-  // 롤 팀 배정 멤버 풀. 확정 멤버 + 롤 티어(외부인은 별도 카드).
+  // 롤 팀 배정 멤버 풀 = 확정 명단. 티어·추방용 참가자 id·주최 여부 포함(외부인은 별도 카드).
   const lolParticipants = useMemo(
     () =>
       confirmedList.map((p) => ({
         key: p.member_id,
+        id: p.id,
         name: p.member_name,
         tier: p.lol_tier,
         rank: p.lol_rank,
         lp: p.lol_league_points,
+        isHost: p.is_host,
       })),
     [confirmedList],
   )
@@ -1312,7 +1314,11 @@ export default function CustomGameDetailPage() {
                   {confirmedList.length === 0 && guests.length === 0 && (
                     <p className="text-sm text-faint">아직 참가자가 없습니다</p>
                   )}
-                  {confirmedList.map((p) => renderParticipantRow(p, 'confirmed'))}
+                  {/* 롤 내전은 확정 멤버를 아래 팀 배정 패널의 명단(드래그 소스)에서 보여준다 — 중복 제거. */}
+                  {!isLol && confirmedList.map((p) => renderParticipantRow(p, 'confirmed'))}
+                  {isLol && confirmedList.length > 0 && (
+                    <p className="text-xs text-subtle">명단은 아래 팀 배정에서 카드로 확인·배치할 수 있어요.</p>
+                  )}
 
                   {isTft && guests.map((g) => (
                     <div
@@ -1540,9 +1546,15 @@ export default function CustomGameDetailPage() {
                       draft={lolDraft}
                       onChange={setLolDraft}
                       onGuestsChange={setLolPoolGuests}
+                      onKickMember={(key) => {
+                        const p = confirmedList.find((x) => x.member_id === key)
+                        if (p) handleKick(p)
+                      }}
                       onRandom={handleRandomLolTeams}
                       onSave={handleSaveLolTeams}
                       saving={savingLolTeams}
+                      canManage={canManage}
+                      isClosed={isClosed}
                       validationError={lolTeamError}
                     />
                   ) : (

@@ -3,14 +3,12 @@
 import { useMemo, useState } from 'react'
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragStartEvent,
 } from '@dnd-kit/core'
 import { Spinner } from '@/app/components/Spinner'
 import { LOL_CAPACITY, LOL_POSITIONS } from '@/lib/customGames/constants'
@@ -19,17 +17,18 @@ import { formatLolRankShort, lolTierClass, positionLabel } from '@/lib/customGam
 const TEAM_SIZE = LOL_CAPACITY / 2 // 5
 const GUEST_NAME_MAX = 20
 
-/** 멤버 풀 소스. 확정 명단 멤버 + 롤 티어. */
+/** 멤버 풀 소스 = 확정 명단. 롤 티어 + 추방용 참가자 id + 주최 여부. */
 export type LolParticipant = {
-  key: string
+  key: string // member_id (드래그 식별자)
+  id: string // custom_game_participants.id (추방 API)
   name: string
   tier: string | null
   rank: string | null
   lp: number | null
+  isHost: boolean
 }
 
 // 슬롯 3-상태: 확정 멤버 | 외부인 라벨(자유 텍스트) | 미배정.
-// key 는 드래그 식별자로도 쓴다(member=member_id, guest=클라이언트 id).
 export type LolSlot =
   | { kind: 'member'; key: string; name: string; tier: string | null; rank: string | null; lp: number | null }
   | { kind: 'guest'; key: string; name: string }
@@ -51,18 +50,21 @@ const TEAM_STYLES = [
   { bg: 'bg-sky-500/5 border-sky-500/25', dot: 'bg-sky-500', text: 'text-sky-400', label: '2팀 (레드)' },
 ]
 
-// ── 카드 값 ──────────────────────────────────────────────────────────────────
-// 드래그 대상은 항상 이 값으로 표현한다. member/guest 를 하나의 카드로 통일한다.
+// 드래그 대상을 하나의 값으로 통일한다.
 type Card =
-  | { kind: 'member'; key: string; name: string; tier: string | null; rank: string | null; lp: number | null }
+  | { kind: 'member'; key: string; name: string; tier: string | null; rank: string | null; lp: number | null; isHost: boolean }
   | { kind: 'guest'; key: string; name: string }
 
 const cardDragId = (c: Card) => `${c.kind}:${c.key}`
-const slotToCard = (s: LolSlot): Card | null => (s ? { ...s } : null)
 
-function CardBody({ card }: { card: Card }) {
+function CardInner({ card }: { card: Card }) {
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      {card.kind === 'member' && card.isHost && (
+        <span className="shrink-0 text-[9px] font-black px-1 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/25 text-brand-ink">
+          주최
+        </span>
+      )}
       <span className="truncate text-sm font-bold text-fg">{card.name}</span>
       {card.kind === 'member' ? (
         <span className={`ml-auto shrink-0 text-[11px] font-black ${lolTierClass(card.tier)}`}>
@@ -77,78 +79,87 @@ function CardBody({ card }: { card: Card }) {
   )
 }
 
-// ── 드래그 가능한 카드 ─────────────────────────────────────────────────────────
-function DraggableCard({ card, disabled }: { card: Card; disabled: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+/**
+ * 드래그 가능한 카드. DragOverlay 대신 카드 자신에 transform 을 적용한다.
+ * (DragOverlay 는 position:fixed 라 상위에 CSS transform 이 있으면 커서와 크게 어긋난다 —
+ *  내전 상세는 애니메이션 transform 조상이 있어 이 방식이 안전하다.)
+ */
+function DraggableCard({
+  card,
+  disabled,
+  onRemove,
+}: {
+  card: Card
+  disabled: boolean
+  onRemove?: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: cardDragId(card),
     data: { card },
     disabled,
   })
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
+    : undefined
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`rounded-lg border border-line bg-surface-2 px-2.5 py-2 select-none touch-none ${
-        disabled ? '' : 'cursor-grab active:cursor-grabbing'
-      } ${isDragging ? 'opacity-40' : ''}`}
+      style={style}
+      className={`relative flex items-center gap-1 rounded-lg border border-line bg-surface-2 pl-2.5 pr-1.5 py-2 ${
+        isDragging ? 'shadow-lg border-brand/50 opacity-95' : ''
+      }`}
     >
-      <CardBody card={card} />
+      {/* 드래그 핸들 = 카드 본문. 버튼(추방/삭제)은 리스너 밖이라 클릭이 드래그로 먹히지 않는다. */}
+      <div
+        {...listeners}
+        {...attributes}
+        className={`flex min-w-0 flex-1 items-center select-none touch-none ${
+          disabled ? '' : 'cursor-grab active:cursor-grabbing'
+        }`}
+      >
+        <CardInner card={card} />
+      </div>
+      {onRemove && !disabled && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={card.kind === 'guest' ? '외부인 삭제' : '명단에서 제외'}
+          className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-faint hover:text-danger-ink transition-colors"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} strokeLinecap="round">
+            <path d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }
 
-// ── 드롭 가능한 슬롯 ───────────────────────────────────────────────────────────
-function Slot({
-  id,
-  label,
-  card,
-  disabled,
-}: {
-  id: string
-  label: string | null
-  card: Card | null
-  disabled: boolean
-}) {
+function Slot({ id, label, card, disabled }: { id: string; label: string | null; card: Card | null; disabled: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled })
   return (
     <div className="flex items-center gap-2">
-      {label !== null && (
-        <span className="w-10 shrink-0 text-[10px] font-bold text-muted">{label}</span>
-      )}
+      {label !== null && <span className="w-10 shrink-0 text-[10px] font-bold text-muted">{label}</span>}
       <div
         ref={setNodeRef}
-        className={`min-h-[38px] flex-1 rounded-lg border px-2 py-1.5 transition-colors ${
+        className={`min-h-[40px] flex-1 rounded-lg border px-2 py-1.5 transition-colors ${
           isOver ? 'border-brand/60 bg-brand/10' : 'border-line bg-surface'
         }`}
       >
-        {card ? <DraggableCard card={card} disabled={disabled} /> : (
-          <span className="text-xs text-faint leading-[26px]">비어 있음</span>
-        )}
+        {card ? <DraggableCard card={card} disabled={disabled} /> : <span className="text-xs text-faint leading-[26px]">비어 있음</span>}
       </div>
     </div>
   )
 }
 
-// ── 풀(미배치) 드롭 영역 ───────────────────────────────────────────────────────
-function Pool({ cards, disabled }: { cards: Card[]; disabled: boolean }) {
+function Pool({ children, disabled }: { children: React.ReactNode; disabled: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'pool', disabled })
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border p-3 transition-colors ${
-        isOver ? 'border-brand/60 bg-brand/10' : 'border-line bg-surface'
-      }`}
+      className={`rounded-xl border p-3 transition-colors ${isOver ? 'border-brand/60 bg-brand/10' : 'border-line bg-surface'}`}
     >
-      {cards.length === 0 ? (
-        <p className="text-xs text-faint">배치되지 않은 인원이 없습니다. 카드를 여기로 끌면 배치가 해제됩니다.</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {cards.map((c) => (
-            <DraggableCard key={cardDragId(c)} card={c} disabled={disabled} />
-          ))}
-        </div>
-      )}
+      {children}
     </div>
   )
 }
@@ -160,9 +171,12 @@ export default function LolTeamAssignPanel({
   draft,
   onChange,
   onGuestsChange,
+  onKickMember,
   onRandom,
   onSave,
   saving,
+  canManage,
+  isClosed,
   validationError,
 }: {
   participants: LolParticipant[]
@@ -171,21 +185,22 @@ export default function LolTeamAssignPanel({
   draft: LolTeamDraft
   onChange: (next: LolTeamDraft) => void
   onGuestsChange: (next: LolGuestCard[]) => void
+  onKickMember: (memberKey: string) => void
   onRandom: () => void
   onSave: () => void
   saving: boolean
+  canManage: boolean
+  isClosed: boolean
   validationError: string | null
 }) {
   const isRift = mode === 'rift'
   const [guestInput, setGuestInput] = useState('')
-  const [activeCard, setActiveCard] = useState<Card | null>(null)
 
   const sensors = useSensors(
     // distance 활성 제약: 터치에서 살짝 눌러 스크롤하는 동작과 드래그를 구분한다(모바일 지원).
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
 
-  // 슬롯에 배치된 key 집합(멤버/게스트 각각).
   const placed = useMemo(() => {
     const members = new Set<string>()
     const guestKeys = new Set<string>()
@@ -197,27 +212,19 @@ export default function LolTeamAssignPanel({
   }, [draft])
 
   // 풀 = 배치되지 않은 멤버 + 배치되지 않은 외부인.
-  const poolCards: Card[] = useMemo(() => {
-    const memberCards: Card[] = participants
-      .filter((p) => !placed.members.has(p.key))
-      .map((p) => ({ kind: 'member', key: p.key, name: p.name, tier: p.tier, rank: p.rank, lp: p.lp }))
-    const guestCards: Card[] = guests
-      .filter((g) => !placed.guestKeys.has(g.key))
-      .map((g) => ({ kind: 'guest', key: g.key, name: g.name }))
-    return [...memberCards, ...guestCards]
-  }, [participants, guests, placed])
+  const poolMembers = useMemo(() => participants.filter((p) => !placed.members.has(p.key)), [participants, placed])
+  const poolGuests = useMemo(() => guests.filter((g) => !placed.guestKeys.has(g.key)), [guests, placed])
+  const poolCount = poolMembers.length + poolGuests.length
 
   const filledCount = useMemo(() => draft.flat().filter((s) => s !== null).length, [draft])
   const canRandom = participants.length === LOL_CAPACITY
 
-  // 드래그 카드의 현재 위치를 찾는다. 슬롯이면 [teamIdx, slotIdx], 풀이면 null.
   const findLocation = (card: Card): [number, number] | null => {
-    for (let t = 0; t < 2; t++) {
+    for (let t = 0; t < 2; t++)
       for (let s = 0; s < TEAM_SIZE; s++) {
         const slot = draft[t][s]
         if (slot && slot.kind === card.kind && slot.key === card.key) return [t, s]
       }
-    }
     return null
   }
 
@@ -227,50 +234,40 @@ export default function LolTeamAssignPanel({
       : { kind: 'guest', key: card.key, name: card.name }
 
   const handleDragEnd = (e: DragEndEvent) => {
-    setActiveCard(null)
     const card = e.active.data.current?.card as Card | undefined
     if (!card || !e.over) return
     const overId = String(e.over.id)
     const from = findLocation(card)
-
     const next: LolTeamDraft = [[...draft[0]], [...draft[1]]]
 
     if (overId === 'pool') {
-      // 슬롯 → 풀: 배치 해제.
       if (from) next[from[0]][from[1]] = null
       onChange(next)
       return
     }
-
-    // overId = "t{team}s{slot}"
     const m = /^t(\d)s(\d)$/.exec(overId)
     if (!m) return
     const toT = Number(m[1])
     const toS = Number(m[2])
-    const occupant = next[toT][toS]
-
-    // 같은 자리면 무시.
     if (from && from[0] === toT && from[1] === toS) return
-
+    const occupant = next[toT][toS]
     next[toT][toS] = cardToSlot(card)
-    if (from) {
-      // 슬롯 → 슬롯: 기존 점유자를 원래 자리로 교환(스왑).
-      next[from[0]][from[1]] = occupant
-    }
-    // 풀 → 슬롯: 점유자가 있으면 풀로 밀려남(자동 — 슬롯에서 빠지면 풀에 다시 나타난다).
+    if (from) next[from[0]][from[1]] = occupant // 슬롯↔슬롯 스왑
     onChange(next)
   }
 
   const addGuest = () => {
     const name = guestInput.trim().slice(0, GUEST_NAME_MAX)
     if (!name) return
-    // 이름 중복(대소문자 무시) 방지 — 서버 규칙과 동일.
-    const dup = guests.some((g) => g.name.trim().toLowerCase() === name.toLowerCase())
-    if (dup) { setGuestInput(''); return }
+    if (guests.some((g) => g.name.trim().toLowerCase() === name.toLowerCase())) { setGuestInput(''); return }
     const key = `g-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`
     onGuestsChange([...guests, { key, name }])
     setGuestInput('')
   }
+
+  const memberCard = (p: LolParticipant): Card => ({
+    kind: 'member', key: p.key, name: p.name, tier: p.tier, rank: p.rank, lp: p.lp, isHost: p.isHost,
+  })
 
   return (
     <div className="rounded-2xl border border-line bg-surface p-5 mb-6">
@@ -278,7 +275,7 @@ export default function LolTeamAssignPanel({
         <div>
           <h3 className="text-sm font-black text-fg">팀 배정 ({isRift ? '협곡 · 포지션' : '증바람'})</h3>
           <p className="text-xs text-subtle mt-0.5">
-            카드를 끌어 {isRift ? '포지션별로' : '각 팀에'} 배치하세요 · 저장 버튼으로 확정됩니다
+            명단 카드를 끌어 {isRift ? '포지션별로' : '각 팀에'} 배치하세요 · 저장 버튼으로 확정됩니다
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -313,16 +310,13 @@ export default function LolTeamAssignPanel({
         </div>
       )}
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={(e: DragStartEvent) => setActiveCard((e.active.data.current?.card as Card) ?? null)}
-        onDragCancel={() => setActiveCard(null)}
-        onDragEnd={handleDragEnd}
-      >
-        {/* 미배치 풀 + 외부인 추가 */}
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {/* 확정 명단 = 미배치 풀(드래그 소스). 배치된 인원은 슬롯에 있으므로 여기서 빠진다. */}
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-black tracking-widest uppercase text-subtle">미배치 ({poolCards.length})</span>
+            <span className="text-[10px] font-black tracking-widest uppercase text-subtle">
+              명단 · 미배치 ({poolCount})
+            </span>
             <div className="flex items-center gap-1.5">
               <input
                 type="text"
@@ -339,17 +333,38 @@ export default function LolTeamAssignPanel({
                 type="button"
                 onClick={addGuest}
                 disabled={saving || !guestInput.trim()}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-surface-2 border border-line text-fg
-                  hover:bg-surface disabled:opacity-40"
+                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-surface-2 border border-line text-fg hover:bg-surface disabled:opacity-40"
               >
                 추가
               </button>
             </div>
           </div>
-          <Pool cards={poolCards} disabled={saving} />
+          <Pool disabled={saving}>
+            {poolCount === 0 ? (
+              <p className="text-xs text-faint">모든 인원이 배치되었습니다. 슬롯 카드를 여기로 끌면 배치가 해제됩니다.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {poolMembers.map((p) => (
+                  <DraggableCard
+                    key={p.key}
+                    card={memberCard(p)}
+                    disabled={saving}
+                    onRemove={canManage && !isClosed && !p.isHost ? () => onKickMember(p.key) : undefined}
+                  />
+                ))}
+                {poolGuests.map((g) => (
+                  <DraggableCard
+                    key={g.key}
+                    card={{ kind: 'guest', key: g.key, name: g.name }}
+                    disabled={saving}
+                    onRemove={() => onGuestsChange(guests.filter((x) => x.key !== g.key))}
+                  />
+                ))}
+              </div>
+            )}
+          </Pool>
         </div>
 
-        {/* 2팀 × 5슬롯 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {([0, 1] as const).map((teamIdx) => {
             const ts = TEAM_STYLES[teamIdx]
@@ -360,36 +375,33 @@ export default function LolTeamAssignPanel({
                   <span className={`text-[10px] font-black tracking-widest uppercase ${ts.text}`}>{ts.label}</span>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {Array.from({ length: TEAM_SIZE }).map((_, slotIdx) => (
-                    <Slot
-                      key={slotIdx}
-                      id={`t${teamIdx}s${slotIdx}`}
-                      label={isRift ? positionLabel(LOL_POSITIONS[slotIdx]) : null}
-                      card={slotToCard(draft[teamIdx][slotIdx])}
-                      disabled={saving}
-                    />
-                  ))}
+                  {Array.from({ length: TEAM_SIZE }).map((_, slotIdx) => {
+                    const slot = draft[teamIdx][slotIdx]
+                    const card: Card | null = slot
+                      ? slot.kind === 'member'
+                        ? { kind: 'member', key: slot.key, name: slot.name, tier: slot.tier, rank: slot.rank, lp: slot.lp, isHost: participants.find((p) => p.key === slot.key)?.isHost ?? false }
+                        : { kind: 'guest', key: slot.key, name: slot.name }
+                      : null
+                    return (
+                      <Slot
+                        key={slotIdx}
+                        id={`t${teamIdx}s${slotIdx}`}
+                        label={isRift ? positionLabel(LOL_POSITIONS[slotIdx]) : null}
+                        card={card}
+                        disabled={saving}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             )
           })}
         </div>
-
-        <DragOverlay>
-          {activeCard ? (
-            <div className="rounded-lg border border-brand/50 bg-surface-2 px-2.5 py-2 shadow-lg">
-              <CardBody card={activeCard} />
-            </div>
-          ) : null}
-        </DragOverlay>
       </DndContext>
 
       <div className="mt-3 flex items-center gap-1.5">
         {Array.from({ length: LOL_CAPACITY }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${i < filledCount ? 'bg-brand' : 'bg-surface-2'}`}
-          />
+          <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i < filledCount ? 'bg-brand' : 'bg-surface-2'}`} />
         ))}
         <span className="text-[10px] text-faint ml-1">{filledCount}/{LOL_CAPACITY}명 배정</span>
       </div>
