@@ -35,6 +35,11 @@
 - 스팀 ID 등록 → **"나와 같은 게임을 가진 사람들"**, 함께 할 수 있는 멀티플레이 게임
 - **"지금 스팀 접속 중"** 실시간 표시
 
+### 디스코드 알림
+- **내전 생성 시** 디스코드 채널에 임베드 알림(제목·종류·정원·일정·주최·링크)
+- **시작 임박(기본 30분 전)** 자동 알림 — 내전당 1회만 발송
+- 웹훅 방식이라 봇 불필요. URL 은 `DISCORD_WEBHOOK_URL` 환경변수로만 관리(서버 전용)
+
 ### 명예의 전당
 - 시즌 마감 시점 랭크 스냅샷, 공동 순위, 추방 후에도 이름 보존
 
@@ -52,8 +57,8 @@
 | 스타일 | Tailwind CSS v4 + Framer Motion + @dnd-kit |
 | 데이터베이스 | Supabase (PostgreSQL) |
 | 인증 | Supabase Auth — Discord OAuth |
-| 외부 API | Riot Games API (TFT·LoL), Steam Web API |
-| 배포 | Vercel (크론: 매일 09:30 랭크 · 11:00 스팀 동기화) |
+| 외부 API | Riot Games API (TFT·LoL), Steam Web API, Discord Webhook |
+| 배포 | Vercel + GitHub Actions (아래 "자동화" 참조) |
 
 ---
 
@@ -64,7 +69,24 @@
 3. 서버가 Riot API로 PUUID·랭크·매치를 수집해 Supabase에 저장
    - TFT 키 / LoL 키는 **서로 다른 앱**이라 PUUID도 각각 발급·보관
 4. 웹 UI에서 랭킹·전적·내전·스팀 정보를 시각화
-5. Vercel 크론이 정기적으로 전체 동기화 (429/5xx·520 자동 재시도 백오프)
+5. 자동화(아래)가 정기적으로 전체 동기화 (429/5xx·520 자동 재시도 백오프)
+
+---
+
+## ⏱ 자동화 (스케줄)
+
+Vercel Hobby 는 크론 빈도(하루 1회)·함수 시간에 제약이 있어, 잦은 주기 작업은
+**GitHub Actions 가 서버 엔드포인트를 주기적으로 호출**하는 방식으로 처리한다
+(`.github/workflows/`, `Authorization: Bearer CRON_SECRET` 인증).
+
+| 작업 | 주기 | 방식 |
+|---|---|---|
+| **전체 랭크 동기화** | 매시간 | GitHub Actions 가 `sync-all` 을 커서 따라 반복 호출해 승인 멤버 전원 갱신(stale 1시간+만) |
+| **내전 시작 임박 알림** | 10분마다 | GitHub Actions → `notify-reminders` (30분 전 1회 발송) |
+| 스팀 캐시 동기화 | 매일 11:00 | Vercel Cron |
+
+> GitHub 저장소 Secrets 에 `SITE_URL`·`CRON_SECRET`, Vercel 환경변수에
+> `CRON_SECRET`·`DISCORD_WEBHOOK_URL` 등록 필요.
 
 ---
 
