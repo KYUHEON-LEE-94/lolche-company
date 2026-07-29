@@ -75,6 +75,10 @@ app/
       sync/route.ts             # 개별 멤버 동기화 (쿨다운 + 로그인·승인 게이트)
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
       history/route.ts          # 랭크 히스토리 조회
+    cron/
+      notify-reminders/route.ts # 내전 시작 임박 디스코드 알림 (GET, Bearer 인증). Vercel Hobby 크론 빈도 제한 때문에
+                                # GitHub Actions(.github/workflows/notify-reminders.yml)가 10분마다 호출한다.
+                                # reminder_sent_at 으로 내전당 1회만 발송(20260734). BYPASS_PATHS 등록 필수
     admin/
       sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동)
       sync-steam/route.ts       # 스팀 캐시 동기화 (GET=크론, POST=관리자)
@@ -149,7 +153,8 @@ STEAM_CATALOG_CACHE_TTL_MS=600000   # 카탈로그 검색 결과 인메모리 �
 STEAM_PRESENCE_TTL_MS=60000         # "지금 접속 중" 인메모리 캐시 TTL (1분). 뷰어 수와 무관하게 호출 1회/TTL
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
-DISCORD_WEBHOOK_URL=                 # ⚠ 서버 전용. 내전 생성 알림용 디스코드 웹훅. 비우면 알림 skip
+DISCORD_WEBHOOK_URL=                 # ⚠ 서버 전용. 내전 생성·임박 알림용 디스코드 웹훅. 비우면 알림 skip
+REMINDER_WINDOW_MIN=30              # 내전 시작 몇 분 전부터 "임박" 알림을 보낼지
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
