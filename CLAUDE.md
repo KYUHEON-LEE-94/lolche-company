@@ -149,6 +149,7 @@ STEAM_CATALOG_CACHE_TTL_MS=600000   # 카탈로그 검색 결과 인메모리 �
 STEAM_PRESENCE_TTL_MS=60000         # "지금 접속 중" 인메모리 캐시 TTL (1분). 뷰어 수와 무관하게 호출 1회/TTL
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
+DISCORD_WEBHOOK_URL=                 # ⚠ 서버 전용. 내전 생성 알림용 디스코드 웹훅. 비우면 알림 skip
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)

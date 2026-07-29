@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, canManageGame, isApprovedMember } from '@/lib/customGames/authorize'
+import { sendDiscordWebhook, DISCORD_COLOR } from '@/lib/discord/notify'
+import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGames/display'
 import {
   GAME_COLUMNS,
   PRE_LOL_GAME_COLUMNS,
@@ -255,6 +257,31 @@ export async function POST(req: Request) {
     await supabaseAdmin.from('custom_games').delete().eq('id', game.id)
     return NextResponse.json({ error: participantError.message }, { status: 500 })
   }
+
+  // 응답 후 디스코드 알림(after: 생성 응답을 지연시키지 않고, 실패해도 생성에 영향 없음).
+  const kv = kind.value
+  const hostName = viewer.member.member_name
+  const origin = new URL(req.url).origin
+  after(async () => {
+    const kindText =
+      kv.game_kind === 'lol'
+        ? `롤 · ${lolModeLabel(kv.lol_mode) || '협곡'}`
+        : gameKindLabel(kv.game_kind, kv.game_kind_label)
+    await sendDiscordWebhook([
+      {
+        title: `🎮 새 내전 모집 — ${title.value}`,
+        url: `${origin}/custom-games/${game.id}`,
+        color: DISCORD_COLOR[kv.game_kind] ?? DISCORD_COLOR.etc,
+        fields: [
+          { name: '종류', value: kindText, inline: true },
+          { name: '정원', value: `${capacity.value}명`, inline: true },
+          { name: '일정', value: formatKstSchedule(scheduledAt.value), inline: false },
+          { name: '주최', value: hostName, inline: true },
+        ],
+        timestamp: new Date().toISOString(),
+      },
+    ])
+  })
 
   return NextResponse.json({ id: game.id })
 }
