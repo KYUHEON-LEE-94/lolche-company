@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import SteamThumb from '@/app/steam/SteamThumb'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
 
 /**
@@ -44,10 +45,6 @@ function formatHours(minutes: number) {
   if (hours >= 10) return `${hours.toFixed(0)}시간`
   if (hours >= 1) return `${hours.toFixed(1)}시간`
   return `${minutes}분`
-}
-
-function capsuleUrl(appid: number) {
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_231x87.jpg`
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
@@ -259,14 +256,7 @@ function Body({
                     {detail.map((g) => (
                       <li key={g.appid} className="flex items-center gap-3">
                         <div className="relative h-[32px] w-[84px] shrink-0 overflow-hidden rounded-md border border-line bg-surface-2">
-                          <Image
-                            src={capsuleUrl(g.appid)}
-                            alt=""
-                            fill
-                            sizes="84px"
-                            className="object-cover"
-                            unoptimized
-                          />
+                          <SteamThumb appid={g.appid} name={g.name} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
