@@ -168,7 +168,7 @@ export default function MemberSelfForm({
         )
 
     return (
-        <section className="rounded-3xl bg-slate-900/40 ring-1 ring-slate-700/50 p-6 shadow-xl">
+        <section className="rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-extrabold text-fg">

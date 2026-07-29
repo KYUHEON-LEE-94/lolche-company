@@ -43,7 +43,7 @@ export default function PlacementHistogram({
             <span className="text-[10px] font-bold leading-none" style={{ color }}>
               {count}
             </span>
-            <span className="text-[10px] text-faint leading-none">{placement}</span>
+            <span className="text-[10px] text-muted leading-none">{placement}</span>
           </div>
         )
       })}

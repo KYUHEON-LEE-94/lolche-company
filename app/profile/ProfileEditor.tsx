@@ -140,7 +140,7 @@ export default function ProfileEditor({ member }: Props) {
     return (
         <div className="grid gap-6">
             {/* 미리보기 카드 */}
-            <section className="rounded-3xl bg-slate-900/40 ring-1 ring-slate-700/50 p-6 shadow-xl">
+            <section className="rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <div className="text-lg font-bold text-fg">{member.member_name}</div>
@@ -183,14 +183,14 @@ export default function ProfileEditor({ member }: Props) {
                 {/* 토스트 */}
                 {toast && (
                     <div
-                        className="mt-4 rounded-2xl bg-slate-800/50 ring-1 ring-slate-700/50 px-4 py-3 text-sm text-fg">
+                        className="mt-4 rounded-2xl bg-surface-2 ring-1 ring-line px-4 py-3 text-sm text-fg">
                         {toast}
                     </div>
                 )}
             </section>
 
             {/* 프로필 이미지 안내 섹션 */}
-            <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
+            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
                 <div className="flex items-center gap-5">
                     <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60 shrink-0">
                         {displayUrl ? (
@@ -208,7 +208,7 @@ export default function ProfileEditor({ member }: Props) {
             </section>
 
             {/* 프레임 선택 섹션 */}
-            <section className="rounded-3xl bg-slate-900/30 ring-1 ring-slate-700/50 p-6">
+            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-fg font-extrabold">프레임 선택</div>

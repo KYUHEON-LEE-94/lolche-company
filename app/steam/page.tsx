@@ -50,7 +50,9 @@ type LoadResult =
   | { ok: false; message: string }
 
 function capsuleUrl(appid: number) {
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_231x87.jpg`
+  // header.jpg 는 capsule_231x87.jpg 보다 커버리지가 넓다(신작 다수가 capsule 404).
+  // 완전히 없는 앱(미출시 등)은 컨테이너의 bg-surface-2 회색 박스로 자연 폴백된다.
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`
 }
 
 function formatHours(minutes: number) {
@@ -281,7 +283,7 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-bold text-fg">{game.name}</p>
                     {game.isMultiplayer === null && (
-                      <span className="shrink-0 rounded-md border border-line bg-slate-700/40 px-1.5 py-0.5 text-[10px] font-bold text-muted">
+                      <span className="shrink-0 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-muted">
                         분류 미확인
                       </span>
                     )}

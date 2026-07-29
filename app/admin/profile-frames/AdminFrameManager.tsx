@@ -217,7 +217,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                         >
                             <div className="flex items-center gap-4">
                                 {/* 프레임 미리보기 */}
-                                <div className="relative w-14 h-14 rounded-xl bg-slate-900 border border-line flex-shrink-0">
+                                <div className="relative w-14 h-14 rounded-xl bg-surface-2 border border-line flex-shrink-0">
                                     <Image src={frameUrl(f.image_path)} alt={f.label} fill className="object-contain p-2" />
                                 </div>
 
@@ -242,7 +242,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     ))}
 
                     {frames.length === 0 && (
-                        <div className="text-center py-12 rounded-2xl border border-dashed border-slate-800">
+                        <div className="text-center py-12 rounded-2xl border border-dashed border-line">
                             <p className="text-sm text-faint font-medium italic">등록된 프레임이 없습니다.</p>
                         </div>
                     )}

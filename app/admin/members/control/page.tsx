@@ -318,7 +318,7 @@ export default function AdminMemberControlPage() {
                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-line hover:border-line transition-all">
 
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-slate-800 flex items-center justify-center font-bold text-subtle uppercase">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-surface-2 flex items-center justify-center font-bold text-subtle uppercase">
                       {m.member_name[0]}
                     </div>
                     <div className="min-w-0">

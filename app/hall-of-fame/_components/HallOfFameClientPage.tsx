@@ -43,7 +43,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
 
                 {/* 탭 & 시즌탭 (기존과 동일) */}
                 <div className="flex justify-center mb-12">
-                    <div className="bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 flex gap-2 backdrop-blur-md">
+                    <div className="bg-surface p-1.5 rounded-2xl border border-line flex gap-2 backdrop-blur-md">
                         {['solo', 'doubleup'].map((q) => (
                             <Link key={q} href={`/hall-of-fame?season=${currentSeason.id}&queue=${q}`} className={`px-8 py-3 rounded-xl text-sm font-black transition-all duration-300 ${currentQueue === q ? (q === 'solo' ? 'bg-amber-400 text-black shadow-lg shadow-orange-500/20' : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20') : 'text-subtle hover:text-muted'}`}>
                                 {q === 'solo' ? '솔로 랭크' : '더블업 랭크'}
@@ -67,9 +67,9 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                         className="mt-24 max-w-4xl mx-auto"
                     >
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-800" />
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-line-strong" />
                             <h2 className="text-subtle font-black tracking-widest uppercase text-xs">Top Rankers</h2>
-                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-800" />
+                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-line-strong" />
                         </div>
 
                         <div className="space-y-3">

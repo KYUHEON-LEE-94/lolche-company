@@ -72,7 +72,8 @@ export function gameKindLabel(kind: string | null | undefined, label: string | n
 
 /** 스팀 스토어 캡슐 이미지. app/steam/page.tsx 와 동일 규격을 쓴다. */
 export function steamCapsuleUrl(appid: number): string {
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_231x87.jpg`
+  // header.jpg 는 capsule_231x87.jpg 보다 커버리지가 넓다(신작 다수가 capsule 404).
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`
 }
 
 export const GAME_KIND_BADGE: Record<GameKind, string> = {
