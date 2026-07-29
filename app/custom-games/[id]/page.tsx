@@ -16,9 +16,11 @@ import { effectiveMemberCapacity } from '@/lib/customGames/waitlist'
 import {
   formatKstSchedule,
   formatKstShort,
+  formatLolRankShort,
   gameKindBadgeClass,
   gameKindLabel,
   lolModeLabel,
+  lolTierClass,
   openNativePicker,
   positionLabel,
   statusBadgeClass,
@@ -56,6 +58,9 @@ type MemberParticipant = {
   riot_game_name: string
   riot_tagline: string
   riot_puuid: string | null
+  lol_tier: string | null
+  lol_rank: string | null
+  lol_league_points: number | null
   joined_at: string
   position: number
   confirmed: boolean
@@ -108,6 +113,9 @@ type MemberOption = {
   member_name: string
   riot_game_name: string
   riot_tagline: string
+  lol_tier: string | null
+  lol_rank: string | null
+  lol_league_points: number | null
 }
 
 type MyParticipation = { id: string; position: number; confirmed: boolean } | null
@@ -861,6 +869,11 @@ export default function CustomGameDetailPage() {
         </div>
         <p className="text-[10px] text-faint">{p.riot_game_name}#{p.riot_tagline}</p>
       </div>
+      {isLol && (
+        <span className={`ml-auto shrink-0 text-[11px] font-black ${lolTierClass(p.lol_tier)}`}>
+          {formatLolRankShort(p.lol_tier, p.lol_rank, p.lol_league_points)}
+        </span>
+      )}
       {isTft && tone === 'confirmed' && !p.riot_puuid && (
         <span className="text-[10px] text-danger-ink bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded font-bold">
           PUUID 없음
@@ -1190,6 +1203,11 @@ export default function CustomGameDetailPage() {
                                     {m.riot_game_name ? `${m.riot_game_name}#${m.riot_tagline}` : '라이엇 ID 미등록'}
                                   </span>
                                 </span>
+                                {isLol && (
+                                  <span className={`ml-auto shrink-0 text-[11px] font-black ${lolTierClass(m.lol_tier)}`}>
+                                    {formatLolRankShort(m.lol_tier, m.lol_rank, m.lol_league_points)}
+                                  </span>
+                                )}
                               </button>
                             )
                           })}

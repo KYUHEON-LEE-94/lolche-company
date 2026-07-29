@@ -27,7 +27,7 @@ export async function GET(req: Request, ctx: Ctx) {
 
   let query = supabaseAdmin
     .from('members')
-    .select('id, member_name, riot_game_name, riot_tagline')
+    .select('id, member_name, riot_game_name, riot_tagline, lol_tier, lol_rank, lol_league_points')
     .eq('status', 'approved')
     .order('member_name')
     .limit(50)

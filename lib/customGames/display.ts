@@ -49,6 +49,40 @@ export function lolModeLabel(mode: string | null | undefined): string {
   return mode && mode in LOL_MODE_LABELS ? LOL_MODE_LABELS[mode as LolMode] : ''
 }
 
+/** 롤 티어별 텍스트 색. /lol 페이지 TIER_STYLES 와 같은 계열을 쓴다. */
+const LOL_TIER_TEXT: Record<string, string> = {
+  CHALLENGER: 'text-yellow-400',
+  GRANDMASTER: 'text-red-400',
+  MASTER: 'text-purple-400',
+  DIAMOND: 'text-blue-400',
+  EMERALD: 'text-emerald-400',
+  PLATINUM: 'text-cyan-400',
+  GOLD: 'text-amber-400',
+  SILVER: 'text-slate-400',
+  BRONZE: 'text-orange-400',
+  IRON: 'text-muted',
+}
+
+export function lolTierClass(tier: string | null | undefined): string {
+  return LOL_TIER_TEXT[(tier ?? '').toUpperCase()] ?? 'text-muted'
+}
+
+/** 마스터 이상은 디비전이 없다. */
+const LOL_APEX_TIERS = new Set(['CHALLENGER', 'GRANDMASTER', 'MASTER'])
+
+/** 롤 랭크 짧은 표기: "Gold III · 24LP" / 티어 없으면 "언랭". */
+export function formatLolRankShort(
+  tier: string | null | undefined,
+  rank: string | null | undefined,
+  lp: number | null | undefined,
+): string {
+  if (!tier) return '언랭'
+  const t = tier.toUpperCase()
+  const cap = t.charAt(0) + t.slice(1).toLowerCase()
+  const div = LOL_APEX_TIERS.has(t) || !rank ? '' : ` ${rank}`
+  return `${cap}${div} · ${lp ?? 0}LP`
+}
+
 /** 협곡 포지션 한국어 표기 */
 export const POSITION_LABELS: Record<LolPosition, string> = {
   top: '탑',

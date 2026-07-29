@@ -47,7 +47,7 @@ export async function GET(_req: Request, ctx: Ctx) {
 
   const { data: memberRows } = await supabaseAdmin
     .from('members')
-    .select('id, member_name, riot_game_name, riot_tagline, riot_puuid')
+    .select('id, member_name, riot_game_name, riot_tagline, riot_puuid, lol_tier, lol_rank, lol_league_points')
     .in('id', lookupIds.length > 0 ? lookupIds : ['__none__'])
 
   const memberMap = new Map((memberRows ?? []).map((m) => [m.id, m]))
@@ -80,6 +80,9 @@ export async function GET(_req: Request, ctx: Ctx) {
       riot_game_name: m?.riot_game_name ?? '',
       riot_tagline: m?.riot_tagline ?? '',
       riot_puuid: m?.riot_puuid ?? null,
+      lol_tier: m?.lol_tier ?? null,
+      lol_rank: m?.lol_rank ?? null,
+      lol_league_points: m?.lol_league_points ?? null,
       joined_at: p.joined_at,
       position: index + 1,
       confirmed: isConfirmed,
