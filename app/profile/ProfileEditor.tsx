@@ -154,7 +154,7 @@ export default function ProfileEditor({ member }: Props) {
                     <div className="relative h-24 w-24 shrink-0">
                         {/* 프로필 이미지 */}
                         <div
-                            className="absolute inset-0 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60 z-10">
+                            className="absolute inset-0 rounded-full overflow-hidden bg-surface-2 ring-2 ring-line z-10">
                             {displayUrl ? (
                                 <Image src={displayUrl} alt="profile image" fill className="object-cover"/>
                             ) : (
@@ -192,7 +192,7 @@ export default function ProfileEditor({ member }: Props) {
             {/* 프로필 이미지 안내 섹션 */}
             <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
                 <div className="flex items-center gap-5">
-                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-700/40 ring-2 ring-slate-600/60 shrink-0">
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-surface-2 ring-2 ring-line shrink-0">
                         {displayUrl ? (
                             <Image src={displayUrl} alt="avatar preview" fill className="object-cover" />
                         ) : (
@@ -221,7 +221,7 @@ export default function ProfileEditor({ member }: Props) {
                             <button
                                 type="button"
                                 onClick={() => router.push('/admin/profile-frames')}
-                                className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-fg hover:bg-slate-700 transition"
+                                className="px-4 py-2 rounded-xl text-sm font-bold bg-surface-2 border border-line text-fg hover:bg-surface transition"
                             >
                                 프레임 관리
                             </button>
@@ -230,7 +230,7 @@ export default function ProfileEditor({ member }: Props) {
                         <button
                             disabled={savingFrame}
                             onClick={() => saveFrame(null)}
-                            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700/60 text-fg hover:bg-slate-700 disabled:opacity-50"
+                            className="px-4 py-2 rounded-xl text-sm font-bold bg-surface-2 border border-line text-fg hover:bg-surface disabled:opacity-50"
                         >
                             해제
                         </button>
@@ -253,7 +253,7 @@ export default function ProfileEditor({ member }: Props) {
                                         'rounded-2xl p-4 ring-1 transition',
                                         selected
                                             ? 'bg-amber-500/10 ring-amber-400/60'
-                                            : 'bg-slate-800/40 ring-slate-700/50 hover:bg-slate-800/60',
+                                            : 'bg-surface-2 ring-line hover:bg-surface',
                                         savingFrame ? 'opacity-50' : '',
                                     ].join(' ')}
                                 >

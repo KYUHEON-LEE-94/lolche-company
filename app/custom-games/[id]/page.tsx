@@ -288,7 +288,7 @@ function TeamAssignPanel({
           <div
             key={i}
             className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              i < assignedKeys.size ? 'bg-violet-500' : 'bg-slate-700'
+              i < assignedKeys.size ? 'bg-violet-500' : 'bg-surface-2'
             }`}
           />
         ))}

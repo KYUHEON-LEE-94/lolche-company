@@ -341,7 +341,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-xs font-bold text-fg">{opt.name}</p>
                           {opt.ownerCount !== null && opt.isMultiplayer === null && (
-                            <span className="shrink-0 rounded border border-line bg-slate-700/40 px-1 py-0.5 text-[9px] font-bold text-muted">
+                            <span className="shrink-0 rounded border border-line bg-surface-2 px-1 py-0.5 text-[9px] font-bold text-muted">
                               분류 미확인
                             </span>
                           )}

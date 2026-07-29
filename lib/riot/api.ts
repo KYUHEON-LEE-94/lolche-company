@@ -51,8 +51,16 @@ async function riotFetch(url: string, product: RiotProduct = 'tft'): Promise<Res
   if (res.ok) return res
   const retryAfterHeader = res.headers.get('Retry-After')
   const retryAfterSec = retryAfterHeader ? Number(retryAfterHeader) : undefined
-  const text = await res.text().catch(() => '')
-  throw new RiotApiError(`Riot API error (${res.status}): ${text}`, res.status, retryAfterSec)
+  const raw = (await res.text().catch(() => '')).trim()
+  // Cloudflare/게이트웨이는 5xx(예: 520~524) 시 긴 HTML 에러 페이지를 반환한다.
+  // 그대로 message 에 실으면 UI·로그·title 속성이 HTML 통째로 오염된다 → HTML 이면 버리고
+  // 그 외 응답 본문만 200자로 잘라 붙인다.
+  const body = raw.startsWith('<') ? '' : raw.slice(0, 200)
+  throw new RiotApiError(
+    `Riot API error (${res.status})${body ? `: ${body}` : ''}`,
+    res.status,
+    retryAfterSec,
+  )
 }
 
 export type RiotMatchParticipant = {

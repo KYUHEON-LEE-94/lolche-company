@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
+import SteamThumb from '@/app/steam/SteamThumb'
 import SharedWithMe from '@/app/steam/SharedWithMe'
 import SteamPresence from '@/app/steam/SteamPresence'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
@@ -48,12 +49,6 @@ type OwnedRow = {
 type LoadResult =
   | { ok: true; members: SteamMemberRow[]; owned: OwnedRow[] }
   | { ok: false; message: string }
-
-function capsuleUrl(appid: number) {
-  // header.jpg 는 capsule_231x87.jpg 보다 커버리지가 넓다(신작 다수가 capsule 404).
-  // 완전히 없는 앱(미출시 등)은 컨테이너의 bg-surface-2 회색 박스로 자연 폴백된다.
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`
-}
 
 function formatHours(minutes: number) {
   const hours = minutes / 60
@@ -270,14 +265,7 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
                 className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-line-strong"
               >
                 <div className="relative h-[42px] w-[110px] shrink-0 overflow-hidden rounded-lg border border-line bg-surface-2">
-                  <Image
-                    src={capsuleUrl(game.appid)}
-                    alt=""
-                    fill
-                    sizes="110px"
-                    className="object-cover"
-                    unoptimized
-                  />
+                  <SteamThumb appid={game.appid} name={game.name} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

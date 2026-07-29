@@ -17,7 +17,15 @@ function backoffMs(attempt: number) {
 }
 
 function isRetryableStatus(status: number) {
-  return status === 429 || status === 502 || status === 503 || status === 504
+  // 520~524 는 Cloudflare 가 Riot origin 장애 시 반환하는 일시적 5xx 다(520=unknown error 등).
+  // 즉시 실패시키지 말고 백오프 재시도로 짧은 블립을 넘긴다.
+  return (
+    status === 429 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    (status >= 520 && status <= 524)
+  )
 }
 
 export class SyncError extends Error {
