@@ -8,6 +8,7 @@ import Image from 'next/image'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import LolTeamAssignPanel, {
   EMPTY_LOL_DRAFT,
+  type LolGuestCard,
   type LolSlot,
   type LolTeamDraft,
 } from '@/app/custom-games/_components/LolTeamAssignPanel'
@@ -356,6 +357,8 @@ export default function CustomGameDetailPage() {
 
   // 롤 팀 배정 상태
   const [lolDraft, setLolDraft] = useState<LolTeamDraft>(EMPTY_LOL_DRAFT)
+  // 미배치 외부인 카드(드래그로 슬롯에 넣기 전까지 풀에 머문다).
+  const [lolPoolGuests, setLolPoolGuests] = useState<LolGuestCard[]>([])
   const [savingLolTeams, setSavingLolTeams] = useState(false)
   const [lolTeamError, setLolTeamError] = useState<string | null>(null)
 
@@ -427,6 +430,8 @@ export default function CustomGameDetailPage() {
   // ── 롤 팀 드래프트 초기화 ──────────────────────────────────────────
   useEffect(() => {
     if (!isLol) return
+    // 저장된 배정을 다시 불러오면 미배치 외부인 풀은 비운다(저장된 외부인은 전부 슬롯에 있다).
+    setLolPoolGuests([])
     if (lolTeams.length === 0) {
       setLolDraft(EMPTY_LOL_DRAFT)
       setLolTeamError(null)
@@ -436,19 +441,23 @@ export default function CustomGameDetailPage() {
       [null, null, null, null, null],
       [null, null, null, null, null],
     ]
-    lolTeams.forEach((t) => {
+    lolTeams.forEach((t, i) => {
       // 슬롯은 확정 멤버(member_id) 또는 외부인 라벨(guest_name) 중 하나로 채워진다.
+      const m = t.member_id
+        ? confirmedList.find((p) => p.member_id === t.member_id)
+          ?? waitlist.find((p) => p.member_id === t.member_id)
+        : undefined
       const slotValue: LolSlot = t.member_id
         ? {
             kind: 'member',
             key: t.member_id,
-            name:
-              confirmedList.find((p) => p.member_id === t.member_id)?.member_name
-              ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
-              ?? '알 수 없음',
+            name: m?.member_name ?? '알 수 없음',
+            tier: m?.lol_tier ?? null,
+            rank: m?.lol_rank ?? null,
+            lp: m?.lol_league_points ?? null,
           }
         : t.guest_name
-          ? { kind: 'guest', name: t.guest_name }
+          ? { kind: 'guest', key: `g-saved-${i}`, name: t.guest_name }
           : null
       if (!slotValue) return
       const teamIdx = t.team_index - 1
@@ -485,9 +494,16 @@ export default function CustomGameDetailPage() {
     })),
   ], [confirmedList, guests])
 
-  // 롤 팀 배정은 게스트 없이 확정 멤버만 대상으로 한다.
+  // 롤 팀 배정 멤버 풀. 확정 멤버 + 롤 티어(외부인은 별도 카드).
   const lolParticipants = useMemo(
-    () => confirmedList.map((p) => ({ key: p.member_id, name: p.member_name })),
+    () =>
+      confirmedList.map((p) => ({
+        key: p.member_id,
+        name: p.member_name,
+        tier: p.lol_tier,
+        rank: p.lol_rank,
+        lp: p.lol_league_points,
+      })),
     [confirmedList],
   )
 
@@ -1516,69 +1532,72 @@ export default function CustomGameDetailPage() {
               {/* ── 롤 내전: 팀/포지션 배정 (전용 경로, TFT 로직과 분리) ───── */}
               {isLol && (
                 <>
-                  {canManage && !isClosed && (
+                  {canManage && !isClosed ? (
                     <LolTeamAssignPanel
                       participants={lolParticipants}
+                      guests={lolPoolGuests}
                       mode={isRift ? 'rift' : 'aram'}
                       draft={lolDraft}
                       onChange={setLolDraft}
+                      onGuestsChange={setLolPoolGuests}
                       onRandom={handleRandomLolTeams}
                       onSave={handleSaveLolTeams}
                       saving={savingLolTeams}
                       validationError={lolTeamError}
                     />
-                  )}
-
-                  {lolTeams.length > 0 && (
-                    <div className="mb-8">
-                      <h2 className="text-xs font-black text-subtle tracking-widest uppercase mb-3">팀 구성</h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {([1, 2] as const).map((teamIndex) => {
-                          const rows = lolTeams
-                            .filter((t) => t.team_index === teamIndex && (t.member_id || t.guest_name))
-                            .sort((a, b) => {
-                              if (!isRift) return 0
-                              return LOL_POSITIONS.indexOf(a.position as (typeof LOL_POSITIONS)[number]) -
-                                LOL_POSITIONS.indexOf(b.position as (typeof LOL_POSITIONS)[number])
-                            })
-                          const ts = teamIndex === 1
-                            ? { bg: 'bg-rose-500/10 border-rose-500/25', dot: 'bg-rose-500', text: 'text-danger-ink', label: '1팀 (블루)' }
-                            : { bg: 'bg-sky-500/10 border-sky-500/25', dot: 'bg-sky-500', text: 'text-sky-400', label: '2팀 (레드)' }
-                          return (
-                            <div key={teamIndex} className={`rounded-xl border p-3 ${ts.bg}`}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className={`w-1.5 h-1.5 rounded-full ${ts.dot}`} />
-                                <span className={`text-[10px] font-black tracking-widest uppercase ${ts.text}`}>{ts.label}</span>
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                {rows.length === 0 && <p className="text-xs text-faint">미배정</p>}
-                                {rows.map((t) => (
-                                  <div key={`${t.member_id ?? t.guest_name}-${t.position ?? ''}`} className="flex items-center gap-2 text-sm">
-                                    {isRift && (
-                                      <span className="w-10 text-[10px] font-bold text-muted shrink-0">
-                                        {positionLabel(t.position)}
+                  ) : (
+                    // 관리 권한이 없거나 종료된 내전은 읽기 전용 팀 구성만 보여준다.
+                    lolTeams.length > 0 && (
+                      <div className="mb-8">
+                        <h2 className="text-xs font-black text-subtle tracking-widest uppercase mb-3">팀 구성</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {([1, 2] as const).map((teamIndex) => {
+                            const rows = lolTeams
+                              .filter((t) => t.team_index === teamIndex && (t.member_id || t.guest_name))
+                              .sort((a, b) => {
+                                if (!isRift) return 0
+                                return LOL_POSITIONS.indexOf(a.position as (typeof LOL_POSITIONS)[number]) -
+                                  LOL_POSITIONS.indexOf(b.position as (typeof LOL_POSITIONS)[number])
+                              })
+                            const ts = teamIndex === 1
+                              ? { bg: 'bg-rose-500/10 border-rose-500/25', dot: 'bg-rose-500', text: 'text-danger-ink', label: '1팀 (블루)' }
+                              : { bg: 'bg-sky-500/10 border-sky-500/25', dot: 'bg-sky-500', text: 'text-sky-400', label: '2팀 (레드)' }
+                            return (
+                              <div key={teamIndex} className={`rounded-xl border p-3 ${ts.bg}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${ts.dot}`} />
+                                  <span className={`text-[10px] font-black tracking-widest uppercase ${ts.text}`}>{ts.label}</span>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  {rows.length === 0 && <p className="text-xs text-faint">미배정</p>}
+                                  {rows.map((t) => (
+                                    <div key={`${t.member_id ?? t.guest_name}-${t.position ?? ''}`} className="flex items-center gap-2 text-sm">
+                                      {isRift && (
+                                        <span className="w-10 text-[10px] font-bold text-muted shrink-0">
+                                          {positionLabel(t.position)}
+                                        </span>
+                                      )}
+                                      <span className="font-bold text-fg">
+                                        {t.member_id
+                                          ? confirmedList.find((p) => p.member_id === t.member_id)?.member_name
+                                            ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
+                                            ?? '알 수 없음'
+                                          : t.guest_name ?? '알 수 없음'}
                                       </span>
-                                    )}
-                                    <span className="font-bold text-fg">
-                                      {t.member_id
-                                        ? confirmedList.find((p) => p.member_id === t.member_id)?.member_name
-                                          ?? waitlist.find((p) => p.member_id === t.member_id)?.member_name
-                                          ?? '알 수 없음'
-                                        : t.guest_name ?? '알 수 없음'}
-                                    </span>
-                                    {!t.member_id && t.guest_name && (
-                                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-warn-ink">
-                                        외부인
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
+                                      {!t.member_id && t.guest_name && (
+                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/25 text-warn-ink">
+                                          외부인
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )
                   )}
                 </>
               )}
