@@ -80,7 +80,9 @@ app/
                                 # GitHub Actions(.github/workflows/notify-reminders.yml)가 10분마다 호출한다.
                                 # reminder_sent_at 으로 내전당 1회만 발송(20260734). BYPASS_PATHS 등록 필수
     admin/
-      sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동)
+      sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동). GET은 커서 배치 1개만 처리한다.
+                                # Vercel Hobby 크론(하루 1회)로는 배치 1개뿐이라, GitHub Actions
+                                # (.github/workflows/sync-ranks.yml)가 매시간 커서를 따라 반복 호출해 전원 갱신한다.
       sync-steam/route.ts       # 스팀 캐시 동기화 (GET=크론, POST=관리자)
       members/                  # 멤버 CRUD API (route=목록, create/update/[id])
         [id]/approve/route.ts   # 승인 + 즉시 동기화
