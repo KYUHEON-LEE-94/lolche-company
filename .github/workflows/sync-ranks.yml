@@ -30,9 +30,12 @@ jobs:
             if [ -n "$cursor" ]; then url="${url}&cursorId=${cursor}"; fi
             resp=$(curl -sS --max-time 120 -X GET "$url" -H "Authorization: Bearer ${CRON_SECRET}" || echo '{}')
             echo "batch ${i}: $(printf '%s' "$resp" | head -c 300)"
-            done=$(printf '%s' "$resp" | jq -r '.batch.done // empty')
+            # ⚠ jq 의 `//` 는 좌변이 null "또는 false" 면 우변을 쓴다.
+            #   `.batch.done // empty` 로 하면 done:false(배치 더 남음, 정상)가 빈 문자열이 되어
+            #   파싱 실패로 오판한다. done 은 // 없이 그대로 읽고 true/false 만 유효로 본다.
+            done=$(printf '%s' "$resp" | jq -r '.batch.done')
             next=$(printf '%s' "$resp" | jq -r '.batch.nextCursorId // empty')
-            if [ -z "$done" ]; then
+            if [ "$done" != "true" ] && [ "$done" != "false" ]; then
               echo "::error::sync-all 응답을 파싱할 수 없습니다(인증/배포 확인). 응답: $(printf '%s' "$resp" | head -c 200)"
               exit 1
             fi
