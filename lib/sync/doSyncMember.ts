@@ -14,6 +14,7 @@ import {
 } from '@/lib/riot/api'
 import { LOL_ENABLED } from '@/lib/constants/features'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
+import { notifyTierPromotion } from '@/lib/discord/notify'
 import {
   listRiotAccounts,
   mirrorPrimaryToMember,
@@ -356,5 +357,23 @@ export async function doSyncMember(memberId: string) {
       .eq('id', memberId)
 
     if (recentUpdateError) console.error('members.tft_recent5 update error', recentUpdateError)
+  }
+
+  // ── 티어 승급 축하 알림 ─────────────────────────────────────────────────
+  //   member(함수 시작 시점 = 이전 값)와 최종 members 값을 비교해 등급 자체가
+  //   오른 경우(실버→골드)만 디스코드로 알린다. 디비전 상승·언랭·강등은 제외.
+  //   알림 실패가 동기화를 깨뜨리지 않도록 try/catch 로 감싼다.
+  try {
+    const { data: after } = await supabaseAdmin
+      .from('members')
+      .select('tft_tier, lol_tier')
+      .eq('id', memberId)
+      .maybeSingle()
+    if (after) {
+      await notifyTierPromotion(member.member_name, 'tft', member.tft_tier, after.tft_tier)
+      await notifyTierPromotion(member.member_name, 'lol', member.lol_tier, after.lol_tier)
+    }
+  } catch (e) {
+    console.warn('[sync] 승급 알림 실패:', e instanceof Error ? e.message : '오류')
   }
 }

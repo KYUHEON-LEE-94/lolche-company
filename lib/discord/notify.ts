@@ -1,4 +1,5 @@
 import 'server-only'
+import { tierOrder } from '@/lib/constants/tierOrder'
 
 /**
  * 디스코드 웹훅 전송. ⚠ 서버 전용 — DISCORD_WEBHOOK_URL 은 클라이언트에 노출 금지.
@@ -49,3 +50,55 @@ export const DISCORD_COLOR = {
   etc: 0x94a3b8, // slate
   reminder: 0x6366f1, // indigo
 } as const
+
+// ── 티어 승급 축하 ────────────────────────────────────────────────────────────
+
+const TIER_KO: Record<string, string> = {
+  IRON: '아이언',
+  BRONZE: '브론즈',
+  SILVER: '실버',
+  GOLD: '골드',
+  PLATINUM: '플래티넘',
+  EMERALD: '에메랄드',
+  DIAMOND: '다이아몬드',
+  MASTER: '마스터',
+  GRANDMASTER: '그랜드마스터',
+  CHALLENGER: '챌린저',
+}
+
+const GAME_KO = { tft: '롤체', lol: '롤' } as const
+
+function tierKo(tier: string): string {
+  return TIER_KO[tier.toUpperCase()] ?? tier
+}
+
+/**
+ * 티어 "등급 자체"가 오른 경우(예: 실버 → 골드)에만 디스코드로 축하 알림을 보낸다.
+ *   - 디비전 상승(실버 IV → 실버 III)은 대상 아님 — 티어명이 같으면 무시.
+ *   - 강등·언랭(null) 변화도 무시.
+ *   - 승급이 아니면 아무것도 보내지 않는다(호출부에서 조건 판단 불필요).
+ * TIER_ORDER 는 낮을수록 높은 티어(CHALLENGER=1 … IRON=10)다.
+ */
+export async function notifyTierPromotion(
+  memberName: string,
+  game: 'tft' | 'lol',
+  oldTier: string | null | undefined,
+  newTier: string | null | undefined,
+): Promise<void> {
+  if (!oldTier || !newTier) return
+  const o = tierOrder(oldTier)
+  const n = tierOrder(newTier)
+  if (o >= 999 || n >= 999) return // 알 수 없는 티어
+  // ★ n < o 일 때(= 새 티어가 더 높을 때)만 발송한다.
+  //   n === o: 같은 티어(디비전 상승) → 제외. n > o: 강등 → 반드시 제외.
+  if (n >= o) return
+
+  await sendDiscordWebhook([
+    {
+      title: `🎉 승급 축하합니다! ${memberName}`,
+      description: `**${tierKo(oldTier)} → ${tierKo(newTier)}** 승급 (${GAME_KO[game]})`,
+      color: DISCORD_COLOR[game],
+      timestamp: new Date().toISOString(),
+    },
+  ])
+}
