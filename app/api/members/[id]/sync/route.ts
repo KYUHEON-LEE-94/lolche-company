@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, isApprovedMember } from '@/lib/customGames/authorize'
 import { syncOneMember } from '@/lib/sync/syncMember'
@@ -80,6 +81,11 @@ export async function POST(
       { status: r.status || 500 },
     )
   }
+
+  // 랭크 캐시가 바뀌었으니 ISR 랭킹 페이지 캐시를 무효화한다(동기화 즉시 반영).
+  revalidatePath('/')
+  revalidatePath('/tft')
+  revalidatePath('/lol')
 
   return NextResponse.json({
     ok: true,

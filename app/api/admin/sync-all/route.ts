@@ -1,5 +1,6 @@
 // app/api/admin/sync-all/route.ts
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { syncOneMember } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
@@ -193,6 +194,14 @@ async function runSyncAll(params: {
 
   const nextCursorId = members && members.length ? members[members.length - 1].id : cursorId
   const done = !members || members.length < limit
+
+  // ★ 동기화가 members 랭크 캐시를 바꿨으니 ISR 랭킹 페이지 캐시를 무효화한다.
+  //   (revalidate=60 만으로는 배포·저트래픽 환경에서 stale 이 오래 남을 수 있다.)
+  if (results.length > 0) {
+    revalidatePath('/')
+    revalidatePath('/tft')
+    revalidatePath('/lol')
+  }
 
   console.log('[sync-all] end', {
     processed: results.length,
