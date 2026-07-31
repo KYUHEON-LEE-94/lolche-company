@@ -5,7 +5,10 @@ name: 전체 랭크 동기화
 # 승인 멤버 전원(stale=1시간 이상)을 갱신한다. public repo 라 Actions 분은 무료.
 on:
   schedule:
-    - cron: '0 * * * *' # 매시 정각 (UTC). 서버는 stale(1시간+)만 갱신하므로 매시간이면 전원 시간당 1회.
+    # ⚠ GitHub 스케줄은 best-effort 라 정각(:00)엔 부하로 지연·드롭된다(공식 문서).
+    #   정각을 피한 시각으로, 드롭 대비 시간당 2회 시도한다(off-peak, 30분 간격).
+    #   서버가 stale(1시간+)만 갱신하므로 2회 시도해도 실제 Riot 호출은 시간당 1회 수준이다.
+    - cron: '17,47 * * * *'
   workflow_dispatch: {} # 수동 실행용
 
 concurrency:
