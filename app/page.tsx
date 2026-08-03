@@ -57,9 +57,15 @@ type RecentMatchRow = {
 const MEMBER_COLUMNS =
   'id,member_name,profile_image_path,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
 
+// TFT queue_id → 모드 라벨 (Riot 공식/CommunityDragon 기준).
+// ⚠ 1210=촌크의 보물은 로테이션 랩 모드이지 솔로랭크가 아니다.
+// 미매핑 이벤트/랩 큐(1220·6100·6110·6120 등)는 '기타'로 폴백한다.
 const QUEUE_LABELS: Record<number, string> = {
+  1090: '일반',
   1100: '솔로',
+  1130: '초고속',
   1160: '더블업',
+  1210: '촌크의 보물',
 }
 
 const NAV_CARDS = [
