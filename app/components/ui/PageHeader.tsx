@@ -5,11 +5,11 @@ import { H1, KICKER, MUTED } from '@/lib/ui/styles'
 
 type Accent = 'amber' | 'emerald' | 'sky' | 'indigo'
 
-const LINE: Record<Accent, string> = {
-  amber: 'to-amber-500/50',
-  emerald: 'to-emerald-500/50',
-  sky: 'to-sky-500/50',
-  indigo: 'to-indigo-500/50',
+const PILL: Record<Accent, string> = {
+  amber: 'border-amber-500/20 bg-amber-500/10',
+  emerald: 'border-emerald-500/20 bg-emerald-500/10',
+  sky: 'border-sky-500/20 bg-sky-500/10',
+  indigo: 'border-indigo-500/20 bg-indigo-500/10',
 }
 
 const TEXT: Record<Accent, string> = {
@@ -34,12 +34,11 @@ export default function PageHeader({
 }) {
   return (
     <header className={className}>
-      <div className="mb-3 inline-flex items-center gap-3">
-        <div className={`h-px w-10 bg-gradient-to-r from-transparent ${LINE[accent]}`} />
+      <div className={`mb-4 inline-flex items-center rounded-full border px-3 py-1.5 ${PILL[accent]}`}>
         <span className={`${KICKER} ${TEXT[accent]}`}>{kicker}</span>
       </div>
       <h1 className={H1}>{title}</h1>
-      {description && <p className={`mt-2 ${MUTED}`}>{description}</p>}
+      {description && <p className={`mt-3 max-w-2xl leading-relaxed ${MUTED}`}>{description}</p>}
     </header>
   )
 }

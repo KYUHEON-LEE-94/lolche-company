@@ -78,27 +78,28 @@ export default function TodayMyRecord() {
   }
 
   return (
-    <section className={`${CARD} mb-8 overflow-hidden`}>
-      <div className="flex flex-col gap-5 p-5 sm:p-6">
+    <section className={`${CARD} relative mb-8 overflow-hidden border-brand/20 bg-gradient-to-br from-brand/10 via-surface to-surface`}>
+      <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-brand/10 blur-3xl" aria-hidden />
+      <div className="relative flex flex-col gap-6 p-5 sm:p-7">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             {data.member.avatarUrl ? (
-              <Image src={data.member.avatarUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
+              <Image src={data.member.avatarUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-xl border border-line object-cover shadow-sm" />
             ) : (
-              <span className="h-11 w-11 rounded-full bg-surface-2" aria-hidden />
+              <span className="h-12 w-12 rounded-xl border border-line bg-surface-2" aria-hidden />
             )}
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.15em] text-brand-ink">오늘의 내 기록</p>
-              <h2 className="truncate text-lg font-black text-fg">{data.member.memberName}</h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-ink">오늘의 내 기록</p>
+              <h2 className="mt-0.5 truncate text-xl font-black tracking-tight text-fg">{data.member.memberName}</h2>
               <p className="text-xs text-subtle">{formatSyncedAt(data.member.lastSyncedAt)}</p>
             </div>
           </div>
-          <button type="button" onClick={openDetail} aria-haspopup="dialog" className="min-h-[44px] shrink-0 rounded-xl border border-line px-3 text-xs font-bold text-fg transition-colors hover:border-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60">
+          <button type="button" onClick={openDetail} aria-haspopup="dialog" className="min-h-[44px] shrink-0 rounded-xl border border-brand/25 bg-brand/10 px-4 text-xs font-bold text-brand-ink transition-colors hover:bg-brand/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60">
             상세 기록 보기
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Record label="롤체 전체 순위" value={data.tft.position ? `${data.tft.position}위` : '언랭'} detail={data.tft.label} />
           <Record label="직전 동기화 대비" value={data.tft.delta === null ? '비교 기록 없음' : data.tft.delta === 0 ? '변동 없음' : `${data.tft.delta > 0 ? '+' : ''}${data.tft.delta}점`} />
           <Record label="최근 7일 수집 최고" value={data.tft.weeklyBest ?? '아직 기록 없음'} />
@@ -114,9 +115,9 @@ export default function TodayMyRecord() {
 
 function Record({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-xl border border-line bg-surface-2 p-3">
-      <p className="text-xs font-bold text-subtle">{label}</p>
-      <p className="mt-1 text-sm font-black text-fg">{value}</p>
+    <div className="rounded-xl border border-line bg-panel/55 p-4 backdrop-blur-sm">
+      <p className="text-[11px] font-bold text-subtle">{label}</p>
+      <p className="mt-1.5 text-base font-black tracking-tight text-fg">{value}</p>
       {detail && <p className="mt-0.5 truncate text-xs text-muted">{detail}</p>}
     </div>
   )
@@ -124,7 +125,7 @@ function Record({ label, value, detail }: { label: string; value: string; detail
 
 function RecentMatches({ matches, wide = false }: { matches: ReadyDashboard['recentMatches']; wide?: boolean }) {
   return (
-    <div className={`rounded-xl border border-line bg-surface-2 p-3 ${wide ? 'lg:col-span-4' : ''}`}>
+    <div className={`rounded-xl border border-line bg-panel/55 p-4 backdrop-blur-sm ${wide ? 'lg:col-span-4' : ''}`}>
       <p className="text-xs font-bold text-subtle">최근 솔로 경기</p>
       {matches.length === 0 ? <p className="mt-1 text-sm font-black text-fg">아직 기록 없음</p> : (
         <div className="mt-2 flex flex-wrap gap-1.5">

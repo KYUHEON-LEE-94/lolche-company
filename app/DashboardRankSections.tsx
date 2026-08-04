@@ -51,9 +51,12 @@ export default function DashboardRankSections({
   return (
     <>
       {/* ① 리더보드 TOP5 */}
-      <section className={`${CARD} p-5 lg:col-span-2`}>
+      <section className={`${CARD} p-5 sm:p-6 lg:col-span-2`}>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-black text-fg">롤체 TOP 5</h2>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-warn-ink">Leaderboard</p>
+            <h2 className="mt-1 text-lg font-black tracking-tight text-fg">롤체 TOP 5</h2>
+          </div>
           <Link href="/tft" className="text-xs font-bold text-brand-ink hover:text-brand-ink">
             전체 보기 →
           </Link>
@@ -62,7 +65,7 @@ export default function DashboardRankSections({
         {leaderboard.length === 0 ? (
           <p className="mt-4 text-sm text-subtle">아직 랭크 기록이 없어요.</p>
         ) : (
-          <ol className="mt-3 divide-y divide-line">
+          <ol className="mt-4 divide-y divide-line">
             {leaderboard.map((m, i) => (
               <li key={m.id}>
                 {/* /tft 의 <article onClick> 과 달리 button 을 쓴다 — Tab·Enter 접근 가능 */}
@@ -71,16 +74,16 @@ export default function DashboardRankSections({
                   onClick={() => open(m)}
                   aria-haspopup="dialog"
                   aria-label={`${m.member_name} 상세 전적 보기`}
-                  className={`flex w-full items-center gap-3 py-2.5 min-h-[44px] text-left rounded-lg transition-colors hover:bg-surface-2 ${TRIGGER_FOCUS}`}
+                  className={`flex w-full items-center gap-3 rounded-xl px-2 py-3 min-h-[48px] text-left transition-colors hover:bg-surface-2 ${TRIGGER_FOCUS}`}
                 >
-                  <span className="w-5 shrink-0 text-center text-sm font-black text-subtle">{i + 1}</span>
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${i < 3 ? 'bg-warn/10 text-warn-ink' : 'bg-surface-2 text-subtle'}`}>{i + 1}</span>
                   {m.avatarUrl ? (
                     <Image
                       src={m.avatarUrl}
                       alt=""
                       width={32}
                       height={32}
-                      className="h-8 w-8 shrink-0 rounded-full object-cover"
+                      className="h-9 w-9 shrink-0 rounded-xl border border-line object-cover"
                     />
                   ) : (
                     <span className="h-8 w-8 shrink-0 rounded-full bg-surface-2" aria-hidden />
@@ -95,8 +98,9 @@ export default function DashboardRankSections({
       </section>
 
       {/* ② 최근 랭크 변동 */}
-      <section className={`${CARD} p-5`}>
-        <h2 className="text-sm font-black text-fg">최근 랭크 변동</h2>
+      <section className={`${CARD} p-5 sm:p-6`}>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-ink">Momentum</p>
+        <h2 className="mt-1 text-lg font-black tracking-tight text-fg">최근 랭크 변동</h2>
 
         {movers.length === 0 ? (
           <p className="mt-4 text-sm text-subtle">직전 동기화 대비 변동이 없어요.</p>

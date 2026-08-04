@@ -229,25 +229,26 @@ export default async function DashboardPage() {
         {/* 개인 데이터는 ISR HTML에 포함하지 않고 동적 API를 호출하는 클라이언트 아일랜드에서만 표시한다. */}
         <TodayMyRecord />
 
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+        <section className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {stats.map((stat) => (
-            <div key={stat.label} className={`${CARD} px-5 py-4`}>
-              <p className="text-xs font-black tracking-[0.15em] uppercase text-subtle">{stat.label}</p>
-              <p className="mt-2 text-lg font-bold text-fg truncate">{stat.value}</p>
+            <div key={stat.label} className={`${CARD} relative overflow-hidden px-5 py-4`}>
+              <span className="absolute inset-y-4 left-0 w-0.5 rounded-full bg-brand/50" aria-hidden />
+              <p className="text-[10px] font-black tracking-[0.18em] uppercase text-subtle">{stat.label}</p>
+              <p className="mt-2 truncate text-lg font-black tracking-tight text-fg">{stat.value}</p>
             </div>
           ))}
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* ①② TOP5 + 랭크 변동 — 클릭 시 상세 패널.
               ISR(revalidate=60) 공유 캐시라 상태는 클라이언트 아일랜드가 소유한다.
               Fragment 를 반환하므로 grid 직계 자식 관계와 lg:col-span-2 가 보존된다. */}
           <DashboardRankSections leaderboard={leaderboardView} movers={moversView} />
 
           {/* ③ 모집 중 내전 */}
-          <section className={`${CARD} p-5`}>
+          <section className={`${CARD} p-5 sm:p-6`}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-black text-fg">모집 중 내전</h2>
+              <h2 className="text-lg font-black tracking-tight text-fg">모집 중 내전</h2>
               <Link href="/custom-games" className="text-xs font-bold text-brand-ink hover:text-brand-ink">
                 전체 보기 →
               </Link>
@@ -283,8 +284,8 @@ export default async function DashboardPage() {
           </section>
 
           {/* ④ 최근 매치 */}
-          <section className={`${CARD} p-5 lg:col-span-2`}>
-            <h2 className="text-sm font-black text-fg">최근 매치</h2>
+          <section className={`${CARD} p-5 sm:p-6 lg:col-span-2`}>
+            <h2 className="text-lg font-black tracking-tight text-fg">최근 매치</h2>
 
             {recentMatches.length === 0 ? (
               <p className="mt-4 text-sm text-subtle">아직 수집된 매치가 없어요.</p>
@@ -332,10 +333,10 @@ export default async function DashboardPage() {
         </div>
 
         {/* ⑥ 축약된 네비 카드 */}
-        <section className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {NAV_CARDS.map((card) => (
-            <Link key={card.href} href={card.href} className={`${CARD_HOVER} flex items-center gap-3 px-4 py-3.5`}>
-              <span className="text-xl leading-none" aria-hidden>
+            <Link key={card.href} href={card.href} className={`${CARD_HOVER} group flex min-h-[72px] items-center gap-3 px-4 py-3.5`}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-2 text-lg leading-none transition-colors group-hover:border-brand/20 group-hover:bg-brand/10" aria-hidden>
                 {card.icon}
               </span>
               <span className="min-w-0">

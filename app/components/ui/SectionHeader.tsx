@@ -10,10 +10,10 @@ export default function SectionHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
+    <div className="mb-5 flex items-end justify-between gap-4">
       <div>
         <h2 className={H2}>{title}</h2>
-        {hint && <p className="mt-1 text-xs text-subtle">{hint}</p>}
+        {hint && <p className="mt-1.5 text-xs leading-relaxed text-subtle">{hint}</p>}
       </div>
       {action}
     </div>

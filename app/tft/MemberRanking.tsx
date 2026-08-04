@@ -119,16 +119,16 @@ const TIER_STYLES: Record<
     string,
     { strip: string; text: string; glow: string; badge: string; icon: string }
 > = {
-  CHALLENGER:  { strip: 'from-yellow-400 to-amber-500',  text: 'text-yellow-400',  glow: 'hover:shadow-yellow-500/20  hover:border-yellow-500/25',  badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-500/20',  icon: '👑' },
+  CHALLENGER:  { strip: 'from-yellow-400 to-amber-500',  text: 'text-warn-ink',  glow: 'hover:border-yellow-500/25',  badge: 'bg-yellow-400/10 text-warn-ink border-yellow-500/20',  icon: '✦' },
   GRANDMASTER: { strip: 'from-red-500 to-rose-600',      text: 'text-danger-ink',     glow: 'hover:shadow-red-500/20    hover:border-red-500/25',      badge: 'bg-red-500/10   text-danger-ink   border-red-500/20',      icon: '♦' },
-  MASTER:      { strip: 'from-purple-500 to-violet-600', text: 'text-purple-400',  glow: 'hover:shadow-purple-500/20 hover:border-purple-500/25',  badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20', icon: '◆' },
-  DIAMOND:     { strip: 'from-blue-400 to-blue-600',     text: 'text-blue-400',    glow: 'hover:shadow-blue-500/20   hover:border-blue-500/25',    badge: 'bg-blue-500/10   text-blue-300   border-blue-500/20',    icon: '◇' },
+  MASTER:      { strip: 'from-purple-500 to-violet-600', text: 'text-purple-500 dark:text-purple-300',  glow: 'hover:border-purple-500/25',  badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20', icon: '◆' },
+  DIAMOND:     { strip: 'from-blue-400 to-blue-600',     text: 'text-blue-600 dark:text-blue-300',    glow: 'hover:border-blue-500/25',    badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/20',    icon: '◇' },
   EMERALD:     { strip: 'from-emerald-400 to-emerald-600',text:'text-ok-ink', glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/25',badge: 'bg-emerald-500/10 text-ok-ink border-emerald-500/20',icon: '◈' },
-  PLATINUM:    { strip: 'from-cyan-400 to-teal-500',     text: 'text-cyan-400',    glow: 'hover:shadow-cyan-500/20   hover:border-cyan-500/25',    badge: 'bg-cyan-500/10   text-cyan-300   border-cyan-500/20',    icon: '◉' },
+  PLATINUM:    { strip: 'from-cyan-400 to-teal-500',     text: 'text-cyan-700 dark:text-cyan-300',    glow: 'hover:border-cyan-500/25',    badge: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',    icon: '◉' },
   GOLD:        { strip: 'from-amber-400 to-yellow-500',  text: 'text-warn-ink',   glow: 'hover:shadow-amber-500/20  hover:border-amber-500/25',   badge: 'bg-amber-500/10  text-warn-ink  border-amber-500/20',   icon: '○' },
   SILVER:      { strip: 'from-slate-400 to-slate-500',   text: 'text-muted',   glow: 'hover:shadow-slate-400/20  hover:border-slate-400/25',   badge: 'bg-slate-400/10  text-muted  border-slate-400/20',   icon: '○' },
-  BRONZE:      { strip: 'from-orange-500 to-orange-700', text: 'text-orange-400',  glow: 'hover:shadow-orange-500/20 hover:border-orange-500/25',  badge: 'bg-orange-500/10 text-orange-300 border-orange-500/20', icon: '○' },
-  IRON:        { strip: 'from-gray-500 to-gray-600',     text: 'text-gray-400',    glow: 'hover:shadow-gray-500/20   hover:border-gray-500/25',    badge: 'bg-gray-500/10   text-gray-300   border-gray-500/20',    icon: '◌' },
+  BRONZE:      { strip: 'from-orange-500 to-orange-700', text: 'text-orange-700 dark:text-orange-300',  glow: 'hover:border-orange-500/25',  badge: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20', icon: '○' },
+  IRON:        { strip: 'from-gray-500 to-gray-600',     text: 'text-muted',    glow: 'hover:border-gray-500/25',    badge: 'bg-gray-500/10 text-muted border-gray-500/20',    icon: '◌' },
 }
 
 const FALLBACK_STYLE = {
@@ -168,20 +168,20 @@ function shortTierLabel(tier: string | null, rank: string | null) {
 function RankBadge({ idx }: { idx: number }) {
   if (idx === 0)
     return (
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-yellow-500/40 text-sm">
-          🥇
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/25 bg-amber-500/10 text-xs font-black text-warn-ink">
+          1
         </div>
     )
   if (idx === 1)
     return (
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg shadow-slate-400/30 text-sm">
-          🥈
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-400/25 bg-slate-400/10 text-xs font-black text-muted">
+          2
         </div>
     )
   if (idx === 2)
     return (
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30 text-sm">
-          🥉
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-orange-500/25 bg-orange-500/10 text-xs font-black text-orange-700 dark:text-orange-300">
+          3
         </div>
     )
   return (
@@ -211,9 +211,10 @@ function SyncButton({
           disabled={disabled}
           title={remainSec > 0 ? `쿨다운 중 · ${formatRemain(remainSec)}` : '동기화'}
           className="
-        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+        inline-flex min-h-9 items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold
         bg-indigo-500/10 border border-indigo-500/25 text-brand-ink
-        hover:bg-indigo-500/20 hover:text-brand-ink transition-all duration-200
+        hover:bg-indigo-500/20 hover:text-brand-ink transition-colors
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40
         disabled:opacity-40 disabled:cursor-not-allowed
       "
       >
@@ -280,8 +281,8 @@ const MemberRow = memo(function MemberRow({
       <div
           onClick={() => onDetailOpen(member)}
           className="
-        group relative flex items-center gap-2.5 sm:gap-3
-        min-h-[56px] pl-3 pr-2 sm:pr-3 py-2 cursor-pointer
+        group relative flex items-center gap-2 sm:gap-3
+        min-h-[64px] pl-3 pr-2 sm:pr-3 py-2.5 cursor-pointer
         transition-colors hover:bg-surface-2
       "
       >
@@ -345,7 +346,7 @@ const MemberRow = memo(function MemberRow({
         </div>
 
         {/* 티어 · LP */}
-        <div className="flex items-center gap-1.5 shrink-0 w-[92px] justify-end text-right">
+        <div className="flex items-center gap-1 shrink-0 w-[74px] sm:w-[92px] justify-end text-right">
           <span className={`text-base leading-none ${style.text}`}>{style.icon}</span>
           <div className="leading-tight">
             <p className={`text-xs font-black ${style.text}`}>{shortTierLabel(tier, rank)}</p>
@@ -443,27 +444,25 @@ export default function MemberRanking({
             backgroundImage: 'url(/images/background/background1.png)',
             backgroundRepeat: 'no-repeat',
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center top',
           }}
       >
-        {/* 다크 오버레이 */}
-        <div className="min-h-screen bg-canvas/85 backdrop-blur-sm px-4 py-12">
+        <div className="min-h-screen bg-gradient-to-b from-canvas/92 via-canvas/96 to-canvas px-4 pt-8 pb-28 md:py-12">
           <div className={CONTAINER}>
 
             {/* ── 헤더 ── */}
-            <header className="text-center mb-12">
+            <header className="mb-8 rounded-3xl border border-line bg-surface/90 px-5 py-7 text-center shadow-[0_24px_60px_-38px_var(--color-shadow)] backdrop-blur-md sm:px-8 sm:py-9">
 
               {/* 시즌 */}
-              <div className="mb-6">
+              <div className="mb-5">
                 {currentSeason ? (
                     <>
-                      <div className="inline-flex items-center gap-3 mb-2">
-                        <div className="h-px w-10 bg-gradient-to-r from-transparent to-amber-500/50" />
-                        <span className="text-[10px] font-black tracking-[0.4em] text-warn-ink uppercase">
+                      <div className="mb-3 inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5">
+                        <span className="text-[10px] font-black tracking-[0.2em] text-warn-ink uppercase">
                       Now Playing
                     </span>
                       </div>
-                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-fg leading-tight">
+                      <h1 className="text-3xl font-black tracking-[-0.035em] text-fg leading-tight sm:text-4xl">
                         {currentSeason.season_name}
                       </h1>
                       <p className="mt-1 text-sm font-bold text-warn-ink tracking-[0.2em]">
@@ -478,11 +477,9 @@ export default function MemberRanking({
               </div>
 
               {/* 로고 */}
-              <div className="flex justify-center mb-8">
+              <div className="mb-6 flex justify-center">
                 <div className="relative group w-full max-w-[320px]">
-                  {/* glow */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-600/30 blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-                  <div className="relative h-[68px] rounded-2xl bg-panel border border-line overflow-hidden flex items-center justify-center px-6">
+                  <div className="relative flex h-[64px] items-center justify-center overflow-hidden rounded-2xl border border-line bg-panel/70 px-6">
                     {/* 상단 하이라이트 */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                     <Image
@@ -491,23 +488,23 @@ export default function MemberRanking({
                         width={542}
                         height={419}
                         priority
-                        className="max-h-[48px] w-auto object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)] group-hover:drop-shadow-[0_0_20px_rgba(99,102,241,0.7)] transition-all duration-300"
+                        className="max-h-[44px] w-auto object-contain"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 큐 탭 */}
-              <div className="inline-flex gap-1 p-1 rounded-xl bg-surface-2 border border-line">
+              <div className="inline-flex w-full max-w-sm gap-1 rounded-xl border border-line bg-surface-2 p-1">
                 {(['solo', 'doubleup'] as const).map((q) => (
                     <button
                         key={q}
                         type="button"
                         onClick={() => setQueueType(q)}
                         className={`
-                    flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200
+                    flex min-h-11 flex-1 items-center justify-center gap-2 px-3 sm:px-6 py-2.5 rounded-lg text-sm font-bold transition-colors
                     ${queueType === q
-                            ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-[#1a0a00] shadow-lg shadow-amber-500/30'
+                            ? 'bg-brand text-white shadow-sm'
                             : 'text-muted hover:text-fg'
                         }
                   `}
@@ -531,7 +528,7 @@ export default function MemberRanking({
             {sorted.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
-                <div className="rounded-2xl border border-line bg-surface overflow-hidden divide-y divide-line">
+                <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_52px_-34px_var(--color-shadow)] divide-y divide-line">
                   {sorted.map((m, idx) => {
                     const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
                     return (

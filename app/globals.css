@@ -26,6 +26,8 @@
   --color-line: rgba(255, 255, 255, 0.08);      /* 보더 단일값 */
   --color-line-strong: rgba(255, 255, 255, 0.2);/* hover 보더 */
   --color-panel: #0d1117;                       /* 불투명 패널/모달 */
+  --color-surface-raised: #131923;
+  --color-shadow: rgba(0, 0, 0, 0.34);
 
   /* ── 텍스트 4단계 (다크 기준값 = 현행 slate) ── */
   --color-fg: #f8fafc;      /* 본문 최상 (구 text-white / slate-100·200) */
@@ -58,12 +60,14 @@
 :root,
 [data-theme='light'] {
   color-scheme: light;
-  --color-canvas: #f5f6f8;
+  --color-canvas: #f3f5f9;
   --color-surface: #ffffff;
-  --color-surface-2: #eef1f5;
-  --color-line: rgba(15, 23, 42, 0.1);
-  --color-line-strong: rgba(15, 23, 42, 0.22);
+  --color-surface-2: #f0f3f8;
+  --color-line: rgba(30, 41, 59, 0.1);
+  --color-line-strong: rgba(30, 41, 59, 0.2);
   --color-panel: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-shadow: rgba(30, 41, 59, 0.09);
 
   --color-fg: #0f172a;
   --color-muted: #475569;
@@ -85,6 +89,8 @@
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-strong: rgba(255, 255, 255, 0.2);
   --color-panel: #0d1117;
+  --color-surface-raised: #121722;
+  --color-shadow: rgba(0, 0, 0, 0.32);
 
   --color-fg: #f8fafc;
   --color-muted: #94a3b8;
@@ -100,10 +106,19 @@
 /* ⚠ font-family 에 Arial 을 강제하지 않는다 — layout.tsx 가 주입한 Geist 변수를 덮어쓴다.
    Geist 는 latin 서브셋만 로드되므로 한글 폴백을 명시한다. */
 body {
-  background: var(--color-canvas);
+  min-height: 100vh;
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(circle at 14% -10%, color-mix(in srgb, var(--color-brand) 9%, transparent) 0, transparent 34rem),
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--color-warn) 5%, transparent) 0, transparent 30rem);
   color: var(--color-fg);
   font-family: var(--font-geist-sans), 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
     ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 28%, transparent);
+  color: var(--color-fg);
 }
 
 /* 네이티브 <select> 드롭다운 옵션은 select 에 반투명 배경을 주면 일부 브라우저가

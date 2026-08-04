@@ -144,7 +144,7 @@ export default function SiteNav() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-line bg-canvas/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           {/* 모바일: 햄버거(전체 메뉴) + 로고.
               하단 탭바는 주요 4개만 담아 명예의 전당·롤을 접근할 수 없었다 → 햄버거로 전체 노출. */}
@@ -155,21 +155,22 @@ export default function SiteNav() {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-label="전체 메뉴 열기"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 transition-colors"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-2 hover:text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <Link href="/" className="shrink-0 text-sm font-black tracking-tight text-fg">
+            <Link href="/" className="flex shrink-0 items-center gap-2 text-sm font-black tracking-tight text-fg">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-brand/20 bg-brand/10 text-[10px] font-black text-brand-ink" aria-hidden>LC</span>
               롤토 컴퍼니
             </Link>
 
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute left-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-line bg-panel/95 backdrop-blur-sm shadow-2xl z-50"
+                className="absolute left-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-panel/95 p-1.5 shadow-[0_24px_64px_-24px_var(--color-shadow)] backdrop-blur-xl"
               >
                 {NAV_ITEMS.map((item) => {
                   const active = isActive(pathname, item)
@@ -180,8 +181,8 @@ export default function SiteNav() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                       aria-current={active ? 'page' : undefined}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
-                        active ? 'bg-brand/15 text-brand-ink' : 'text-fg hover:bg-surface-2'
+                      className={`flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+                        active ? 'bg-brand/12 text-brand-ink' : 'text-muted hover:bg-surface-2 hover:text-fg'
                       }`}
                     >
                       <NavIcon name={item.icon} className="h-[18px] w-[18px]" />
@@ -193,7 +194,7 @@ export default function SiteNav() {
             )}
           </div>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 rounded-xl border border-line bg-surface/70 p-1 shadow-sm">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item)
 
@@ -204,11 +205,11 @@ export default function SiteNav() {
                   aria-current={active ? 'page' : undefined}
                   aria-label={item.iconOnlyOnTop ? item.label : undefined}
                   title={item.iconOnlyOnTop ? item.label : undefined}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-colors ${
+                  className={`inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
                     item.iconOnlyOnTop ? 'h-9 w-9 shrink-0' : 'px-3 py-2'
                   } ${
                     active
-                      ? 'bg-brand/15 text-brand-ink'
+                      ? 'bg-brand text-white shadow-sm'
                       : 'text-muted hover:text-fg hover:bg-surface-2'
                   }`}
                 >
@@ -232,7 +233,7 @@ export default function SiteNav() {
       {/* 모바일 하단 탭바. safe-area-inset-bottom 만큼 아래 여백을 둬 iOS 홈 인디케이터를 피한다. */}
       <nav
         aria-label="주요 메뉴"
-        className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/90 shadow-[0_-12px_36px_-24px_var(--color-shadow)] backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="grid grid-cols-4">
           {TAB_ITEMS.map((item) => {
@@ -243,10 +244,11 @@ export default function SiteNav() {
                 <Link
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 transition-colors ${
+                  className={`relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/50 ${
                     active ? 'text-brand-ink' : 'text-subtle'
                   }`}
                 >
+                  {active && <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-brand" aria-hidden />}
                   <NavIcon name={item.icon} className="h-5 w-5" />
                   <span className="text-xs font-bold leading-none">
                     {item.tabLabel ?? item.label}
