@@ -7,6 +7,7 @@ import { CARD, CARD_HOVER, CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import ProfileChecklist from '@/app/components/ProfileChecklist'
 import TodayMyRecord from '@/app/TodayMyRecord'
+import AdminPendingNotice from '@/app/components/AdminPendingNotice'
 import DashboardRankSections, {
   type DashMover,
   type DashRankMember,
@@ -225,6 +226,8 @@ export default async function DashboardPage() {
           description="오늘 단톡방에 무슨 일이 있었는지 한눈에 확인하세요."
           className="mb-8"
         />
+
+        <AdminPendingNotice />
 
         {/* 개인 데이터는 ISR HTML에 포함하지 않고 동적 API를 호출하는 클라이언트 아일랜드에서만 표시한다. */}
         <TodayMyRecord />
