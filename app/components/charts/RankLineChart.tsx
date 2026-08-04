@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { isApexTier, tierScore, TIER_BASE } from '@/lib/tft/tierScore'
-import type { HistoryPoint } from '../ranking/LpSparkline'
+import { shouldShowRankMarker, type HistoryPoint } from '../ranking/LpSparkline'
 
 // 아래에서 위 순서. 표시용 짧은 라벨.
 const TIER_MARKS: { label: string; score: number }[] = [
@@ -142,15 +142,17 @@ export default function RankLineChart({
               fill="transparent"
               onMouseEnter={() => setHoverIdx(i)}
             />
-            <circle
-              cx={toX(i)}
-              cy={toY(s)}
-              r={hoverIdx === i ? 4 : i === scores.length - 1 ? 3.5 : 2}
-              fill={hoverIdx === i ? '#fff' : lineColor}
-              stroke={hoverIdx === i ? lineColor : 'none'}
-              strokeWidth="1.5"
-              className="transition-all duration-100"
-            />
+            {(hoverIdx === i || shouldShowRankMarker(scores, i)) && (
+              <circle
+                cx={toX(i)}
+                cy={toY(s)}
+                r={hoverIdx === i ? 4 : i === scores.length - 1 ? 3.5 : 2}
+                fill={hoverIdx === i ? '#fff' : lineColor}
+                stroke={hoverIdx === i ? lineColor : 'none'}
+                strokeWidth="1.5"
+                className="transition-all duration-100"
+              />
+            )}
           </g>
         ))}
       </svg>

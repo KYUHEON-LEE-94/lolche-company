@@ -13,6 +13,15 @@ export type HistoryPoint = {
   recorded_at: string
 }
 
+export function shouldShowRankMarker(scores: number[], index: number) {
+  return (
+    index === 0 ||
+    index === scores.length - 1 ||
+    scores[index] !== scores[index - 1] ||
+    scores[index] !== scores[index + 1]
+  )
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso)
   return `${d.getMonth() + 1}/${d.getDate()}`
@@ -109,15 +118,17 @@ export default function LpSparkline({
               fill="transparent"
               onMouseEnter={() => setHoverIdx(i)}
             />
-            <circle
-              cx={toX(i)}
-              cy={toY(s)}
-              r={hoverIdx === i ? 4 : i === scores.length - 1 ? 3.5 : 2.5}
-              fill={hoverIdx === i ? '#fff' : lineColor}
-              stroke={hoverIdx === i ? lineColor : 'none'}
-              strokeWidth="1.5"
-              className="transition-all duration-100"
-            />
+            {(hoverIdx === i || shouldShowRankMarker(scores, i)) && (
+              <circle
+                cx={toX(i)}
+                cy={toY(s)}
+                r={hoverIdx === i ? 4 : i === scores.length - 1 ? 3.5 : 2.5}
+                fill={hoverIdx === i ? '#fff' : lineColor}
+                stroke={hoverIdx === i ? lineColor : 'none'}
+                strokeWidth="1.5"
+                className="transition-all duration-100"
+              />
+            )}
           </g>
         ))}
       </svg>
