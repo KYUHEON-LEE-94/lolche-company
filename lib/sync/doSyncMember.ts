@@ -223,19 +223,44 @@ export async function doSyncMember(memberId: string) {
       .eq('is_active', true)
       .maybeSingle()
 
-    const { error: historyError } = await supabaseAdmin
+    const seasonId = activeSeason?.id ?? null
+
+    const snapshot = {
+      tft_tier: solo?.tier ?? null,
+      tft_rank: solo?.rank ?? null,
+      tft_lp: solo?.leaguePoints ?? null,
+      tft_doubleup_tier: doubleUp?.tier ?? null,
+      tft_doubleup_rank: doubleUp?.rank ?? null,
+      tft_doubleup_lp: doubleUp?.leaguePoints ?? null,
+    }
+
+    // ★ 직전 기록과 값이 완전히 같으면 저장하지 않는다.
+    //   동기화가 1시간 간격이라 점수 변화가 없어도 같은 값이 계속 쌓여 DB·그래프가 지저분해진다.
+    //   시즌이 바뀌면(season_id 불일치) LP 리셋 여부와 무관하게 그 시즌의 시작점을 남긴다.
+    const { data: lastRow } = await supabaseAdmin
       .from('member_rank_history')
-      .insert({
-        member_id: memberId,
-        tft_tier: solo?.tier ?? null,
-        tft_rank: solo?.rank ?? null,
-        tft_lp: solo?.leaguePoints ?? null,
-        tft_doubleup_tier: doubleUp?.tier ?? null,
-        tft_doubleup_rank: doubleUp?.rank ?? null,
-        tft_doubleup_lp: doubleUp?.leaguePoints ?? null,
-        season_id: activeSeason?.id ?? null,
-      })
-    if (historyError) console.error('member_rank_history insert error', historyError)
+      .select('tft_tier, tft_rank, tft_lp, tft_doubleup_tier, tft_doubleup_rank, tft_doubleup_lp, season_id')
+      .eq('member_id', memberId)
+      .order('recorded_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const unchanged =
+      lastRow != null &&
+      lastRow.season_id === seasonId &&
+      lastRow.tft_tier === snapshot.tft_tier &&
+      lastRow.tft_rank === snapshot.tft_rank &&
+      lastRow.tft_lp === snapshot.tft_lp &&
+      lastRow.tft_doubleup_tier === snapshot.tft_doubleup_tier &&
+      lastRow.tft_doubleup_rank === snapshot.tft_doubleup_rank &&
+      lastRow.tft_doubleup_lp === snapshot.tft_doubleup_lp
+
+    if (!unchanged) {
+      const { error: historyError } = await supabaseAdmin
+        .from('member_rank_history')
+        .insert({ member_id: memberId, ...snapshot, season_id: seasonId })
+      if (historyError) console.error('member_rank_history insert error', historyError)
+    }
   }
 
   // LoL 솔로랭크. 플래그가 꺼져 있으면 호출 자체를 하지 않는다(불필요한 호출 낭비 방지).
