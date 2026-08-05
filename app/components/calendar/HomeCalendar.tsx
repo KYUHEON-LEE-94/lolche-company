@@ -151,7 +151,7 @@ export default function HomeCalendar() {
   }
 
   return <section id="calendar" className={`${CARD} mb-8 scroll-mt-20 overflow-hidden`} aria-labelledby="calendar-title">
-    <div className="border-b border-line px-4 py-4 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-6">
+    <div className="border-b border-line px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-5">
       <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-ink">Community calendar</p><div className="mt-1 flex items-baseline gap-3"><h2 id="calendar-title" className="text-xl font-black text-fg">멤버 일정</h2><strong className="text-sm font-black text-muted">{view.year}년 {view.month}월</strong></div></div>
       <div className="mt-3 flex items-center gap-1.5 sm:mt-0 sm:gap-2">
         <button className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => move(-1)} aria-label="이전 달">‹</button>
@@ -166,7 +166,7 @@ export default function HomeCalendar() {
         className="border-b border-line bg-surface-2/70"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
       >
-        {WEEKDAYS.map((day, i) => <div key={day} className={`border-r border-line py-2 text-center text-[10px] font-black last:border-r-0 ${i === 0 ? 'text-danger-ink' : i === 6 ? 'text-brand-ink' : 'text-muted'}`}>{day}</div>)}
+        {WEEKDAYS.map((day, i) => <div key={day} className={`border-r border-line py-1.5 text-center text-[10px] font-black last:border-r-0 ${i === 0 ? 'text-danger-ink' : i === 6 ? 'text-brand-ink' : 'text-muted'}`}>{day}</div>)}
       </div>
       <div
         className="border-l border-line"
@@ -180,7 +180,7 @@ export default function HomeCalendar() {
           const canCreate = payload?.permissions.canCreate === true
           return <div
             key={`${cell.year}-${cell.month}-${cell.day}`}
-            className={`relative min-h-[76px] min-w-0 overflow-hidden border-b border-r border-line p-1 sm:min-h-[108px] sm:p-2 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
+            className={`relative min-h-[68px] min-w-0 overflow-hidden border-b border-r border-line p-1 sm:min-h-[92px] sm:p-1.5 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
             onClick={() => canCreate && openCellCreate(cell)}
             role={canCreate ? 'button' : undefined}
             tabIndex={canCreate ? 0 : undefined}
