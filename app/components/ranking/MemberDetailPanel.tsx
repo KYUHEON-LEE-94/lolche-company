@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { type HistoryPoint } from './LpSparkline'
@@ -347,6 +347,9 @@ export default function MemberDetailPanel({
   const [matches, setMatches] = useState<MatchRow[] | null>(null)
   const [accounts, setAccounts] = useState<MemberAccount[] | null>(null)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const titleId = useId()
 
   // 이미 요청한 리소스를 다시 부르지 않기 위한 키 집합.
   const dataKey = `${member.id}|${queue}`
@@ -449,16 +452,49 @@ export default function MemberDetailPanel({
     ? accountRank(selectedAccount, queue)
     : { tier: member.tft_tier, rank: member.tft_rank, lp: member.tft_league_points }
 
-  // ESC 닫기 + 배경 스크롤 잠금 + 닫은 뒤 트리거로 포커스 복귀
+  // 키보드 닫기·포커스 순환 + 배경 스크롤 잠금 + 닫은 뒤 트리거로 포커스 복귀
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const focusTimer = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      const dialog = dialogRef.current
+      if (!dialog) return
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute('hidden'))
+
+      if (focusable.length === 0) {
+        e.preventDefault()
+        dialog.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
     window.addEventListener('keydown', handler)
 
     return () => {
+      window.cancelAnimationFrame(focusTimer)
       window.removeEventListener('keydown', handler)
       document.body.style.overflow = prevOverflow
       opener?.focus?.()
@@ -479,21 +515,24 @@ export default function MemberDetailPanel({
           aria-hidden
         />
 
-        {/* 패널 */}
-        <motion.aside
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${member.member_name} 상세 전적`}
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="fixed right-0 top-0 bottom-0 w-full max-w-sm sm:max-w-lg bg-panel border-l border-line z-50 flex flex-col overflow-hidden"
-        >
+        {/* 반응형 중앙 모달 */}
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center sm:p-6">
+          <motion.section
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="pointer-events-auto flex h-[100dvh] w-full flex-col overflow-hidden bg-panel sm:h-[min(90dvh,900px)] sm:w-[min(94vw,1200px)] sm:rounded-2xl sm:border sm:border-line sm:shadow-2xl"
+          >
           {/* 헤더 */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
             <div>
-              <p className="font-black text-fg text-base leading-tight">{member.member_name}</p>
+              <p id={titleId} className="font-black text-fg text-base leading-tight">{member.member_name}</p>
               {headerRank.tier ? (
                 <p className="text-[11px] text-subtle mt-0.5">
                   {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
@@ -507,6 +546,7 @@ export default function MemberDetailPanel({
               ) : null}
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               aria-label="닫기"
@@ -517,10 +557,13 @@ export default function MemberDetailPanel({
           </div>
 
           {/* 탭 */}
-          <div className="flex border-b border-line px-3">
+          <div className="flex shrink-0 border-b border-line px-3" role="tablist" aria-label="멤버 상세 정보">
             {visibleTabs.map((t) => (
               <button
                 key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
                 onClick={() => setTab(t.key)}
                 className={`px-4 py-3 text-xs font-black tracking-wide transition-colors border-b-2 -mb-px ${
                   tab === t.key
@@ -534,7 +577,7 @@ export default function MemberDetailPanel({
           </div>
 
           {/* 스크롤 영역 */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-4">
 
             {tab !== 'accounts' && subAccountSelected && (
               <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-warn-ink">
@@ -667,7 +710,8 @@ export default function MemberDetailPanel({
             )}
 
           </div>
-        </motion.aside>
+          </motion.section>
+        </div>
       </>
     </AnimatePresence>
   )

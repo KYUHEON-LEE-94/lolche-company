@@ -372,11 +372,14 @@ export default async function DashboardPage() {
                                 </div>
                               </div>
 
-                              <div className="flex min-w-0 flex-1 items-center gap-1" aria-label="사용한 핵심 기물">
+                              <div className="flex min-w-0 flex-1 items-start gap-1 overflow-x-auto pb-0.5" aria-label="사용한 핵심 기물">
                                 {units.map((unit, unitIndex) => (
-                                  <span key={`${match.match_id}-${p.member_id}-${unit.id}-${unitIndex}`} className="relative shrink-0" title={`${unit.name} ${unit.tier}성`}>
-                                    <Image src={unit.imageUrl} alt={unit.name} width={32} height={32} className={`h-8 w-8 rounded-lg border-2 object-cover ${rarityBorderClass(unit.rarity)}`} />
-                                    {unit.tier >= 2 && <span className="absolute -bottom-1 -right-1 rounded bg-panel px-1 text-[8px] font-black leading-3 text-warn-ink">{unit.tier}★</span>}
+                                  <span key={`${match.match_id}-${p.member_id}-${unit.id}-${unitIndex}`} className="flex w-9 shrink-0 flex-col items-center gap-0.5" title={`${unit.name} ${unit.tier}성`}>
+                                    <span className="relative">
+                                      <Image src={unit.imageUrl} alt={unit.name} width={32} height={32} className={`h-8 w-8 rounded-lg border-2 object-cover ${rarityBorderClass(unit.rarity)}`} />
+                                      {unit.tier >= 2 && <span className="absolute -bottom-1 -right-1 rounded bg-panel px-1 text-[8px] font-black leading-3 text-warn-ink">{unit.tier}★</span>}
+                                    </span>
+                                    <span className="block w-full truncate text-center text-[9px] font-semibold leading-3 text-muted">{unit.name}</span>
                                   </span>
                                 ))}
                                 {units.length === 0 && <span className="text-[11px] text-faint">기물 정보 없음</span>}

@@ -17,7 +17,11 @@ const TOP_UNITS = 8
 type RawUnit = { character_id?: string }
 
 type ParticipantRow = { placement: number | null; units: unknown }
-type MatchRow = { tft_match_participants: ParticipantRow[] }
+type MatchRow = {
+  tft_set_number: number | null
+  tft_match_participants: ParticipantRow[]
+}
+type StatsRow = ParticipantRow & { tft_set_number: number | null }
 
 export async function GET(req: Request, ctx: Ctx) {
   const { id: memberId } = await ctx.params
@@ -33,7 +37,7 @@ export async function GET(req: Request, ctx: Ctx) {
   // 임베디드(to-one) 컬럼 기준 정렬은 PostgREST 가 지원하지 않는다.
   let q = supabaseAdmin
     .from('tft_matches')
-    .select('tft_match_participants!inner(placement, units)')
+    .select('tft_set_number, tft_match_participants!inner(placement, units)')
     .eq('tft_match_participants.member_id', memberId)
     .order('game_datetime', { ascending: false })
     .limit(MATCH_SAMPLE)
@@ -42,13 +46,26 @@ export async function GET(req: Request, ctx: Ctx) {
     q = q.eq('queue_id', queueId)
   }
 
-  const { data, error } = await q
+  const [{ data, error }, { data: activeSeason, error: seasonError }] = await Promise.all([
+    q,
+    supabaseAdmin
+      .from('seasons')
+      .select('set_number')
+      .eq('is_active', true)
+      .maybeSingle(),
+  ])
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (seasonError) {
+    console.error('활성 시즌 조회 실패:', seasonError.message)
+  }
 
   const rows = ((data ?? []) as unknown as MatchRow[])
-    .map((m) => m.tft_match_participants[0])
+    .map((m) => {
+      const participant = m.tft_match_participants[0]
+      return participant ? { ...participant, tft_set_number: m.tft_set_number } : null
+    })
     .filter(
-      (r): r is ParticipantRow =>
+      (r): r is StatsRow =>
         !!r && typeof r.placement === 'number' && r.placement >= 1 && r.placement <= 8,
     )
 
@@ -79,6 +96,7 @@ export async function GET(req: Request, ctx: Ctx) {
   // units JSON 은 매치당 8~10개다. 원본을 클라이언트로 내보내지 않고 여기서 집계한다.
   const unitAgg = new Map<string, { count: number; placementSum: number }>()
   for (const r of rows) {
+    if (!activeSeason || r.tft_set_number !== activeSeason.set_number) continue
     if (!Array.isArray(r.units)) continue
     const seen = new Set<string>()
     for (const u of r.units as RawUnit[]) {
@@ -92,17 +110,19 @@ export async function GET(req: Request, ctx: Ctx) {
     }
   }
 
-  const krMaps = await getKrMaps()
-  const topUnits = [...unitAgg.entries()]
-    .sort((a, b) => b[1].count - a[1].count || a[1].placementSum / a[1].count - b[1].placementSum / b[1].count)
-    .slice(0, TOP_UNITS)
-    .map(([characterId, agg]) => ({
-      character_id: characterId,
-      name: toKrChampionName(characterId, krMaps),
-      imageUrl: getUnitImageUrl(characterId, krMaps),
-      count: agg.count,
-      avgPlacement: Number((agg.placementSum / agg.count).toFixed(2)),
-    }))
+  const krMaps = unitAgg.size > 0 ? await getKrMaps() : null
+  const topUnits = krMaps
+    ? [...unitAgg.entries()]
+        .sort((a, b) => b[1].count - a[1].count || a[1].placementSum / a[1].count - b[1].placementSum / b[1].count)
+        .slice(0, TOP_UNITS)
+        .map(([characterId, agg]) => ({
+          character_id: characterId,
+          name: toKrChampionName(characterId, krMaps),
+          imageUrl: getUnitImageUrl(characterId, krMaps),
+          count: agg.count,
+          avgPlacement: Number((agg.placementSum / agg.count).toFixed(2)),
+        }))
+    : []
 
   return NextResponse.json({
     total,
