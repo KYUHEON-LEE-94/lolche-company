@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isMissingColumnError } from '@/lib/customGames/game'
+import { isMissingTableError } from '@/lib/db/pgErrors'
 import { sendDiscordWebhook, DISCORD_COLOR, type DiscordEmbed } from '@/lib/discord/notify'
 import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGames/display'
 
@@ -18,6 +19,72 @@ type GameRow = {
   capacity: number
   scheduled_at: string
   host_member_id: string | null
+}
+type CalendarReminderRow = {
+  id: string
+  title: string
+  description: string | null
+  recurrence: 'none' | 'yearly'
+  event_date: string | null
+  event_month: number
+  event_day: number
+  is_all_day: boolean
+  event_time: string | null
+  member_id: string
+  notification_sent_for: string | null
+}
+
+function kstDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((item) => item.type === type)?.value)
+  const year = part('year'); const month = part('month'); const day = part('day')
+  return { year, month, day, date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` }
+}
+
+async function sendCalendarReminders(req: Request, now: Date): Promise<{ sent: number; migrationRequired: boolean }> {
+  const today = kstDateParts(now)
+  const previous = kstDateParts(new Date(now.getTime() - 24 * 60 * 60 * 1000))
+  const columns = 'id,title,description,recurrence,event_date,event_month,event_day,is_all_day,event_time,member_id,notification_sent_for'
+  const [once, yearly] = await Promise.all([
+    supabaseAdmin.from('calendar_events').select(columns).eq('event_type', 'event').eq('recurrence', 'none').in('event_date', [previous.date, today.date]),
+    supabaseAdmin.from('calendar_events').select(columns).eq('event_type', 'event').eq('recurrence', 'yearly').or(`and(event_month.eq.${previous.month},event_day.eq.${previous.day}),and(event_month.eq.${today.month},event_day.eq.${today.day})`),
+  ])
+  const error = once.error ?? yearly.error
+  if (error) {
+    if (isMissingTableError(error) || isMissingColumnError(error)) return { sent: 0, migrationRequired: true }
+    console.error('[notify-reminders] 캘린더 조회 실패', error.message)
+    return { sent: 0, migrationRequired: false }
+  }
+  const candidates = [...(once.data ?? []), ...(yearly.data ?? [])] as CalendarReminderRow[]
+  const due = candidates.flatMap((event) => {
+    const occurrence = event.recurrence === 'none' ? event.event_date : (event.event_month === today.month && event.event_day === today.day ? today.date : previous.date)
+    if (!occurrence) return []
+    const time = event.is_all_day ? '09:00:00' : event.event_time
+    if (!time) return []
+    const instant = new Date(`${occurrence}T${time}+09:00`)
+    if (Number.isNaN(instant.getTime()) || instant.getTime() > now.getTime() || instant.getTime() <= now.getTime() - 24 * 60 * 60 * 1000 || event.notification_sent_for === occurrence) return []
+    return [{ event, occurrence, instant }]
+  })
+  const memberIds = [...new Set(due.map(({ event }) => event.member_id))]
+  const { data: members } = memberIds.length ? await supabaseAdmin.from('members').select('id,member_name').in('id', memberIds) : { data: [] as { id: string; member_name: string }[] }
+  const names = new Map((members ?? []).map((member) => [member.id, member.member_name]))
+  const origin = new URL(req.url).origin
+  let sent = 0
+  for (const { event, occurrence, instant } of due) {
+    const { data: claimed } = await supabaseAdmin.from('calendar_events').update({ notification_sent_for: occurrence }).eq('id', event.id).or(`notification_sent_for.is.null,notification_sent_for.neq.${occurrence}`).select('id').maybeSingle()
+    if (!claimed) continue
+    const timeText = event.is_all_day ? '하루 종일 · 09:00 알림' : `${String(event.event_time).slice(0, 5)} KST`
+    await sendDiscordWebhook([{
+      title: `📅 오늘의 일정 — ${event.title}`,
+      url: `${origin}/#calendar`,
+      description: event.description ? event.description.slice(0, 1000) : undefined,
+      color: DISCORD_COLOR.calendar,
+      fields: [{ name: '멤버', value: names.get(event.member_id) ?? '알 수 없음', inline: true }, { name: '시간', value: timeText, inline: true }],
+      timestamp: instant.toISOString(),
+    }])
+    sent += 1
+  }
+  return { sent, migrationRequired: false }
 }
 
 /**
@@ -46,16 +113,17 @@ export async function GET(req: Request) {
     .lte('scheduled_at', until.toISOString())
     .order('scheduled_at', { ascending: true })
 
+  let customGameMigrationRequired = false
   if (error) {
     // 20260734 미적용(reminder_sent_at 부재) → 크론을 실패로 만들지 않고 안내만 남긴다.
     if (isMissingColumnError(error)) {
-      return NextResponse.json({ ok: true, migration_required: true, sent: 0 })
+      customGameMigrationRequired = true
+    } else {
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const games = (data ?? []) as GameRow[]
-  if (games.length === 0) return NextResponse.json({ ok: true, sent: 0 })
+  const games = error ? [] : (data ?? []) as GameRow[]
 
   // 주최자 이름 조회(한 번에).
   const hostIds = [...new Set(games.map((g) => g.host_member_id).filter((v): v is string => !!v))]
@@ -65,7 +133,7 @@ export async function GET(req: Request) {
   const hostName = new Map((hosts ?? []).map((h) => [h.id, h.member_name]))
 
   const origin = new URL(req.url).origin
-  let sent = 0
+  let customGameSent = 0
 
   for (const g of games) {
     const kindText =
@@ -99,8 +167,9 @@ export async function GET(req: Request) {
 
     if (!claimed) continue // 이미 다른 실행이 선점 → 중복 발송 방지
     await sendDiscordWebhook([embed])
-    sent += 1
+    customGameSent += 1
   }
 
-  return NextResponse.json({ ok: true, sent })
+  const calendar = await sendCalendarReminders(req, now)
+  return NextResponse.json({ ok: true, sent: customGameSent + calendar.sent, custom_game_sent: customGameSent, calendar_sent: calendar.sent, calendar_migration_required: calendar.migrationRequired, ...(customGameMigrationRequired ? { migration_required: true } : {}) })
 }

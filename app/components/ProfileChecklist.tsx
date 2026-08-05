@@ -82,12 +82,13 @@ export default function ProfileChecklist() {
 
   const items = buildItems(status)
   const doneCount = items.filter((i) => i.done).length
+  const pendingItems = items.filter((i) => !i.done)
 
   // 전부 완료한 사용자에게 체크리스트는 노이즈다.
   if (doneCount === items.length) return null
 
   return (
-    <section className={`${CARD} p-5`}>
+    <section className={`${CARD} mb-8 p-4 sm:p-5`}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-black text-fg">프로필 완성도</h2>
         <span className="text-xs font-bold text-muted">
@@ -108,36 +109,25 @@ export default function ProfileChecklist() {
         />
       </div>
 
-      <ul className="mt-4 space-y-2">
-        {items.map((item) => (
+      <ul className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {pendingItems.map((item) => (
           <li
             key={item.key}
             className="flex items-start gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5"
           >
-            <span
-              aria-hidden
-              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
-                item.done ? 'bg-ok/20 text-ok-ink' : 'bg-surface-2 text-subtle'
-              }`}
-            >
-              {item.done ? '✓' : '·'}
-            </span>
+            <span aria-hidden className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-black text-brand-ink">·</span>
 
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-bold ${item.done ? 'text-muted line-through' : 'text-fg'}`}>
-                {item.label}
-              </p>
-              {!item.done && <p className="mt-0.5 text-xs text-subtle">{item.hint}</p>}
+              <p className="text-sm font-bold text-fg">{item.label}</p>
+              <p className="mt-0.5 text-xs text-subtle">{item.hint}</p>
             </div>
 
-            {!item.done && (
-              <Link
+            <Link
                 href={item.href}
                 className="shrink-0 self-center rounded-lg bg-brand/10 border border-brand/30 px-2.5 py-1.5 text-xs font-bold text-brand-ink hover:bg-brand/20 transition-colors"
               >
                 {item.cta}
               </Link>
-            )}
           </li>
         ))}
       </ul>

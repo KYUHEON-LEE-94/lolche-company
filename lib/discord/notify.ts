@@ -49,6 +49,7 @@ export const DISCORD_COLOR = {
   steam: 0x22c55e, // emerald
   etc: 0x94a3b8, // slate
   reminder: 0x6366f1, // indigo
+  calendar: 0xec4899, // pink
 } as const
 
 // ── 티어 승급 축하 ────────────────────────────────────────────────────────────

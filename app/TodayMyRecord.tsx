@@ -99,14 +99,15 @@ export default function TodayMyRecord() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Record label="롤체 전체 순위" value={data.tft.position ? `${data.tft.position}위` : '언랭'} detail={data.tft.label} />
-          <Record label="직전 동기화 대비" value={data.tft.delta === null ? '비교 기록 없음' : data.tft.delta === 0 ? '변동 없음' : `${data.tft.delta > 0 ? '+' : ''}${data.tft.delta}점`} />
-          <Record label="최근 7일 수집 최고" value={data.tft.weeklyBest ?? '아직 기록 없음'} />
-          {data.lol ? <Record label="롤 전체 순위" value={data.lol.position ? `${data.lol.position}위` : '언랭'} detail={data.lol.label} /> : <RecentMatches matches={data.recentMatches} />}
+        <div className="overflow-hidden rounded-xl border border-line bg-panel/35 backdrop-blur-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <Record label="롤체 전체 순위" value={data.tft.position ? `${data.tft.position}위` : '언랭'} detail={data.tft.label} />
+            <Record label="직전 동기화 대비" value={data.tft.delta === null ? '비교 기록 없음' : data.tft.delta === 0 ? '변동 없음' : `${data.tft.delta > 0 ? '+' : ''}${data.tft.delta}점`} />
+            <Record label="최근 7일 수집 최고" value={data.tft.weeklyBest ?? '아직 기록 없음'} />
+            {data.lol ? <Record label="롤 전체 순위" value={data.lol.position ? `${data.lol.position}위` : '언랭'} detail={data.lol.label} /> : <RecentMatches matches={data.recentMatches} />}
+          </div>
+          {data.lol && <RecentMatches matches={data.recentMatches} wide />}
         </div>
-
-        {data.lol && <RecentMatches matches={data.recentMatches} wide />}
       </div>
       {panelMounted && <DashboardMemberPanel member={selected} onClose={() => setSelected(null)} />}
     </section>
@@ -115,7 +116,7 @@ export default function TodayMyRecord() {
 
 function Record({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-xl border border-line bg-panel/55 p-4 backdrop-blur-sm">
+    <div className="min-w-0 border-b border-line p-4 last:border-b-0 sm:border-r sm:[&:nth-child(2n)]:border-r-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-r lg:last:border-r-0">
       <p className="text-[11px] font-bold text-subtle">{label}</p>
       <p className="mt-1.5 text-base font-black tracking-tight text-fg">{value}</p>
       {detail && <p className="mt-0.5 truncate text-xs text-muted">{detail}</p>}
@@ -125,7 +126,7 @@ function Record({ label, value, detail }: { label: string; value: string; detail
 
 function RecentMatches({ matches, wide = false }: { matches: ReadyDashboard['recentMatches']; wide?: boolean }) {
   return (
-    <div className={`rounded-xl border border-line bg-panel/55 p-4 backdrop-blur-sm ${wide ? 'lg:col-span-4' : ''}`}>
+    <div className={`min-w-0 p-4 ${wide ? 'border-t border-line' : 'border-b border-line sm:border-b-0 lg:border-r-0'}`}>
       <p className="text-xs font-bold text-subtle">최근 솔로 경기</p>
       {matches.length === 0 ? <p className="mt-1 text-sm font-black text-fg">아직 기록 없음</p> : (
         <div className="mt-2 flex flex-wrap gap-1.5">

@@ -7,6 +7,26 @@ export type Json =
   | Json[]
 
 export type MemberStatus = 'pending' | 'approved' | 'rejected'
+export type CalendarEventType = 'birthday' | 'anniversary' | 'event'
+export type CalendarEventRecurrence = 'none' | 'yearly'
+
+export type CalendarEvent = {
+  id: string
+  title: string
+  description: string | null
+  event_type: CalendarEventType
+  recurrence: CalendarEventRecurrence
+  event_date: string | null
+  event_month: number
+  event_day: number
+  is_all_day: boolean
+  event_time: string | null
+  notification_sent_for: string | null
+  member_id: string
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
 
 export type Member = {
   id: string
@@ -335,6 +355,21 @@ export interface Database {
         }
         Update: Optional<Member>
       }
+      calendar_events: {
+        Row: CalendarEvent
+        Insert: Optional<Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          title: string
+          event_type: CalendarEventType
+          recurrence: CalendarEventRecurrence
+          event_month: number
+          event_day: number
+          member_id: string
+        }
+        Update: Optional<CalendarEvent>
+      }
       riot_accounts: {
         Row: RiotAccount
         Insert: Optional<Omit<RiotAccount, 'id' | 'created_at'>> & {
@@ -514,5 +549,3 @@ export interface Database {
     CompositeTypes: Record<string, never>
   }
 }
-
-

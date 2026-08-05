@@ -50,22 +50,25 @@ export default function DashboardRankSections({
 
   return (
     <>
-      {/* ① 리더보드 TOP5 */}
+      {/* 리더보드와 변동을 한 외부 카드 안에서 구분한다. */}
       <section className={`${CARD} p-5 sm:p-6 lg:col-span-2`}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-warn-ink">Leaderboard</p>
-            <h2 className="mt-1 text-lg font-black tracking-tight text-fg">롤체 TOP 5</h2>
+            <h2 className="mt-1 text-lg font-black tracking-tight text-fg">롤체 랭킹</h2>
           </div>
           <Link href="/tft" className="text-xs font-bold text-brand-ink hover:text-brand-ink">
             전체 보기 →
           </Link>
         </div>
 
-        {leaderboard.length === 0 ? (
-          <p className="mt-4 text-sm text-subtle">아직 랭크 기록이 없어요.</p>
-        ) : (
-          <ol className="mt-4 divide-y divide-line">
+        <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1.5fr)_minmax(14rem,1fr)]">
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-fg">TOP 5</h3>
+            {leaderboard.length === 0 ? (
+              <p className="mt-4 text-sm text-subtle">아직 랭크 기록이 없어요.</p>
+            ) : (
+              <ol className="mt-2 divide-y divide-line">
             {leaderboard.map((m, i) => (
               <li key={m.id}>
                 {/* /tft 의 <article onClick> 과 달리 button 을 쓴다 — Tab·Enter 접근 가능 */}
@@ -93,19 +96,17 @@ export default function DashboardRankSections({
                 </button>
               </li>
             ))}
-          </ol>
-        )}
-      </section>
+              </ol>
+            )}
+          </div>
 
-      {/* ② 최근 랭크 변동 */}
-      <section className={`${CARD} p-5 sm:p-6`}>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-ink">Momentum</p>
-        <h2 className="mt-1 text-lg font-black tracking-tight text-fg">최근 랭크 변동</h2>
-
-        {movers.length === 0 ? (
-          <p className="mt-4 text-sm text-subtle">직전 동기화 대비 변동이 없어요.</p>
-        ) : (
-          <ul className="mt-3 space-y-2">
+          <div className="min-w-0 border-t border-line pt-5 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-ink">Momentum</p>
+            <h3 className="mt-1 text-sm font-black text-fg">최근 랭크 변동</h3>
+            {movers.length === 0 ? (
+              <p className="mt-4 text-sm text-subtle">직전 동기화 대비 변동이 없어요.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
             {movers.map(({ member, delta, prevLabel }) => {
               const up = delta > 0
               return (
@@ -132,8 +133,10 @@ export default function DashboardRankSections({
                 </li>
               )
             })}
-          </ul>
-        )}
+              </ul>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* 상세 패널 — 홈은 솔로 기준이므로 queue 고정 */}

@@ -16,6 +16,11 @@ export function isMissingColumnError(error: PgErrorLike): boolean {
   return error?.code === '42703' || error?.code === 'PGRST204'
 }
 
+/** 테이블 부재(Postgres 또는 PostgREST schema cache). */
+export function isMissingTableError(error: PgErrorLike): boolean {
+  return error?.code === '42P01' || error?.code === 'PGRST205'
+}
+
 /** 23505 = unique_violation */
 export function isUniqueViolation(error: PgErrorLike): boolean {
   return error?.code === '23505'
