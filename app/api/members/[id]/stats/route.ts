@@ -32,12 +32,15 @@ export async function GET(req: Request, ctx: Ctx) {
 
   const { searchParams } = new URL(req.url)
   const queueId = QUEUE_ID[searchParams.get('queue') ?? 'solo']
+  const includeUnits = searchParams.get('include') === 'units'
 
   // 정렬 기준(game_datetime)이 tft_matches 에 있으므로 매치 테이블을 루트로 둔다.
   // 임베디드(to-one) 컬럼 기준 정렬은 PostgREST 가 지원하지 않는다.
   let q = supabaseAdmin
     .from('tft_matches')
-    .select('tft_set_number, tft_match_participants!inner(placement, units)')
+    .select(includeUnits
+      ? 'tft_set_number, tft_match_participants!inner(placement, units)'
+      : 'tft_match_participants!inner(placement)')
     .eq('tft_match_participants.member_id', memberId)
     .order('game_datetime', { ascending: false })
     .limit(MATCH_SAMPLE)
@@ -46,18 +49,8 @@ export async function GET(req: Request, ctx: Ctx) {
     q = q.eq('queue_id', queueId)
   }
 
-  const [{ data, error }, { data: activeSeason, error: seasonError }] = await Promise.all([
-    q,
-    supabaseAdmin
-      .from('seasons')
-      .select('set_number')
-      .eq('is_active', true)
-      .maybeSingle(),
-  ])
+  const { data, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (seasonError) {
-    console.error('활성 시즌 조회 실패:', seasonError.message)
-  }
 
   const rows = ((data ?? []) as unknown as MatchRow[])
     .map((m) => {
@@ -72,6 +65,7 @@ export async function GET(req: Request, ctx: Ctx) {
   const total = rows.length
 
   if (total === 0) {
+    if (includeUnits) return NextResponse.json({ topUnits: [] })
     return NextResponse.json({
       total: 0,
       avgPlacement: null,
@@ -79,7 +73,6 @@ export async function GET(req: Request, ctx: Ctx) {
       winRate: 0,
       distribution: [0, 0, 0, 0, 0, 0, 0, 0],
       recentForm: [],
-      topUnits: [],
     })
   }
 
@@ -92,6 +85,24 @@ export async function GET(req: Request, ctx: Ctx) {
   }
 
   const top4 = distribution[0] + distribution[1] + distribution[2] + distribution[3]
+
+  if (!includeUnits) {
+    return NextResponse.json({
+      total,
+      avgPlacement: Number((sum / total).toFixed(2)),
+      top4Rate: Number(((top4 / total) * 100).toFixed(1)),
+      winRate: Number(((distribution[0] / total) * 100).toFixed(1)),
+      distribution,
+      recentForm: rows.slice(0, RECENT_FORM).map((r) => r.placement as number),
+    })
+  }
+
+  const { data: activeSeason, error: seasonError } = await supabaseAdmin
+    .from('seasons')
+    .select('set_number')
+    .eq('is_active', true)
+    .maybeSingle()
+  if (seasonError) console.error('활성 시즌 조회 실패:', seasonError.message)
 
   // units JSON 은 매치당 8~10개다. 원본을 클라이언트로 내보내지 않고 여기서 집계한다.
   const unitAgg = new Map<string, { count: number; placementSum: number }>()
@@ -124,13 +135,5 @@ export async function GET(req: Request, ctx: Ctx) {
         }))
     : []
 
-  return NextResponse.json({
-    total,
-    avgPlacement: Number((sum / total).toFixed(2)),
-    top4Rate: Number(((top4 / total) * 100).toFixed(1)),
-    winRate: Number(((distribution[0] / total) * 100).toFixed(1)),
-    distribution,
-    recentForm: rows.slice(0, RECENT_FORM).map((r) => r.placement as number),
-    topUnits,
-  })
+  return NextResponse.json({ topUnits })
 }

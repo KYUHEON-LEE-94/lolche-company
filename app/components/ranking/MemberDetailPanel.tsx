@@ -8,6 +8,7 @@ import RankLineChart from '../charts/RankLineChart'
 import PlacementHistogram from '../charts/PlacementHistogram'
 import type { Json } from '@/types/supabase'
 import { rarityBorderClass } from '@/lib/tft/tftLocale'
+import { cachedJson } from '@/lib/client/requestCache'
 
 type TopUnit = {
   character_id: string
@@ -26,6 +27,8 @@ type MemberStats = {
   recentForm: number[]
   topUnits: TopUnit[]
 }
+
+type TopUnitsResponse = Pick<MemberStats, 'topUnits'>
 
 type MemberAccount = {
   id: string
@@ -354,6 +357,14 @@ export default function MemberDetailPanel({
   // 이미 요청한 리소스를 다시 부르지 않기 위한 키 집합.
   const dataKey = `${member.id}|${queue}`
   const requestedRef = useRef<{ key: string; set: Set<string> }>({ key: dataKey, set: new Set() })
+  const activeKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    activeKeyRef.current = dataKey
+    return () => {
+      if (activeKeyRef.current === dataKey) activeKeyRef.current = null
+    }
+  }, [dataKey])
 
   // member/queue 가 바뀌면 렌더 중에 초기화한다(effect 내 setState 로 인한 캐스케이드 렌더 회피).
   const [loadedKey, setLoadedKey] = useState(dataKey)
@@ -380,13 +391,14 @@ export default function MemberDetailPanel({
       const set = requestedRef.current.set
       if (set.has(resource)) return
       set.add(resource)
-      fetch(url)
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-        .then(apply)
+      cachedJson<unknown>(url)
+        .then((data) => {
+          if (activeKeyRef.current === key) apply(data)
+        })
         .catch((e) => {
           set.delete(resource)
           console.error(`${resource} fetch 실패:`, e instanceof Error ? e.message : '오류 발생')
-          onFail()
+          if (activeKeyRef.current === key) onFail()
         })
     },
     [],
@@ -405,12 +417,22 @@ export default function MemberDetailPanel({
     }
     load(
       dataKey,
-      'stats',
+      'stats-summary',
       `/api/members/${member.id}/stats?queue=${queue}`,
-      (d) => setStats(d as MemberStats),
-      () => setStats(EMPTY_STATS),
+      (d) => setStats((current) => ({ ...(d as MemberStats), topUnits: current?.topUnits ?? [] })),
+      () => setStats((current) => current ?? EMPTY_STATS),
     )
     if (tab === 'matches') {
+      load(
+        dataKey,
+        'stats-units',
+        `/api/members/${member.id}/stats?queue=${queue}&include=units`,
+        (d) => setStats((current) => ({
+          ...(current ?? EMPTY_STATS),
+          topUnits: (d as TopUnitsResponse).topUnits,
+        })),
+        () => setStats((current) => ({ ...(current ?? EMPTY_STATS), topUnits: [] })),
+      )
       load(
         dataKey,
         'matches',

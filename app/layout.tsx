@@ -26,6 +26,8 @@ export default function RootLayout({
   return (
       <html lang="ko" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://ddragon.leagueoflegends.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://ddragon.leagueoflegends.com" />
         {/* FOUC 방지: paint 이전에 localStorage → 없으면 matchMedia 로 data-theme 를 심는다.
             next/script 는 실행 시점 보장이 약해 flash 가 생기므로 raw 인라인 스크립트를 쓴다. */}
         <script

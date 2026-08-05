@@ -11,6 +11,7 @@ import { compareRank } from '@/lib/constants/tierOrder'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
 import { CONTAINER } from '@/lib/ui/styles'
 import EmptyState from '@/app/components/ui/EmptyState'
+import { invalidateMemberDetailCache } from '@/lib/client/requestCache'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -414,6 +415,7 @@ export default function MemberRanking({
         return
       }
       const iso = new Date().toISOString()
+      invalidateMemberDetailCache(id)
       setLocalLastSynced((prev) => ({ ...prev, [id]: iso }))
       setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 완료!' }))
     } catch (e) {
