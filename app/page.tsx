@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase/service'
 import type { Member, Season } from '@/types/supabase'
@@ -17,6 +18,7 @@ import { isApexTier, tierScore } from '@/lib/tft/tierScore'
 import { formatKstShort, gameKindLabel } from '@/lib/customGames/display'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
+import { getKrMaps, getUnitImageUrl, rarityBorderClass, toKrChampionName, toKrTraitName, type KrMaps } from '@/lib/tft/tftLocale'
 
 export const revalidate = 60
 
@@ -47,6 +49,8 @@ type RecruitingGame = {
 type MatchParticipantRow = {
   member_id: string | null
   placement: number | null
+  traits: unknown
+  units: unknown
 }
 
 type RecentMatchRow = {
@@ -54,6 +58,23 @@ type RecentMatchRow = {
   game_datetime: string | null
   queue_id: number | null
   tft_match_participants: MatchParticipantRow[]
+}
+
+type RawUnit = {
+  character_id?: string
+  rarity?: number
+  tier?: number
+}
+
+type RawTrait = {
+  name?: string
+  num_units?: number
+  style?: number
+  tier_current?: number
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 const MEMBER_COLUMNS =
@@ -134,16 +155,43 @@ async function fetchRecentMatches(memberIds: string[]): Promise<RecentMatchRow[]
   // 조인 안쪽 status 필터 대신 승인 멤버 id 배열로 좁힌다(검증이 쉽고 누락이 드러난다).
   const { data, error } = await supabaseService
     .from('tft_matches')
-    .select('match_id,game_datetime,queue_id,tft_match_participants!inner(member_id,placement)')
+    .select('match_id,game_datetime,queue_id,tft_match_participants!inner(member_id,placement,traits,units)')
     .in('tft_match_participants.member_id', memberIds)
     .order('game_datetime', { ascending: false })
-    .limit(5)
+    .limit(3)
 
   if (error) {
     console.error('Supabase error:', error)
     return []
   }
   return (data ?? []) as unknown as RecentMatchRow[]
+}
+
+function matchUnits(raw: unknown, maps: KrMaps) {
+  if (!Array.isArray(raw)) return []
+  return (raw as unknown[])
+    .filter((unit): unit is RawUnit => isObjectRecord(unit) && typeof unit.character_id === 'string' && unit.character_id.length > 0)
+    .sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0) || (b.rarity ?? 0) - (a.rarity ?? 0))
+    .slice(0, 7)
+    .map((unit) => ({
+      id: unit.character_id as string,
+      name: toKrChampionName(unit.character_id as string, maps),
+      imageUrl: getUnitImageUrl(unit.character_id as string),
+      rarity: unit.rarity ?? 0,
+      tier: unit.tier ?? 1,
+    }))
+}
+
+function activeTraits(raw: unknown, maps: KrMaps) {
+  if (!Array.isArray(raw)) return []
+  return (raw as unknown[])
+    .filter((trait): trait is RawTrait => isObjectRecord(trait) && typeof trait.name === 'string' && ((typeof trait.style === 'number' ? trait.style : 0) > 0 || (typeof trait.tier_current === 'number' ? trait.tier_current : 0) > 0))
+    .sort((a, b) => (b.style ?? b.tier_current ?? 0) - (a.style ?? a.tier_current ?? 0) || (b.num_units ?? 0) - (a.num_units ?? 0))
+    .slice(0, 3)
+    .map((trait) => ({
+      name: toKrTraitName(trait.name as string, maps),
+      units: trait.num_units ?? 0,
+    }))
 }
 
 export default async function DashboardPage() {
@@ -163,6 +211,7 @@ export default async function DashboardPage() {
   const activeSeason = seasonResult.data as Pick<Season, 'season_name' | 'set_number'> | null
 
   const recentMatches = await fetchRecentMatches(members.map((m) => m.id))
+  const krMaps = recentMatches.length > 0 ? await getKrMaps() : null
 
   const memberNameById = new Map(members.map((m) => [m.id, m.member_name]))
 
@@ -300,7 +349,7 @@ export default async function DashboardPage() {
                     .sort((a, b) => (a.placement ?? 99) - (b.placement ?? 99))
 
                   return (
-                    <li key={match.match_id} className="py-2.5">
+                    <li key={match.match_id} className="py-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold text-muted">
                           {match.queue_id !== null ? QUEUE_LABELS[match.queue_id] ?? '기타' : '기타'}
@@ -309,18 +358,40 @@ export default async function DashboardPage() {
                           {match.game_datetime ? formatKstShort(match.game_datetime) : ''}
                         </span>
                       </div>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {results.map((p, i) => (
-                          <span
-                            key={`${match.match_id}-${p.member_id}-${i}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs font-bold text-fg"
-                          >
-                            {memberNameById.get(p.member_id as string)}
-                            <span className={p.placement === 1 ? 'text-warn-ink' : (p.placement ?? 9) <= 4 ? 'text-ok-ink' : 'text-subtle'}>
-                              {p.placement ?? '-'}위
-                            </span>
-                          </span>
-                        ))}
+                      <div className="mt-2 space-y-2">
+                        {results.map((p, i) => {
+                          const units = krMaps ? matchUnits(p.units, krMaps) : []
+                          const traits = krMaps ? activeTraits(p.traits, krMaps) : []
+                          return (
+                            <div key={`${match.match_id}-${p.member_id}-${i}`} className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2 p-2.5 sm:flex-row sm:items-center">
+                              <div className="flex min-w-[7.5rem] items-center gap-2">
+                                <span className={`h-8 w-1 rounded-full ${p.placement === 1 ? 'bg-warn' : (p.placement ?? 9) <= 4 ? 'bg-ok' : 'bg-danger/70'}`} aria-hidden />
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-black text-fg">{memberNameById.get(p.member_id as string)}</p>
+                                  <p className={`text-xs font-black ${p.placement === 1 ? 'text-warn-ink' : (p.placement ?? 9) <= 4 ? 'text-ok-ink' : 'text-danger-ink'}`}>{p.placement ?? '-'}위</p>
+                                </div>
+                              </div>
+
+                              <div className="flex min-w-0 flex-1 items-center gap-1" aria-label="사용한 핵심 기물">
+                                {units.map((unit, unitIndex) => (
+                                  <span key={`${match.match_id}-${p.member_id}-${unit.id}-${unitIndex}`} className="relative shrink-0" title={`${unit.name} ${unit.tier}성`}>
+                                    <Image src={unit.imageUrl} alt={unit.name} width={32} height={32} className={`h-8 w-8 rounded-lg border-2 object-cover ${rarityBorderClass(unit.rarity)}`} />
+                                    {unit.tier >= 2 && <span className="absolute -bottom-1 -right-1 rounded bg-panel px-1 text-[8px] font-black leading-3 text-warn-ink">{unit.tier}★</span>}
+                                  </span>
+                                ))}
+                                {units.length === 0 && <span className="text-[11px] text-faint">기물 정보 없음</span>}
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 sm:max-w-[15rem] sm:justify-end">
+                                {traits.map((trait) => (
+                                  <span key={`${match.match_id}-${p.member_id}-${trait.name}`} className="rounded-md border border-brand/20 bg-brand/10 px-1.5 py-1 text-[10px] font-bold text-brand-ink">
+                                    {trait.name}{trait.units > 0 ? ` ${trait.units}` : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     </li>
                   )

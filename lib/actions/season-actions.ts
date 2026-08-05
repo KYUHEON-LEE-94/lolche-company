@@ -4,6 +4,7 @@ import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
 import { Database } from '@/types/supabase'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { isMissingFunctionError } from '@/lib/db/pgErrors'
 
 /**
  * 특정 시즌의 현재 랭킹을 스냅샷으로 저장하고 시즌을 마감하는 함수
@@ -126,5 +127,90 @@ export async function deleteSeasonHallOfFameAction(seasonId: number) {
     } catch (error) {
         console.error('시즌 기록 삭제 에러:', error);
         return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' };
+    }
+}
+
+export type SeasonRolloverResult = {
+    status: 'completed' | 'already_completed'
+    previous_season_id: number
+    next_season_id: number
+    next_season_name: string
+    solo_count: number
+    doubleup_count: number
+}
+
+export async function rolloverSeasonAction(input: {
+    currentSeasonId: number
+    confirmation: string
+    nextSeasonName: string
+    nextSetNumber: number
+    startAt: string
+    finalSyncConfirmed: boolean
+}): Promise<{ ok: true; result: SeasonRolloverResult } | { ok: false; message: string }> {
+    const { ok } = await requireAdmin()
+    if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
+
+    if (!input || typeof input !== 'object') {
+        return { ok: false, message: '시즌 전환 요청 형식이 올바르지 않습니다.' }
+    }
+
+    const currentSeasonId = Number(input.currentSeasonId)
+    const nextSetNumber = Number(input.nextSetNumber)
+    const nextSeasonName = typeof input.nextSeasonName === 'string' ? input.nextSeasonName.trim() : ''
+    const confirmation = typeof input.confirmation === 'string' ? input.confirmation.trim() : ''
+    const startAt = new Date(typeof input.startAt === 'string' ? input.startAt : '')
+
+    if (!Number.isInteger(currentSeasonId) || currentSeasonId <= 0) {
+        return { ok: false, message: '현재 시즌 정보가 올바르지 않습니다.' }
+    }
+    if (!input.finalSyncConfirmed) {
+        return { ok: false, message: '최종 랭크 동기화 확인이 필요합니다.' }
+    }
+    if (!confirmation || confirmation.length > 60) {
+        return { ok: false, message: '현재 시즌 이름을 정확히 입력하세요.' }
+    }
+    if (!nextSeasonName || nextSeasonName.length > 60) {
+        return { ok: false, message: '다음 시즌 이름은 1~60자로 입력하세요.' }
+    }
+    if (!Number.isInteger(nextSetNumber) || nextSetNumber < 1 || nextSetNumber > 999) {
+        return { ok: false, message: '다음 세트 번호는 1~999의 정수여야 합니다.' }
+    }
+    if (Number.isNaN(startAt.getTime())) {
+        return { ok: false, message: '다음 시즌 시작 시각이 올바르지 않습니다.' }
+    }
+
+    try {
+        const { supabaseAdmin } = await import('@/lib/supabaseAdmin')
+        const { data, error } = await supabaseAdmin.rpc('rollover_tft_season', {
+            p_current_season_id: currentSeasonId,
+            p_confirmation: confirmation,
+            p_next_season_name: nextSeasonName,
+            p_next_set_number: nextSetNumber,
+            p_start_at: startAt.toISOString(),
+        })
+
+        if (error) {
+            if (isMissingFunctionError(error)) {
+                return {
+                    ok: false,
+                    message: '시즌 전환 기능이 아직 활성화되지 않았습니다. scripts/sql/20260805_season_rollover.sql을 먼저 적용하세요.',
+                }
+            }
+            throw new Error(error.message)
+        }
+        if (!data) throw new Error('시즌 전환 결과를 받지 못했습니다.')
+
+        revalidatePath('/')
+        revalidatePath('/tft')
+        revalidatePath('/hall-of-fame')
+        revalidatePath('/admin/seasons')
+
+        return { ok: true, result: data as SeasonRolloverResult }
+    } catch (error) {
+        console.error('시즌 원클릭 전환 오류:', error)
+        return {
+            ok: false,
+            message: error instanceof Error ? error.message : '시즌 전환 중 오류가 발생했습니다.',
+        }
     }
 }

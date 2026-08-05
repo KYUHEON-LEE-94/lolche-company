@@ -492,6 +492,23 @@ export interface Database {
         Args: { p_member_id: string; p_account_id: string }
         Returns: undefined
       }
+      rollover_tft_season: {
+        Args: {
+          p_current_season_id: number
+          p_confirmation: string
+          p_next_season_name: string
+          p_next_set_number: number
+          p_start_at: string
+        }
+        Returns: {
+          status: 'completed' | 'already_completed'
+          previous_season_id: number
+          next_season_id: number
+          next_season_name: string
+          solo_count: number
+          doubleup_count: number
+        }
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

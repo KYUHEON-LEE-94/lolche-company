@@ -35,6 +35,10 @@ supabase/config.toml
 !.claude/skills/
 !.claude/skills/**
 
+# Local agent/runtime configuration (not required by the deployed app)
+/.agents/
+/.codex/
+
 # misc
 .DS_Store
 *.pem

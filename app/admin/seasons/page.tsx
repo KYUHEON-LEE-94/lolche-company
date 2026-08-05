@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import { archiveSeason, updateSeasonStatusAction, deleteSeasonHallOfFameAction } from '@/lib/actions/season-actions'
 import {Spinner} from '@/app/components/Spinner'
+import SeasonRolloverPanel from '@/app/admin/seasons/SeasonRolloverPanel'
 
 
 
@@ -182,6 +183,7 @@ export default function AdminSeasonManagementPage() {
                             >
                                 🏆 더블업 마감
                             </button>
+                            <SeasonRolloverPanel currentSeason={activeSeason} onCompleted={loadSeasons} />
                         </div>
                     </div>
                 ) : (
