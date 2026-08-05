@@ -99,7 +99,7 @@ export async function GET(req: Request, ctx: Ctx) {
     .map(([characterId, agg]) => ({
       character_id: characterId,
       name: toKrChampionName(characterId, krMaps),
-      imageUrl: getUnitImageUrl(characterId),
+      imageUrl: getUnitImageUrl(characterId, krMaps),
       count: agg.count,
       avgPlacement: Number((agg.placementSum / agg.count).toFixed(2)),
     }))

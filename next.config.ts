@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'raw.communitydragon.org',
             },
+            {
+                protocol: 'https',
+                hostname: 'ddragon.leagueoflegends.com',
+                pathname: '/cdn/**/img/tft-champion/**',
+            },
             // 디스코드 아바타 (members.discord_avatar_url)
             // 커스텀 아바타는 /avatars/{userId}/{hash}, 아바타 미설정 유저는
             // 기본 아바타 /embed/avatars/{n}.png 를 받는다. 둘 다 좁게 허용한다.

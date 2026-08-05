@@ -108,7 +108,7 @@ export async function GET(req: Request, ctx: Ctx) {
         name: toKrChampionName(u.character_id!, krMaps),
         rarity: u.rarity ?? 0,
         tier: u.tier ?? 1,
-        imageUrl: getUnitImageUrl(u.character_id!),
+        imageUrl: getUnitImageUrl(u.character_id!, krMaps),
       }))
 
     return {

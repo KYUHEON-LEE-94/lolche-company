@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useState, useEffect, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import type { MemberStatus } from '@/types/supabase'
 import {
   MEMBER_NAME_MAX,
@@ -8,6 +9,7 @@ import {
   RIOT_TAGLINE_MAX,
   REJECTED_REASON_MAX,
 } from '@/lib/members/memberInput'
+import { resolveAvatarUrl } from '@/lib/members/avatar'
 
 function Field({
                  label, hint, children,
@@ -44,6 +46,7 @@ type MemberListItem = {
   last_synced_at: string | null
   login_linked: boolean
   discord_registered: boolean
+  discord_avatar_url: string | null
   /** 마이그레이션 미적용 환경에서는 빈 배열. 대표 계정이 항상 첫 번째. */
   riot_accounts: {
     id: string
@@ -52,6 +55,28 @@ type MemberListItem = {
     riot_game_name: string
     riot_tagline: string
   }[]
+}
+
+function MemberAvatar({ member }: { member: MemberListItem }) {
+  const [imageFailed, setImageFailed] = useState(false)
+  const avatarUrl = member.login_linked && !imageFailed ? resolveAvatarUrl(member) : null
+
+  return (
+      <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-full bg-surface-2 flex items-center justify-center font-bold text-subtle uppercase">
+        {avatarUrl ? (
+            <Image
+                src={avatarUrl}
+                alt={`${member.member_name} Discord 프로필 이미지`}
+                fill
+                sizes="40px"
+                className="object-cover"
+                onError={() => setImageFailed(true)}
+            />
+        ) : (
+            member.member_name[0]
+        )}
+      </div>
+  )
 }
 
 type Tab = 'pending' | 'all'
@@ -318,9 +343,7 @@ export default function AdminMemberControlPage() {
                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-line hover:border-line transition-all">
 
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-surface-2 flex items-center justify-center font-bold text-subtle uppercase">
-                      {m.member_name[0]}
-                    </div>
+                    <MemberAvatar member={m} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-fg font-bold truncate">{m.member_name}</span>

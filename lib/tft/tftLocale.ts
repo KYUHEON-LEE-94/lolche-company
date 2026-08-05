@@ -4,6 +4,7 @@ export type KrMaps = {
   traits: KrMap
   augments: KrMap
   champions: KrMap
+  championImages: KrMap
 }
 
 function cleanName(raw: string): string {
@@ -20,8 +21,11 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
   tft17_rhaast: 'tft17_kayn_slay_square',
 }
 
-/** character_id → Community Dragon HUD 스퀘어 이미지 URL (시즌 자동 감지) */
-export function getUnitImageUrl(characterId: string): string {
+/** character_id → Data Dragon 이미지 URL, 메타데이터 누락 시 Community Dragon fallback */
+export function getUnitImageUrl(characterId: string, maps: KrMaps): string {
+  const officialUrl = maps.championImages[characterId]
+  if (officialUrl) return officialUrl
+
   const lower = characterId.toLowerCase()
   const setMatch = characterId.match(/^TFT(\d+)_/i)
   const setNum = setMatch?.[1] ?? '17'
@@ -47,6 +51,7 @@ async function fetchKrMaps(): Promise<KrMaps> {
   const traits: KrMap = {}
   const augments: KrMap = {}
   const champions: KrMap = {}
+  const championImages: KrMap = {}
 
   try {
     const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json', {
@@ -84,15 +89,18 @@ async function fetchKrMaps(): Promise<KrMaps> {
 
     if (champRes.ok) {
       const data = await champRes.json()
-      for (const entry of Object.values<{ id?: string; name?: string }>(data.data ?? {})) {
+      for (const entry of Object.values<{ id?: string; name?: string; image?: { full?: string } }>(data.data ?? {})) {
         if (entry.id && entry.name) champions[entry.id] = entry.name
+        if (entry.id && entry.image?.full) {
+          championImages[entry.id] = `https://ddragon.leagueoflegends.com/cdn/${version}/img/tft-champion/${entry.image.full}`
+        }
       }
     }
   } catch (e) {
     console.error('tftLocale fetch error', e instanceof Error ? e.message : e)
   }
 
-  return { traits, augments, champions }
+  return { traits, augments, champions, championImages }
 }
 
 export async function getKrMaps(): Promise<KrMaps> {

@@ -176,7 +176,7 @@ function matchUnits(raw: unknown, maps: KrMaps) {
     .map((unit) => ({
       id: unit.character_id as string,
       name: toKrChampionName(unit.character_id as string, maps),
-      imageUrl: getUnitImageUrl(unit.character_id as string),
+      imageUrl: getUnitImageUrl(unit.character_id as string, maps),
       rarity: unit.rarity ?? 0,
       tier: unit.tier ?? 1,
     }))

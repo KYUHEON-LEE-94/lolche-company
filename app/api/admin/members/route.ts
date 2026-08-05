@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/isAdmin'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isMissingTableError, pickPrimaryAccount } from '@/lib/members/primaryAccount'
+import { withAvatarColumn } from '@/lib/members/avatar'
+import type { Member } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,30 +70,31 @@ export async function GET(req: Request) {
 
   const status = new URL(req.url).searchParams.get('status')
 
-  let query = supabase
-    .schema('public')
-    .from('members')
-    .select(
-      'id, member_name, riot_game_name, riot_tagline, status, rejected_reason, requested_at, approved_at, created_at, last_synced_at, user_id, discord_id, tft_tier, tft_rank, tft_league_points, tft_doubleup_tier, tft_doubleup_rank, tft_doubleup_league_points, sync_status, last_sync_error, last_sync_finished_at',
-    )
-    .order('created_at', { ascending: false })
-
-  if (status) {
-    if (!ALLOWED_STATUS.has(status)) {
-      return NextResponse.json({ ok: false, message: '잘못된 status 값입니다.' }, { status: 400 })
-    }
-    query = query.eq('status', status)
+  if (status && !ALLOWED_STATUS.has(status)) {
+    return NextResponse.json({ ok: false, message: '잘못된 status 값입니다.' }, { status: 400 })
   }
 
-  const { data, error } = await query
+  const { data, error } = await withAvatarColumn((avatarColumns) => {
+    let query = supabase
+      .schema('public')
+      .from('members')
+      .select(
+        `id, member_name, riot_game_name, riot_tagline, status, rejected_reason, requested_at, approved_at, created_at, last_synced_at, user_id, discord_id, tft_tier, tft_rank, tft_league_points, tft_doubleup_tier, tft_doubleup_rank, tft_doubleup_league_points, sync_status, last_sync_error, last_sync_finished_at${avatarColumns}`,
+      )
+      .order('created_at', { ascending: false })
+
+    if (status) query = query.eq('status', status)
+    return query
+  })
 
   if (error) {
     return NextResponse.json({ ok: false, message: error.message }, { status: 500 })
   }
 
-  const accountsByMember = await loadAccountsByMember((data ?? []).map((m) => m.id))
+  const rows = (data ?? []) as unknown as Member[]
+  const accountsByMember = await loadAccountsByMember(rows.map((m) => m.id))
 
-  const members = (data ?? []).map((m) => ({
+  const members = rows.map((m) => ({
     id: m.id,
     member_name: m.member_name,
     riot_game_name: m.riot_game_name,
@@ -115,6 +118,7 @@ export async function GET(req: Request) {
     // 로그인 연결 현황: 원본 user_id/discord_id는 노출하지 않고 불리언으로만 전달
     login_linked: !!m.user_id,
     discord_registered: !!m.discord_id,
+    discord_avatar_url: m.discord_avatar_url ?? null,
     riot_accounts: accountsByMember.get(m.id) ?? [],
   }))
 
