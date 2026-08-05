@@ -29,11 +29,9 @@ function tierLabel(tier: string | null, rank: string | null, lp: number | null) 
 export default function RankLineChart({
   history,
   queue = 'solo',
-  height = 160,
 }: {
   history: HistoryPoint[]
   queue?: 'solo' | 'doubleup'
-  height?: number
 }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
 
@@ -44,10 +42,7 @@ export default function RankLineChart({
 
   if (valid.length < 2) {
     return (
-      <div
-        className="flex items-center justify-center text-faint text-xs"
-        style={{ height }}
-      >
+      <div className="flex h-40 items-center justify-center text-faint text-xs sm:h-[220px]">
         히스토리 데이터 없음 (동기화 후 누적)
       </div>
     )
@@ -63,16 +58,6 @@ export default function RankLineChart({
   // 값이 전부 같으면 range 0 → 0-division. 최소 100 을 보장한다.
   const range = maxS - minS || 100
 
-  const W = 320
-  const H = height
-  const PAD_X = 22
-  const PAD_Y = 14
-
-  const toX = (i: number) => PAD_X + (i / (scores.length - 1)) * (W - PAD_X - 10)
-  const toY = (s: number) => H - PAD_Y - ((s - minS) / range) * (H - PAD_Y * 2)
-
-  const points = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ')
-
   const overallUp = scores[scores.length - 1] >= scores[0]
   const lineColor = overallUp ? '#34d399' : '#f87171'
 
@@ -81,15 +66,24 @@ export default function RankLineChart({
   // x축은 처음/중간/끝 3개만. 라벨 밀집 방지.
   const xTickIdx = Array.from(new Set([0, Math.floor((valid.length - 1) / 2), valid.length - 1]))
 
-  return (
-    <div className="relative select-none">
+  const renderChart = (width: number, height: number, gradientId: string) => {
+    const padX = width < 500 ? 24 : 32
+    const padY = 16
+    const toX = (i: number) => padX + (i / (scores.length - 1)) * (width - padX - 12)
+    const toY = (score: number) =>
+      height - padY - ((score - minS) / range) * (height - padY * 2)
+    const points = scores.map((score, i) => `${toX(i)},${toY(score)}`).join(' ')
+
+    return (
       <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-full w-full"
+        role="img"
+        aria-label={`${queue === 'solo' ? '솔로' : '더블업'} 랭크 변화 그래프`}
         onMouseLeave={() => setHoverIdx(null)}
       >
         <defs>
-          <linearGradient id="rankLineGrad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={lineColor} stopOpacity="0.28" />
             <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
           </linearGradient>
@@ -98,8 +92,8 @@ export default function RankLineChart({
         {marks.map((m) => (
           <g key={m.label}>
             <line
-              x1={PAD_X}
-              x2={W - 10}
+              x1={padX}
+              x2={width - 10}
               y1={toY(m.score)}
               y2={toY(m.score)}
               stroke="var(--color-line)"
@@ -119,8 +113,8 @@ export default function RankLineChart({
         ))}
 
         <polygon
-          points={`${toX(0)},${H} ${points} ${toX(scores.length - 1)},${H}`}
-          fill="url(#rankLineGrad)"
+          points={`${toX(0)},${height - padY} ${points} ${toX(scores.length - 1)},${height - padY}`}
+          fill={`url(#${gradientId})`}
         />
 
         <polyline
@@ -156,12 +150,21 @@ export default function RankLineChart({
           </g>
         ))}
       </svg>
+    )
+  }
+
+  return (
+    <div className="relative mx-auto w-full max-w-[900px] select-none">
+      <div className="h-40 sm:hidden">{renderChart(320, 160, 'rankLineGradMobile')}</div>
+      <div className="hidden h-[220px] sm:block">
+        {renderChart(900, 220, 'rankLineGradDesktop')}
+      </div>
 
       {hoverIdx !== null && (
         <div
           className="absolute -top-2 text-[11px] font-bold bg-panel border border-line rounded-lg px-2 py-1 pointer-events-none whitespace-nowrap z-10"
           style={{
-            left: `${(toX(hoverIdx) / W) * 100}%`,
+            left: `${3 + (hoverIdx / (scores.length - 1)) * 94}%`,
             transform: hoverIdx > scores.length / 2 ? 'translateX(-100%)' : 'translateX(0)',
           }}
         >

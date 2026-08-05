@@ -589,19 +589,6 @@ export default function MemberDetailPanel({
               <>
                 <section>
                   <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
-                    랭크 그래프 ({queueLabel})
-                  </h3>
-                  {history === null ? (
-                    <div className="h-40 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
-                  ) : (
-                    <RankLineChart history={history} queue={queue} />
-                  )}
-                </section>
-
-                <div className="h-px bg-surface" />
-
-                <section>
-                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
                     전적 요약 ({queueLabel})
                   </h3>
                   {stats === null ? (
@@ -632,6 +619,19 @@ export default function MemberDetailPanel({
                         </div>
                       )}
                     </>
+                  )}
+                </section>
+
+                <div className="h-px bg-surface" />
+
+                <section>
+                  <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
+                    랭크 그래프 ({queueLabel})
+                  </h3>
+                  {history === null ? (
+                    <div className="h-40 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
+                  ) : (
+                    <RankLineChart history={history} queue={queue} />
                   )}
                 </section>
               </>

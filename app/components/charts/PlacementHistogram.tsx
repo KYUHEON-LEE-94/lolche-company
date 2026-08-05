@@ -1,8 +1,26 @@
 'use client'
 
-// 1~8위 8칸 분포. distribution[0] = 1위 횟수.
-const BAR_COLOR = (placement: number) =>
-  placement === 1 ? '#fbbf24' : placement <= 4 ? '#34d399' : '#64748b'
+const placementTone = (placement: number) => {
+  if (placement === 1) {
+    return {
+      text: 'text-warn-ink',
+      bar: 'bg-amber-400',
+      border: 'border-amber-400/30',
+    }
+  }
+  if (placement <= 4) {
+    return {
+      text: 'text-ok-ink',
+      bar: 'bg-emerald-400',
+      border: 'border-emerald-400/25',
+    }
+  }
+  return {
+    text: 'text-muted',
+    bar: 'bg-slate-500',
+    border: 'border-line',
+  }
+}
 
 export default function PlacementHistogram({
   distribution,
@@ -18,32 +36,41 @@ export default function PlacementHistogram({
     )
   }
 
-  const max = Math.max(...distribution)
-
   return (
-    <div className="flex items-end gap-1.5 h-28">
+    <div
+      className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+      aria-label={`등수 분포, 총 ${total}판`}
+    >
       {distribution.map((count, i) => {
         const placement = i + 1
-        const color = BAR_COLOR(placement)
-        // 0건이어도 축이 보이도록 최소 2% 높이를 남긴다.
-        const pct = max === 0 ? 0 : (count / max) * 100
+        const percentage = Math.round((count / total) * 100)
+        const tone = placementTone(placement)
+
         return (
-          <div key={placement} className="flex-1 flex flex-col items-center gap-1 h-full">
-            <div className="flex-1 w-full flex items-end">
+          <div
+            key={placement}
+            className={`rounded-xl border bg-surface px-3 py-2.5 ${tone.border}`}
+            aria-label={`${placement}위 ${count}회, 전체의 ${percentage}퍼센트`}
+          >
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <span className={`text-sm font-black ${tone.text}`}>{placement}위</span>
+              <span className="text-xs font-bold text-fg">
+                {count}회 <span className="font-medium text-subtle">· {percentage}%</span>
+              </span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label={`${placement}위 비율`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percentage}
+              className="h-1.5 overflow-hidden rounded-full bg-surface-2"
+            >
               <div
-                className="w-full rounded-t-md transition-all"
-                style={{
-                  height: `${Math.max(pct, count > 0 ? 6 : 2)}%`,
-                  backgroundColor: color,
-                  opacity: count > 0 ? 0.85 : 0.2,
-                }}
-                title={`${placement}위 ${count}회`}
+                className={`h-full rounded-full transition-[width] ${tone.bar}`}
+                style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="text-[10px] font-bold leading-none" style={{ color }}>
-              {count}
-            </span>
-            <span className="text-[10px] text-muted leading-none">{placement}</span>
           </div>
         )
       })}
