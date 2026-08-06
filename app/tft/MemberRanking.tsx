@@ -1,11 +1,11 @@
 'use client'
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import Image from 'next/image'
-import MemberDetailPanel from '@/app/components/ranking/MemberDetailPanel'
+import MemberDetailPanel, { prefetchMemberOverview } from '@/app/components/ranking/MemberDetailPanel'
 import { tierScore } from '@/lib/tft/tierScore'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
@@ -274,6 +274,26 @@ const MemberRow = memo(function MemberRow({
   const profileUrl = resolveAvatarUrl(member)
   const framePath = member.profile_frame_path
 
+  // hover-intent(120ms) 프리페치 — 스치기만 해도 부르는 낭비를 막고,
+  // 열 의도가 보이면 개요 데이터를 미리 데워 클릭 시 즉시 표시되게 한다.
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startPrefetch = () => {
+    if (hoverTimer.current) return
+    hoverTimer.current = setTimeout(() => {
+      hoverTimer.current = null
+      prefetchMemberOverview(member.id, queue)
+    }, 120)
+  }
+  const cancelPrefetch = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current)
+      hoverTimer.current = null
+    }
+  }
+  useEffect(() => () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current)
+  }, [])
+
   // 최근 5경기 순위 dots
   const recent5 = member.tft_recent5
     ? member.tft_recent5.split(',').map(Number).filter(Boolean)
@@ -282,6 +302,8 @@ const MemberRow = memo(function MemberRow({
   return (
       <div
           onClick={() => onDetailOpen(member)}
+          onPointerEnter={startPrefetch}
+          onPointerLeave={cancelPrefetch}
           className={`
         group relative flex items-center gap-2 sm:gap-3
         min-h-[64px] pl-3 pr-2 sm:pr-3 py-2.5 cursor-pointer

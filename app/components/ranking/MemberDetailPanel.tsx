@@ -10,6 +10,15 @@ import type { Json } from '@/types/supabase'
 import { rarityBorderClass } from '@/lib/tft/tftLocale'
 import { cachedJson } from '@/lib/client/requestCache'
 
+// 랭킹 행 hover 시 개요 탭이 부를 URL 을 미리 데워둔다. cachedJson 이 전역 캐시라
+// 클릭 후 패널의 load() 가 같은 URL 을 부르면 캐시 히트로 즉시 표시된다.
+// URL 은 아래 overview useEffect 의 load() 인자와 반드시 일치해야 캐시가 공유된다.
+export function prefetchMemberOverview(memberId: string, queue: 'solo' | 'doubleup'): void {
+  void cachedJson(`/api/members/${memberId}/history`).catch(() => {})
+  void cachedJson(`/api/members/${memberId}/stats?queue=${queue}`).catch(() => {})
+  void cachedJson(`/api/members/${memberId}/accounts`).catch(() => {})
+}
+
 type TopUnit = {
   character_id: string
   name: string
@@ -336,13 +345,17 @@ function MatchCard({ match }: { match: MatchRow }) {
 
 export default function MemberDetailPanel({
   member,
-  queue = 'solo',
+  queue: initialQueue = 'solo',
   onClose,
 }: {
   member: MemberInfo
   queue?: 'solo' | 'doubleup'
   onClose: () => void
 }) {
+  // 큐(솔로/더블업)는 패널 내부 상태다. 프롭은 최초 진입 큐일 뿐이며,
+  // 헤더 토글로 바꾸면 dataKey(=`${member.id}|${queue}`)가 바뀌어 자동 재로딩된다.
+  const [activeQueue, setActiveQueue] = useState<'solo' | 'doubleup'>(initialQueue)
+  const queue = activeQueue
   const queueLabel = queue === 'solo' ? '솔로' : '더블업'
   const [tab, setTab] = useState<TabKey>('overview')
   const [history, setHistory] = useState<HistoryPoint[] | null>(null)
@@ -353,6 +366,15 @@ export default function MemberDetailPanel({
   const dialogRef = useRef<HTMLElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
+
+  // 다른 멤버를 열면 큐를 그 멤버 진입 큐(=페이지 큐)로 되돌린다.
+  // (앞 멤버에서 더블업으로 바꿔둔 상태가 다음 멤버로 새지 않도록)
+  const [openedMemberId, setOpenedMemberId] = useState(member.id)
+  if (openedMemberId !== member.id) {
+    setOpenedMemberId(member.id)
+    setActiveQueue(initialQueue)
+    setTab('overview')
+  }
 
   // 이미 요청한 리소스를 다시 부르지 않기 위한 키 집합.
   const dataKey = `${member.id}|${queue}`
@@ -567,15 +589,36 @@ export default function MemberDetailPanel({
                 </p>
               ) : null}
             </div>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              aria-label="닫기"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-surface-2 transition-colors"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-2">
+              {/* 큐 전환 — 솔로/더블업. 콘텐츠 탭(개요/전적)과 축이 달라 pill 로 구분한다. */}
+              <div className="flex rounded-lg bg-surface-2 p-0.5" role="tablist" aria-label="큐 선택">
+                {(['solo', 'doubleup'] as const).map((qk) => (
+                  <button
+                    key={qk}
+                    type="button"
+                    role="tab"
+                    aria-selected={queue === qk}
+                    onClick={() => setActiveQueue(qk)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-black transition-colors ${
+                      queue === qk
+                        ? 'bg-panel text-fg shadow-sm'
+                        : 'text-subtle hover:text-muted'
+                    }`}
+                  >
+                    {qk === 'solo' ? '솔로' : '더블업'}
+                  </button>
+                ))}
+              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={onClose}
+                aria-label="닫기"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-surface-2 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* 탭 */}
