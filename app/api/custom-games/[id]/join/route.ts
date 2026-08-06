@@ -4,6 +4,7 @@ import { getViewerMember, isApprovedMember } from '@/lib/customGames/authorize'
 import { fetchGame, isUniqueViolation, type GameRow } from '@/lib/customGames/game'
 import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
 import { JOINABLE_STATUSES, signupLimit, type GameStatus } from '@/lib/customGames/constants'
+import { claimGameParticipation } from '@/lib/points/claims'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,6 +80,8 @@ export async function POST(_req: Request, ctx: Ctx) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await claimGameParticipation(id, viewer.member.id)
 
   return NextResponse.json({ ok: true, ...(await derivePosition(game, viewer.member.id)) })
 }

@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/browser'
 import { isDiscordAvatarUrl } from '@/lib/members/avatar'
 import { useRouter } from 'next/navigation'
+import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 
 type Props = {
     userId: string
@@ -24,12 +25,15 @@ type Frame = {
     label: string
     image_path: string
     sort_order: number
+    price_points: number
+    owned: boolean
+    equipped: boolean
 }
+type Effect={id:string;label:string;description:string|null;effect_key:string;price_points:number;owned:boolean;equipped:boolean}
+type LedgerItem={id:number;amount:number;description:string|null;created_at:string;balance_after:number}
 
 export default function ProfileEditor({ member }: Props) {
     const router = useRouter()
-
-    const supabase = useMemo(() => createClient(), [])
 
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
     const [framePath, setFramePath] = useState<string | null>(member.profile_frame_path)
@@ -37,6 +41,10 @@ export default function ProfileEditor({ member }: Props) {
 
     const [frames, setFrames] = useState<Frame[]>([])
     const [framesLoading, setFramesLoading] = useState(true)
+    const [effects,setEffects]=useState<Effect[]>([])
+    const [balance,setBalance]=useState(0)
+    const [effectKey,setEffectKey]=useState<string|null>(null)
+    const [ledger,setLedger]=useState<LedgerItem[]>([])
 
     const [savingFrame, setSavingFrame] = useState(false)
 
@@ -57,26 +65,23 @@ export default function ProfileEditor({ member }: Props) {
             setFrameUrl(null)
             return
         }
-        const { data } = supabase.storage.from('profile-frames').getPublicUrl(framePath)
-        setFrameUrl(`${data.publicUrl}?t=${Date.now()}`) // 캐시 무효화(선택)
+        setFrameUrl(framePublicUrl(framePath))
     }, [framePath])
 
     useEffect(() => {
         let mounted = true
         ;(async () => {
             setFramesLoading(true)
-            const { data, error } = await supabase
-                .from('profile_frames')
-                .select('id,key,label,image_path,sort_order')
-                .eq('is_active', true)
-                .order('sort_order', { ascending: true })
+            const response=await fetch('/api/me/cosmetics',{cache:'no-store'})
+            const data:unknown=await response.json()
 
             if (!mounted) return
-            if (error) {
-                showToast(error.message)
+            if (!response.ok||!data||typeof data!=='object') {
+                showToast('상점 정보를 불러오지 못했습니다.')
                 setFrames([])
             } else {
-                setFrames(data ?? [])
+                const shop=data as {frames?:Frame[];effects?:Effect[];balance?:number;isAdmin?:boolean;ledger?:LedgerItem[]}
+                setFrames(shop.frames??[]);setEffects(shop.effects??[]);setBalance(shop.balance??0);setIsAdmin(Boolean(shop.isAdmin));setEffectKey(shop.effects?.find(e=>e.equipped)?.effect_key??null);setLedger(shop.ledger??[])
             }
             setFramesLoading(false)
         })()
@@ -84,21 +89,6 @@ export default function ProfileEditor({ member }: Props) {
         return () => {
             mounted = false
         }
-    }, [])
-
-    useEffect(() => {
-        ;(async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            const { data } = await supabase
-                .from('admins')
-                .select('user_id')
-                .eq('user_id', user.id)
-                .maybeSingle()
-
-            setIsAdmin(!!data)
-        })()
     }, [])
 
     function showToast(msg: string) {
@@ -109,8 +99,17 @@ export default function ProfileEditor({ member }: Props) {
     // 프레임 이미지
     // -----------------------
     function framePublicUrl(imagePath: string) {
-        const { data } = supabase.storage.from('profile-frames').getPublicUrl(imagePath)
-        return data.publicUrl
+        return resolveFrameUrl(imagePath,(path)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-frames/${encodeURIComponent(path).replaceAll('%2F','/')}`)
+    }
+
+    async function itemAction(itemType:'frame'|'rank_effect',item:{id:string;owned:boolean;equipped:boolean;price_points:number}){
+      setSavingFrame(true)
+      try{
+        if(!item.owned){if(!confirm(`${item.price_points}P로 구매할까요?`))return;const r=await fetch('/api/me/cosmetics/purchase',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:item.id})});const b=await r.json();if(!r.ok)throw new Error(b.error??'구매 실패');setBalance(typeof b.balance==='number'?b.balance:balance-item.price_points)}
+        const r=await fetch('/api/me/cosmetics/equip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:item.equipped?null:item.id})});const b=await r.json();if(!r.ok)throw new Error(b.error??'장착 실패')
+        if(itemType==='frame'){const selected=frames.find(f=>f.id===item.id);setFramePath(item.equipped?null:selected?.image_path??null);setFrames(frames.map(f=>({...f,owned:f.id===item.id?true:f.owned,equipped:f.id===item.id?!item.equipped:false})))}else{const selected=effects.find(e=>e.id===item.id);setEffectKey(item.equipped?null:selected?.effect_key??null);setEffects(effects.map(e=>({...e,owned:e.id===item.id?true:e.owned,equipped:e.id===item.id?!item.equipped:false})))}
+        showToast('반영됐어요 ✅')
+      }catch(e){showToast(e instanceof Error?e.message:'처리 중 오류')}finally{setSavingFrame(false)}
     }
 
 
@@ -140,7 +139,7 @@ export default function ProfileEditor({ member }: Props) {
     return (
         <div className="grid gap-6">
             {/* 미리보기 카드 */}
-            <section className="rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl">
+            <section className={`relative overflow-hidden rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl ${rankEffectClass(effectKey)}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <div className="text-lg font-bold text-fg">{member.member_name}</div>
@@ -208,11 +207,12 @@ export default function ProfileEditor({ member }: Props) {
             </section>
 
             {/* 프레임 선택 섹션 */}
+            {ledger.length>0&&<section className="rounded-3xl bg-surface ring-1 ring-line p-5"><div className="flex items-center justify-between"><div className="font-extrabold text-fg">포인트 내역</div><div className="font-black text-brand-ink">{balance}P</div></div><ul className="mt-3 divide-y divide-line">{ledger.slice(0,5).map(row=><li key={row.id} className="flex items-center justify-between py-2 text-xs"><span className="truncate text-muted">{row.description??'포인트 변동'}</span><b className={row.amount>0?'text-ok-ink':'text-danger-ink'}>{row.amount>0?'+':''}{row.amount}P</b></li>)}</ul></section>}
             <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-fg font-extrabold">프레임 선택</div>
-                        <div className="mt-1 text-xs text-muted">프레임은 프리셋 중에서 선택해요.</div>
+                        <div className="mt-1 text-xs text-muted">보유 포인트 <b className="text-brand-ink">{balance}P</b></div>
                     </div>
 
                     {/* ✅ 오른쪽 액션 버튼들 */}
@@ -248,7 +248,7 @@ export default function ProfileEditor({ member }: Props) {
                                 <button
                                     key={f.id}
                                     disabled={savingFrame}
-                                    onClick={() => saveFrame(f.image_path)} // ✅ members.profile_frame_path에 저장
+                                    onClick={() => itemAction('frame',f)}
                                     className={[
                                         'rounded-2xl p-4 ring-1 transition',
                                         selected
@@ -263,7 +263,7 @@ export default function ProfileEditor({ member }: Props) {
                                         </div>
                                         <div className="text-left">
                                             <div className="text-fg font-bold">{f.label}</div>
-                                            <div className="text-xs text-muted">{selected ? '선택됨' : '선택'}</div>
+                                            <div className="text-xs text-muted">{selected ? '장착 중' : f.owned ? '장착' : `${f.price_points}P`}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -274,6 +274,7 @@ export default function ProfileEditor({ member }: Props) {
 
                 {savingFrame && <div className="mt-4 text-xs text-muted">저장 중...</div>}
             </section>
+            <section className="rounded-3xl bg-surface ring-1 ring-line p-6"><div className="text-fg font-extrabold">랭킹 카드 배경</div><div className="mt-4 grid gap-3 sm:grid-cols-3">{effects.map(e=><button key={e.id} disabled={savingFrame||(!e.owned&&balance<e.price_points)} onClick={()=>itemAction('rank_effect',e)} className={`rounded-2xl border p-4 text-left ${e.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'} disabled:opacity-40`}><div className="font-bold text-fg">{e.label}</div><div className="mt-1 text-xs text-muted">{e.equipped?'장착 중':e.owned?'장착':`${e.price_points}P`}</div><div className="mt-2 text-[11px] text-subtle">{e.description}</div></button>)}</div></section>
         </div>
     )
 }

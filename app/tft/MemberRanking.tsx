@@ -12,6 +12,8 @@ import { resolveAvatarUrl } from '@/lib/members/avatar'
 import { CONTAINER } from '@/lib/ui/styles'
 import EmptyState from '@/app/components/ui/EmptyState'
 import { invalidateMemberDetailCache } from '@/lib/client/requestCache'
+import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -52,8 +54,7 @@ function calcRemainSec(
 }
 
 function getFramePublicUrl(framePath: string) {
-  const { data } = supabaseClient.storage.from('profile-frames').getPublicUrl(framePath)
-  return data.publicUrl
+  return resolveFrameUrl(framePath,(path)=>supabaseClient.storage.from('profile-frames').getPublicUrl(path).data.publicUrl)
 }
 
 // ─── LP 변화 계산 ────────────────────────────────────────────────────────────
@@ -281,11 +282,12 @@ const MemberRow = memo(function MemberRow({
   return (
       <div
           onClick={() => onDetailOpen(member)}
-          className="
+          className={`
         group relative flex items-center gap-2 sm:gap-3
         min-h-[64px] pl-3 pr-2 sm:pr-3 py-2.5 cursor-pointer
         transition-colors hover:bg-surface-2
-      "
+        overflow-hidden ${rankEffectClass(member.ranking_card_effect_key)}
+      `}
       >
         {/* 티어 컬러 액센트 (좌측 얇은 바) */}
         <span className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-gradient-to-b ${style.strip} opacity-70`} />

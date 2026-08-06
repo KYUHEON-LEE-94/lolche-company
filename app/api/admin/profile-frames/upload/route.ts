@@ -9,18 +9,30 @@ export async function POST(req: Request) {
 
     const form = await req.formData()
     const file = form.get('file') as File | null
-    const key = String(form.get('key') ?? '')
-    const label = String(form.get('label') ?? '')
+    const key = String(form.get('key') ?? '').trim()
+    const label = String(form.get('label') ?? '').trim()
     const sortOrder = Number(form.get('sort_order') ?? 0)
+    const pricePoints = Number(form.get('price_points') ?? 0)
+    const isPurchasable = String(form.get('is_purchasable') ?? 'true') === 'true'
 
 
 
-    if (!file || !key || !label) {
+    if (!file || !/^[a-z0-9_-]{1,40}$/.test(key) || !label || label.length > 50 || !Number.isInteger(sortOrder) || !Number.isInteger(pricePoints) || pricePoints < 0 || pricePoints > 100000) {
         return NextResponse.json({ ok: false, message: 'file/key/label이 필요합니다.' }, { status: 400 })
     }
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+    if(file.size>2*1024*1024||!['image/png','image/webp'].includes(file.type))return NextResponse.json({ok:false,message:'PNG/WebP 2MB 이하만 업로드할 수 있습니다.'},{status:400})
+    const ext = file.type==='image/webp'?'webp':'png'
     const objectPath = `${key}.${ext}`
+
+    const { data: duplicate, error: duplicateError } = await supabase.schema('public')
+        .from('profile_frames')
+        .select('id')
+        .or(`key.eq.${key},image_path.eq.${objectPath}`)
+        .limit(1)
+        .maybeSingle()
+    if (duplicateError) return NextResponse.json({ ok: false, message: '중복 확인에 실패했습니다.' }, { status: 500 })
+    if (duplicate) return NextResponse.json({ ok: false, message: '이미 사용 중인 key 또는 파일 경로입니다.' }, { status: 409 })
 
     const row: TablesInsert<'profile_frames'> = {
         key,
@@ -28,17 +40,17 @@ export async function POST(req: Request) {
         image_path: objectPath,
         sort_order: sortOrder,
         created_by: user.id,
+        price_points: pricePoints,
+        is_purchasable: isPurchasable,
     }
 
     const { error: upErr } = await supabase.storage
         .from('profile-frames')
-        .upload(objectPath, file, { upsert: true, contentType: file.type })
+        .upload(objectPath, file, { upsert: false, contentType: file.type })
     if (upErr) return NextResponse.json({ ok: false, message: upErr.message }, { status: 400 })
 
-    const { error: insErr } = await supabase.schema('public').from('profile_frames').insert({
-        row
-    })
-    if (insErr) return NextResponse.json({ ok: false, message: insErr.message }, { status: 400 })
+    const { error: insErr } = await supabase.schema('public').from('profile_frames').insert(row)
+    if (insErr) { await supabase.storage.from('profile-frames').remove([objectPath]); return NextResponse.json({ ok: false, message: insErr.message }, { status: 400 }) }
 
     // ✅ 캐시 무효화
     revalidatePath('/profile')

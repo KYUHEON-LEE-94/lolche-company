@@ -1,72 +1,22 @@
-// app/api/profile/frame/route.ts
 import { NextResponse } from 'next/server'
-import { createRouteClient } from '@/lib/supabase/route'
-import { supabaseService } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
-
-export async function POST(req: Request) {
-    const supabase = await createRouteClient()
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-        return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await req.json().catch(() => null)
-    const framePath = body?.framePath as string | null | undefined
-
-    // ✅ 1) null이면 해제 허용
-    if (framePath === null || framePath === undefined) {
-        // members self-UPDATE RLS 정책 제거(20260723 STEP 5)에 따라 service role 경유
-        const { error } = await supabaseService
-            .schema('public')
-            .from('members')
-            .update({ profile_frame_path: null })
-            .eq('user_id', user.id)
-
-        if (error) return NextResponse.json({ ok: false, message: error.message }, { status: 500 })
-
-        // ✅ 캐시 무효화
-        revalidatePath('/profile')
-        revalidatePath('/tft')
-
-        return NextResponse.json({ ok: true })
-    }
-
-    // ✅ 2) string 검증
-    if (typeof framePath !== 'string' || framePath.length > 300) {
-        return NextResponse.json({ ok: false, message: 'Invalid framePath' }, { status: 400 })
-    }
-
-    // ✅ 3) DB에 등록된(active) 프레임만 허용
-    const { data: frame, error: frameErr } = await supabase
-        .from('profile_frames')
-        .select('id')
-        .eq('image_path', framePath)
-        .eq('is_active', true)
-        .maybeSingle()
-
-    if (frameErr) {
-        return NextResponse.json({ ok: false, message: frameErr.message }, { status: 500 })
-    }
-    if (!frame) {
-        return NextResponse.json({ ok: false, message: 'Invalid framePath' }, { status: 400 })
-    }
-
-    // ✅ 4) members에 저장
-    const { error: updateError } = await supabaseService
-        .schema('public')
-        .from('members')
-        .update({ profile_frame_path: framePath })
-        .eq('user_id', user.id)
-
-    if (updateError) {
-        return NextResponse.json({ ok: false, message: updateError.message }, { status: 500 })
-    }
-
-    // ✅ 캐시 무효화
-    revalidatePath('/profile')
-    revalidatePath('/tft')
-
-    return NextResponse.json({ ok: true })
+import { getMyMember } from '@/lib/members/myMember'
+import { requireAdmin } from '@/app/lib/isAdmin'
+import { isRecord } from '@/lib/calendar/events'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isMissingColumnError } from '@/lib/db/pgErrors'
+export const dynamic='force-dynamic'
+export async function POST(req:Request){
+ const mine=await getMyMember(); if(!mine.ok)return NextResponse.json({ok:false,message:mine.message},{status:mine.status}); if(!mine.member||mine.member.status!=='approved')return NextResponse.json({ok:false,message:'승인된 멤버만 사용할 수 있습니다.'},{status:403})
+ let body:unknown; try{body=await req.json()}catch(e){return NextResponse.json({ok:false,message:e instanceof Error?'요청 형식이 올바르지 않습니다.':'오류 발생'},{status:400})}
+ if(!isRecord(body)||Object.keys(body).some(k=>k!=='framePath')||(body.framePath!==null&&typeof body.framePath!=='string'))return NextResponse.json({ok:false,message:'Invalid framePath'},{status:400})
+ if(body.framePath===null){await supabaseAdmin.from('members').update({profile_frame_path:null}).eq('id',mine.member.id); invalidate();return NextResponse.json({ok:true})}
+ const full=await supabaseAdmin.from('profile_frames').select('id,image_path,price_points').eq('image_path',body.framePath).eq('is_active',true).maybeSingle()
+ let frame=full.data as unknown as {id:string;image_path:string;price_points:number}|null
+ if(full.error&&isMissingColumnError(full.error)){const legacy=await supabaseAdmin.from('profile_frames').select('id,image_path').eq('image_path',body.framePath).eq('is_active',true).maybeSingle();if(legacy.error)return NextResponse.json({ok:false,message:'프레임 조회에 실패했습니다.'},{status:500});frame=legacy.data?{...(legacy.data as unknown as {id:string;image_path:string}),price_points:0}:null}else if(full.error)return NextResponse.json({ok:false,message:'프레임 조회에 실패했습니다.'},{status:500})
+ if(!frame)return NextResponse.json({ok:false,message:'Invalid framePath'},{status:400})
+ const admin=(await requireAdmin()).ok
+ if(!admin&&frame.price_points>0){const {data:owned}=await supabaseAdmin.from('member_frame_inventory').select('frame_id').eq('member_id',mine.member.id).eq('frame_id',frame.id).maybeSingle();if(!owned)return NextResponse.json({ok:false,message:'구매한 프레임만 장착할 수 있습니다.'},{status:403})}
+ const {error}=await supabaseAdmin.from('members').update({profile_frame_path:frame.image_path}).eq('id',mine.member.id);if(error)return NextResponse.json({ok:false,message:'프레임 저장에 실패했습니다.'},{status:500});invalidate();return NextResponse.json({ok:true})
 }
+function invalidate(){revalidatePath('/');revalidatePath('/profile');revalidatePath('/tft');revalidatePath('/lol')}

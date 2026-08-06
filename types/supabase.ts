@@ -78,6 +78,7 @@ export type Member = {
 
   profile_image_path: string | null
   profile_frame_path: string | null
+  ranking_card_effect_key: string | null
   profile_updated_at: string | null
 
   created_at: string
@@ -188,9 +189,17 @@ export type ProfileFrame = {
   image_path: string
   is_active: boolean
   sort_order: number
+  price_points: number
+  is_purchasable: boolean
   created_by: string | null
   created_at: string
 }
+
+export type RankingCardEffect = { id:string; key:string; label:string; description:string|null; effect_key:string; price_points:number; is_active:boolean; is_purchasable:boolean; sort_order:number; created_at:string; created_by:string|null }
+export type PointAccount = { member_id:string; balance:number; updated_at:string }
+export type PointLedger = { id:number; member_id:string; amount:number; reason:'daily_login'|'custom_game_participation'|'cosmetic_purchase'|'admin_adjustment'; reference_key:string; description:string|null; balance_after:number; created_at:string }
+export type MemberFrameInventory = { member_id:string; frame_id:string; purchased_at:string; price_paid:number }
+export type MemberRankEffectInventory = { member_id:string; effect_id:string; purchased_at:string; price_paid:number }
 
 // --- 스팀 (20260724_steam.sql) ---
 export type SteamApp = {
@@ -413,6 +422,11 @@ export interface Database {
         }
         Update: Optional<ProfileFrame>
       }
+      point_accounts: { Row: PointAccount; Insert: Optional<PointAccount> & { member_id:string }; Update: Optional<PointAccount> }
+      point_ledger: { Row: PointLedger; Insert: Optional<Omit<PointLedger,'id'|'created_at'>> & { member_id:string; amount:number; reason:PointLedger['reason']; reference_key:string; balance_after:number }; Update: Optional<PointLedger> }
+      ranking_card_effects: { Row: RankingCardEffect; Insert: Optional<Omit<RankingCardEffect,'id'|'created_at'>> & { key:string; label:string; effect_key:string; price_points:number }; Update: Optional<RankingCardEffect> }
+      member_frame_inventory: { Row: MemberFrameInventory; Insert: Optional<MemberFrameInventory> & { member_id:string; frame_id:string; price_paid:number }; Update: Optional<MemberFrameInventory> }
+      member_rank_effect_inventory: { Row: MemberRankEffectInventory; Insert: Optional<MemberRankEffectInventory> & { member_id:string; effect_id:string; price_paid:number }; Update: Optional<MemberRankEffectInventory> }
       seasons: {
         Row: Season
         Insert: Optional<Omit<Season, 'id' | 'created_at'>> & {

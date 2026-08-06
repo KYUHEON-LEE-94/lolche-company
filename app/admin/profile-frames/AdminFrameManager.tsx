@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/browser'
+import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 
 // 동일한 스피너 컴포넌트
 function Spinner({ size = 4 }: { size?: number }) {
@@ -30,16 +31,21 @@ type FrameRow = {
     image_path: string
     is_active: boolean
     sort_order: number
+    price_points: number
+    is_purchasable: boolean
 }
+type EffectRow={id:string;label:string;description:string|null;effect_key:string;price_points:number;is_active:boolean;is_purchasable:boolean;sort_order:number}
 
-export default function AdminFrameManager({ initialFrames }: { initialFrames: FrameRow[] }) {
+export default function AdminFrameManager({ initialFrames,initialEffects }: { initialFrames: FrameRow[];initialEffects:EffectRow[] }) {
     const supabase = useMemo(() => createClient(), [])
     const [frames, setFrames] = useState<FrameRow[]>(initialFrames)
+    const [effects,setEffects]=useState(initialEffects)
 
     const [file, setFile] = useState<File | null>(null)
     const [key, setKey] = useState('')
     const [label, setLabel] = useState('')
     const [sortOrder, setSortOrder] = useState<number>(0)
+    const [pricePoints,setPricePoints]=useState(0)
 
     const [busy, setBusy] = useState(false)
     const [toast, setToast] = useState<string | null>(null)
@@ -51,13 +57,13 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
 
     function frameUrl(path: string) {
         const { data } = supabase.storage.from('profile-frames').getPublicUrl(path)
-        return data.publicUrl
+        return resolveFrameUrl(path,()=>data.publicUrl)
     }
 
     async function reloadFrames() {
         const { data, error } = await supabase
             .from('profile_frames')
-            .select('id,key,label,image_path,is_active,sort_order')
+            .select('id,key,label,image_path,is_active,sort_order,price_points,is_purchasable')
             .order('sort_order', { ascending: true })
 
         if (error) throw error
@@ -76,6 +82,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             fd.append('key', key.trim())
             fd.append('label', label.trim())
             fd.append('sort_order', String(sortOrder))
+            fd.append('price_points',String(pricePoints));fd.append('is_purchasable','true')
 
             const res = await fetch('/api/admin/profile-frames/upload', {
                 method: 'POST',
@@ -90,6 +97,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             setKey('')
             setLabel('')
             setSortOrder(0)
+            setPricePoints(0)
 
             await reloadFrames()
         } catch (e) {
@@ -120,6 +128,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
             setBusy(false)
         }
     }
+    async function saveEffect(effect:EffectRow){setBusy(true);try{const res=await fetch('/api/admin/rank-effects',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(effect)});const data=await res.json();if(!res.ok)throw new Error(data.error??'수정 실패');show('효과 저장 완료 ✅')}catch(e){show(e instanceof Error?e.message:'수정 중 오류')}finally{setBusy(false)}}
 
     return (
         <div className="space-y-8">
@@ -155,6 +164,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                             className={inputCls}
                         />
                     </div>
+                    <div className="space-y-1.5"><label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">가격 (P)</label><input type="number" min={0} value={pricePoints} onChange={e=>setPricePoints(Number(e.target.value))} className={inputCls}/></div>
 
                     <div className="space-y-1.5">
                         <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Label (표시이름)</label>
@@ -196,6 +206,7 @@ export default function AdminFrameManager({ initialFrames }: { initialFrames: Fr
                     {busy ? '처리 중' : '프레임 업로드'}
                 </button>
             </section>
+            <section className="rounded-2xl border border-line bg-surface p-6"><h2 className="text-sm font-black text-fg">랭킹 카드 효과</h2><div className="mt-4 space-y-3">{effects.map((effect,index)=><div key={effect.id} className="grid gap-2 rounded-xl border border-line bg-surface-2 p-3 sm:grid-cols-[1fr_8rem_auto]"><div><div className="font-bold text-fg">{effect.label}</div><div className="text-xs text-muted">{effect.effect_key}</div></div><input type="number" min={0} value={effect.price_points} onChange={e=>setEffects(effects.map((row,i)=>i===index?{...row,price_points:Number(e.target.value)}:row))} className={inputCls}/><button disabled={busy} onClick={()=>saveEffect(effect)} className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-50">저장</button></div>)}</div></section>
 
             {/* ── 프레임 목록 ── */}
             <section className="space-y-4">

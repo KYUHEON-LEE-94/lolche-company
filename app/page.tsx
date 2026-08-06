@@ -33,6 +33,7 @@ type DashMember = Pick<
   | 'tft_rank_prev'
   | 'tft_lp_prev'
   | 'last_synced_at'
+  | 'ranking_card_effect_key'
 >
 
 type RecruitingGame = {
@@ -45,7 +46,16 @@ type RecruitingGame = {
 }
 
 const MEMBER_COLUMNS =
+  'id,member_name,profile_image_path,ranking_card_effect_key,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
+const LEGACY_MEMBER_COLUMNS =
   'id,member_name,profile_image_path,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
+
+async function fetchDashboardMembers() {
+  const full = await withAvatarColumn((cols) => supabase.from('members').select(`${MEMBER_COLUMNS}${cols}`).eq('status', 'approved'))
+  if (!full.error || !isMissingColumnError(full.error)) return full
+  const legacy = await withAvatarColumn((cols) => supabase.from('members').select(`${LEGACY_MEMBER_COLUMNS}${cols}`).eq('status', 'approved'))
+  return legacy.error ? legacy : { ...legacy, data: ((legacy.data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({ ...row, ranking_card_effect_key: null })) }
+}
 
 function formatSyncedAt(value: string | null) {
   if (!value) return '기록 없음'
@@ -96,9 +106,7 @@ async function fetchRecruiting(): Promise<{ rows: RecruitingGame[]; count: numbe
 
 export default async function DashboardPage() {
   const [membersResult, seasonResult, recruiting] = await Promise.all([
-    withAvatarColumn((cols) =>
-      supabase.from('members').select(`${MEMBER_COLUMNS}${cols}`).eq('status', 'approved'),
-    ),
+    fetchDashboardMembers(),
     supabaseService.from('seasons').select('season_name,set_number').eq('is_active', true).maybeSingle(),
     fetchRecruiting(),
   ])
@@ -141,6 +149,7 @@ export default async function DashboardPage() {
     tft_league_points: m.tft_league_points,
     avatarUrl: resolveAvatarUrl(m),
     rankLabel: formatRank(m.tft_tier, m.tft_rank, m.tft_league_points),
+    ranking_card_effect_key: m.ranking_card_effect_key,
   })
 
   const leaderboardView: DashRankMember[] = leaderboard.map(toDashRank)

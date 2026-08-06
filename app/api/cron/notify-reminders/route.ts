@@ -8,7 +8,8 @@ import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGame
 export const dynamic = 'force-dynamic'
 
 /** 시작 몇 분 전부터 "임박" 알림을 보낼지. */
-const WINDOW_MIN = Number(process.env.REMINDER_WINDOW_MIN ?? '30')
+const configuredWindow = Number(process.env.REMINDER_WINDOW_MIN ?? '30')
+const WINDOW_MIN = Number.isFinite(configuredWindow) && configuredWindow > 0 && configuredWindow <= 180 ? configuredWindow : 30
 
 type GameRow = {
   id: string

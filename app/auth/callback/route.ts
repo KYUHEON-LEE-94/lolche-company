@@ -5,6 +5,7 @@ import { getDiscordAvatarUrl, getDiscordId, sanitizeNextPath } from '@/lib/auth/
 import { GUILD_GATE_ID } from '@/lib/constants/features'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import type { User } from '@supabase/supabase-js'
+import { claimDailyLogin } from '@/lib/points/claims'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,6 +182,9 @@ export async function GET(request: Request) {
             await linkDiscordAccount('admins', discordId, data.user)
             await syncDiscordAvatar(discordId, data.user)
         }
+
+        const { data: approvedMember } = await supabaseService.from('members').select('id').eq('user_id', data.user.id).eq('status', 'approved').maybeSingle()
+        if (approvedMember) await claimDailyLogin((approvedMember as unknown as { id: string }).id)
 
         // 2차 방어: 파싱 결과가 같은 오리진이 아니면 무조건 '/'로 보낸다.
         const target = new URL(next, origin)
