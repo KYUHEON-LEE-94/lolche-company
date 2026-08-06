@@ -3,6 +3,7 @@ import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
+import { UUID_RE } from '@/lib/calendar/events'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { ok, supabase } = await requireAdmin()
   if (!ok) {
     return NextResponse.json({ ok: false, message: '관리자만 가능합니다.' }, { status: 403 })
+  }
+  if (!UUID_RE.test(memberId)) {
+    return NextResponse.json({ ok: false, message: '멤버 식별자가 올바르지 않습니다.' }, { status: 400 })
   }
 
   const { data: member, error: memberError } = await supabase

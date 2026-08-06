@@ -197,7 +197,7 @@ export type ProfileFrame = {
 
 export type RankingCardEffect = { id:string; key:string; label:string; description:string|null; effect_key:string; price_points:number; is_active:boolean; is_purchasable:boolean; sort_order:number; created_at:string; created_by:string|null }
 export type PointAccount = { member_id:string; balance:number; updated_at:string }
-export type PointLedger = { id:number; member_id:string; amount:number; reason:'daily_login'|'custom_game_participation'|'cosmetic_purchase'|'admin_adjustment'; reference_key:string; description:string|null; balance_after:number; created_at:string }
+export type PointLedger = { id:number; member_id:string; amount:number; reason:'daily_login'|'custom_game_participation'|'cosmetic_purchase'|'admin_adjustment'; reference_key:string; description:string|null; balance_after:number; created_by:string|null; created_at:string }
 export type MemberFrameInventory = { member_id:string; frame_id:string; purchased_at:string; price_paid:number }
 export type MemberRankEffectInventory = { member_id:string; effect_id:string; purchased_at:string; price_paid:number }
 
@@ -557,6 +557,14 @@ export interface Database {
           solo_count: number
           doubleup_count: number
         }
+      }
+      end_custom_game_and_award_points: {
+        Args: { p_game_id: string }
+        Returns: { status: 'completed'|'already_ended'|'invalid_status'|'not_found'; confirmed_count:number; awarded_count:number; already_awarded_count:number; ended_at:string|null }[]
+      }
+      grant_member_points: {
+        Args: { p_member_id:string; p_amount:number; p_request_id:string; p_actor_user_id:string; p_description:string }
+        Returns: { status:'granted'|'already_applied'|'request_conflict'|'forbidden'|'invalid_amount'|'invalid_description'|'not_found'; balance:number }[]
       }
     }
     Enums: Record<string, never>

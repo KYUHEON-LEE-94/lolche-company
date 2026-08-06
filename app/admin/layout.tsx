@@ -11,6 +11,7 @@ const navItems = [
     { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
     { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
     { href: '/admin/profile-frames',  label: '프레임 관리', icon: 'Image' },
+    { href: '/admin/points',          label: '포인트 관리', icon: 'Coins' },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -38,6 +39,8 @@ function NavIcon({ name }: { name: string }) {
                 <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
             </svg>
         )
+    if (name === 'Coins')
+        return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
     return null
 }
 
@@ -50,12 +53,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="min-h-screen flex flex-col bg-canvas">
             {/* ── 헤더 ── */}
             <header className="sticky top-0 z-50 border-b border-line bg-canvas/90 backdrop-blur-md">
-                <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+                <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3 overflow-hidden">
 
                     {/* 로고 영역 — 클릭 시 사이트 홈으로 (어드민에서 나가는 기본 경로) */}
                     <Link
                         href="/"
-                        className="flex items-center gap-3 rounded-xl px-1 -mx-1 transition-colors hover:bg-surface-2"
+                        className="flex shrink-0 items-center gap-3 rounded-xl px-1 -mx-1 transition-colors hover:bg-surface-2"
                         aria-label="사이트 홈으로 이동"
                     >
                         <div
@@ -73,7 +76,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     </Link>
 
                     {/* 네비게이션 */}
-                    <nav className="flex items-center gap-1">
+                    <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
                         {navItems.map((item) => {
                             const active = isActive(item.href)
                             return (

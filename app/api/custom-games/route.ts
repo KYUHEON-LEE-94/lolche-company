@@ -1,5 +1,4 @@
 import { NextResponse, after } from 'next/server'
-import { claimGameParticipation } from '@/lib/points/claims'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, canManageGame, isApprovedMember } from '@/lib/customGames/authorize'
 import { sendDiscordWebhook, DISCORD_COLOR } from '@/lib/discord/notify'
@@ -258,8 +257,6 @@ export async function POST(req: Request) {
     await supabaseAdmin.from('custom_games').delete().eq('id', game.id)
     return NextResponse.json({ error: participantError.message }, { status: 500 })
   }
-  await claimGameParticipation(game.id, viewer.member.id)
-
   // 응답 후 디스코드 알림(after: 생성 응답을 지연시키지 않고, 실패해도 생성에 영향 없음).
   const kv = kind.value
   const hostName = viewer.member.member_name
