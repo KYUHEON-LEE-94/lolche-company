@@ -142,23 +142,35 @@ export default async function LolPage() {
                     {unranked ? '-' : `#${idx + 1}`}
                   </div>
 
-                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt=""
-                        fill
-                        sizes="40px"
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
-                        {m.member_name.slice(0, 1)}
-                      </span>
+                  <div className="relative h-10 w-10 shrink-0">
+                    {m.profile_frame_path && (
+                      <div className="pointer-events-none absolute -inset-[7px] z-20">
+                        <Image
+                          src={resolveFrameUrl(m.profile_frame_path, (path) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-frames/${path}`)}
+                          alt=""
+                          fill
+                          sizes="54px"
+                          className="object-contain"
+                        />
+                      </div>
                     )}
+                    <div className="relative z-10 h-full w-full overflow-hidden rounded-xl border border-line bg-surface-2">
+                      {imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt=""
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
+                          {m.member_name.slice(0, 1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {m.profile_frame_path && <Image src={resolveFrameUrl(m.profile_frame_path,(path)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-frames/${path}`)} alt="" width={54} height={54} className="pointer-events-none absolute left-[3.35rem] z-20 h-[54px] w-[54px] object-contain" />}
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-fg">{m.member_name}</p>
