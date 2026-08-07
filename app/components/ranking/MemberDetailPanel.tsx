@@ -9,6 +9,13 @@ import PlacementHistogram from '../charts/PlacementHistogram'
 import type { Json } from '@/types/supabase'
 import { rarityBorderClass } from '@/lib/tft/tftLocale'
 import { cachedJson } from '@/lib/client/requestCache'
+import { resolveAvatarUrl } from '@/lib/members/avatar'
+import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { supabaseClient } from '@/lib/supabase'
+
+function panelFrameUrl(path: string): string {
+  return resolveFrameUrl(path, (p) => supabaseClient.storage.from('profile-frames').getPublicUrl(p).data.publicUrl)
+}
 
 // 랭킹 행 hover 시 개요 탭이 부를 URL 을 미리 데워둔다. cachedJson 이 전역 캐시라
 // 클릭 후 패널의 load() 가 같은 URL 을 부르면 캐시 히트로 즉시 표시된다.
@@ -206,6 +213,8 @@ type MemberInfo = {
   tft_tier: string | null
   tft_rank: string | null
   tft_league_points: number | null
+  profile_frame_path?: string | null
+  discord_avatar_url?: string | null
 }
 
 function placementColor(p: number) {
@@ -575,8 +584,26 @@ export default function MemberDetailPanel({
           >
           {/* 헤더 */}
           <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
-            <div>
-              <p id={titleId} className="font-black text-fg text-base leading-tight">{member.member_name}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              {/* 프로필 카드 — 프레임 씌운 아바타(디스코드처럼 상대 프로필 확인) */}
+              <div className="relative h-12 w-12 shrink-0">
+                {member.profile_frame_path && (
+                  <div className="pointer-events-none absolute -inset-[34%] z-20">
+                    <Image src={panelFrameUrl(member.profile_frame_path)} alt="" fill className="object-contain" />
+                  </div>
+                )}
+                <div className="relative z-10 h-full w-full overflow-hidden rounded-full border border-line bg-surface-2">
+                  {resolveAvatarUrl(member) ? (
+                    <Image src={resolveAvatarUrl(member) as string} alt="" fill sizes="48px" className="object-cover" unoptimized />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-sm font-black text-subtle">
+                      {member.member_name.slice(0, 1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            <div className="min-w-0">
+              <p id={titleId} className="font-black text-fg text-base leading-tight truncate">{member.member_name}</p>
               {headerRank.tier ? (
                 <p className="text-[11px] text-subtle mt-0.5">
                   {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
@@ -588,6 +615,7 @@ export default function MemberDetailPanel({
                   )}
                 </p>
               ) : null}
+            </div>
             </div>
             <div className="flex items-center gap-2">
               {/* 큐 전환 — 솔로/더블업. 콘텐츠 탭(개요/전적)과 축이 달라 pill 로 구분한다. */}
