@@ -1055,6 +1055,11 @@ export default function CustomGameDetailPage() {
                     />
                   </div>
                 )}
+                {(game.game_kind === 'tft' || game.game_kind === 'lol') && (
+                  <div className="relative mb-3 h-14 w-14 overflow-hidden rounded-xl border border-line bg-surface-2">
+                    <Image src={`/custom-games/${game.game_kind}.png`} alt="" fill sizes="56px" className="object-cover" />
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h1 className="text-2xl font-black text-fg tracking-tight">{game.title}</h1>
                   <Badge className={gameKindBadgeClass(game.game_kind)}>
