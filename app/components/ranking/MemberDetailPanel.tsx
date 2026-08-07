@@ -46,8 +46,6 @@ type MemberStats = {
   topUnits: TopUnit[]
 }
 
-type TopUnitsResponse = Pick<MemberStats, 'topUnits'>
-
 type MemberAccount = {
   id: string
   account_no: number
@@ -273,25 +271,25 @@ function UnitIcon({ unit }: { unit: ProcessedUnit }) {
 
   return (
     <div className="flex flex-col items-center gap-0.5" title={unit.name}>
-      <div className={`relative w-10 h-10 rounded-md overflow-hidden border-2 ${border} bg-surface`}>
+      <div className={`relative w-[52px] h-[52px] rounded-md overflow-hidden border-2 ${border} bg-surface`}>
         {!imgError ? (
           <Image
             src={unit.imageUrl}
             alt={unit.name}
             fill
-            sizes="40px"
+            sizes="52px"
             className="object-cover"
             onError={() => setImgError(true)}
             unoptimized
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[8px] text-subtle leading-none text-center px-0.5">
+          <div className="w-full h-full flex items-center justify-center text-[9px] text-subtle leading-none text-center px-0.5">
             {unit.name}
           </div>
         )}
       </div>
       {unit.tier >= 2 && (
-        <div className="text-[9px] text-yellow-300 leading-none tracking-[-1px]">
+        <div className="text-[10px] text-yellow-300 leading-none tracking-[-1px]">
           {'★'.repeat(unit.tier)}
         </div>
       )}
@@ -458,16 +456,6 @@ export default function MemberDetailPanel({
       () => setStats((current) => current ?? EMPTY_STATS),
     )
     if (tab === 'matches') {
-      load(
-        dataKey,
-        'stats-units',
-        `/api/members/${member.id}/stats?queue=${queue}&include=units`,
-        (d) => setStats((current) => ({
-          ...(current ?? EMPTY_STATS),
-          topUnits: (d as TopUnitsResponse).topUnits,
-        })),
-        () => setStats((current) => ({ ...(current ?? EMPTY_STATS), topUnits: [] })),
-      )
       load(
         dataKey,
         'matches',
@@ -649,7 +637,7 @@ export default function MemberDetailPanel({
                 type="button"
                 onClick={onClose}
                 aria-label="닫기"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-surface-2 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/40 text-white ring-1 ring-white/15 backdrop-blur-sm transition-colors hover:bg-black/60"
               >
                 ✕
               </button>
@@ -749,24 +737,6 @@ export default function MemberDetailPanel({
                     <PlacementHistogram distribution={stats.distribution} />
                   )}
                 </section>
-
-                {stats && stats.topUnits.length > 0 && (
-                  <section>
-                    <h3 className="text-[11px] font-black tracking-widest text-subtle uppercase mb-3">
-                      자주 쓴 기물
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {stats.topUnits.map((u) => (
-                        <div key={u.character_id} className="flex flex-col items-center gap-0.5 w-12" title={`${u.name} · ${u.count}회 · 평균 ${u.avgPlacement}위`}>
-                          <div className="relative w-8 h-8 rounded overflow-hidden border border-line bg-surface">
-                            <Image src={u.imageUrl} alt={u.name} fill sizes="32px" className="object-cover" unoptimized />
-                          </div>
-                          <span className="text-[9px] text-subtle leading-none">{u.count}회</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
 
                 <div className="h-px bg-surface" />
 

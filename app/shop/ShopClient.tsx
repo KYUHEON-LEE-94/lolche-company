@@ -20,7 +20,6 @@ type Frame = {
   equipped: boolean
 }
 type Effect = { id: string; label: string; description: string | null; effect_key: string | null; image_path: string | null; price_points: number; owned: boolean; equipped: boolean }
-type LedgerItem = { id: number; amount: number; description: string | null; created_at: string; balance_after: number }
 
 type Status = 'loading' | 'ok' | 'unauth' | 'forbidden' | 'migration' | 'error'
 
@@ -39,7 +38,6 @@ export default function ShopClient() {
   const [frames, setFrames] = useState<Frame[]>([])
   const [effects, setEffects] = useState<Effect[]>([])
   const [balance, setBalance] = useState(0)
-  const [ledger, setLedger] = useState<LedgerItem[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -53,12 +51,11 @@ export default function ShopClient() {
       if (response.status === 401) { setStatus('unauth'); return }
       if (response.status === 403) { setStatus('forbidden'); return }
       if (!response.ok || !data || typeof data !== 'object') { setStatus('error'); return }
-      const shop = data as { frames?: Frame[]; effects?: Effect[]; balance?: number; isAdmin?: boolean; ledger?: LedgerItem[]; migration_required?: boolean }
+      const shop = data as { frames?: Frame[]; effects?: Effect[]; balance?: number; isAdmin?: boolean; migration_required?: boolean }
       setFrames(shop.frames ?? [])
       setEffects(shop.effects ?? [])
       setBalance(shop.balance ?? 0)
       setIsAdmin(Boolean(shop.isAdmin))
-      setLedger(shop.ledger ?? [])
       setStatus(shop.migration_required ? 'migration' : 'ok')
     })()
     return () => { mounted = false }
@@ -126,7 +123,7 @@ export default function ShopClient() {
       {/* 프레임 카탈로그 */}
       <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
         <div className="text-fg font-extrabold">프로필 프레임</div>
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="mt-5 grid grid-cols-3 gap-4">
           {frames.length === 0 ? (
             <div className="text-xs text-muted">등록된 프레임이 없어요.</div>
           ) : (
@@ -166,7 +163,7 @@ export default function ShopClient() {
       {/* 랭킹 카드 배경 카탈로그 */}
       <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
         <div className="text-fg font-extrabold">랭킹 카드 배경</div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-3 gap-3">
           {effects.length === 0 ? (
             <div className="text-xs text-muted">등록된 효과가 없어요.</div>
           ) : (
@@ -196,21 +193,6 @@ export default function ShopClient() {
           )}
         </div>
       </section>
-
-      {/* 포인트 내역 */}
-      {ledger.length > 0 && (
-        <section className="rounded-3xl bg-surface ring-1 ring-line p-5">
-          <div className="font-extrabold text-fg">포인트 내역</div>
-          <ul className="mt-3 divide-y divide-line">
-            {ledger.slice(0, 5).map((row) => (
-              <li key={row.id} className="flex items-center justify-between py-2 text-xs">
-                <span className="truncate text-muted">{row.description ?? '포인트 변동'}</span>
-                <b className={row.amount > 0 ? 'text-ok-ink' : 'text-danger-ink'}>{row.amount > 0 ? '+' : ''}{row.amount.toLocaleString()}P</b>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   )
 }
