@@ -50,18 +50,18 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
     const cssEffects = effects.filter((e) => !e.image_path)
     const bgEffects = effects.filter((e) => e.image_path)
 
+    // 프레임/배경 통합 업로드 폼 — 타입만 토글하고 입력 필드는 공유한다.
+    const [uploadType, setUploadType] = useState<'frame' | 'background'>('frame')
     const [file, setFile] = useState<File | null>(null)
     const [key, setKey] = useState('')
     const [label, setLabel] = useState('')
     const [sortOrder, setSortOrder] = useState<number>(0)
-    const [pricePoints,setPricePoints]=useState(50)
+    const [pricePoints, setPricePoints] = useState(50)
 
-    // 이미지 배경 업로드 폼 (프레임 폼과 분리)
-    const [bgFile, setBgFile] = useState<File | null>(null)
-    const [bgKey, setBgKey] = useState('')
-    const [bgLabel, setBgLabel] = useState('')
-    const [bgSortOrder, setBgSortOrder] = useState<number>(0)
-    const [bgPricePoints, setBgPricePoints] = useState(100)
+    function switchType(t: 'frame' | 'background') {
+        setUploadType(t)
+        setPricePoints(t === 'frame' ? 50 : 100) // 기본가
+    }
 
     const [busy, setBusy] = useState(false)
     const [toast, setToast] = useState<string | null>(null)
@@ -82,18 +82,18 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
     }
 
     async function uploadBackground() {
-        if (!bgFile) return show('이미지 파일을 선택해줘.')
-        if (!bgKey.trim()) return show('key를 입력해줘.')
-        if (!bgLabel.trim()) return show('label을 입력해줘.')
+        if (!file) return show('이미지 파일을 선택해줘.')
+        if (!key.trim()) return show('key를 입력해줘.')
+        if (!label.trim()) return show('label을 입력해줘.')
 
         setBusy(true)
         try {
             const fd = new FormData()
-            fd.append('file', bgFile)
-            fd.append('key', bgKey.trim())
-            fd.append('label', bgLabel.trim())
-            fd.append('sort_order', String(bgSortOrder))
-            fd.append('price_points', String(bgPricePoints))
+            fd.append('file', file)
+            fd.append('key', key.trim())
+            fd.append('label', label.trim())
+            fd.append('sort_order', String(sortOrder))
+            fd.append('price_points', String(pricePoints))
             fd.append('is_purchasable', 'true')
 
             const res = await fetch('/api/admin/rank-backgrounds/upload', { method: 'POST', body: fd })
@@ -101,7 +101,7 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
             if (!res.ok || !data.ok) throw new Error(data.message ?? '업로드 실패')
 
             show('배경 업로드 완료 ✅')
-            setBgFile(null); setBgKey(''); setBgLabel(''); setBgSortOrder(0); setBgPricePoints(100)
+            setFile(null); setKey(''); setLabel(''); setSortOrder(0)
             router.refresh()
         } catch (e) {
             show(e instanceof Error ? e.message : '업로드 중 오류')
@@ -238,103 +238,66 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                 </div>
             )}
 
-            {/* ── 업로드 폼 ── */}
+            {/* ── 통합 업로드 폼 (프레임/배경 토글) ── */}
             <section className="rounded-2xl border p-6 bg-surface" style={{ borderColor: 'var(--color-line)' }}>
-                <div className="flex items-center gap-2 mb-6">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">New Frame</h2>
+                <div className="mb-6 flex flex-wrap items-center gap-3">
+                    <div className="flex rounded-lg bg-surface-2 p-0.5 ring-1 ring-line">
+                        {(['frame', 'background'] as const).map((t) => (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => switchType(t)}
+                                className={`rounded-md px-4 py-1.5 text-xs font-black transition-colors ${
+                                    uploadType === t
+                                        ? (t === 'frame' ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white')
+                                        : 'text-muted hover:text-fg'
+                                }`}
+                            >
+                                {t === 'frame' ? '프레임' : '배경'}
+                            </button>
+                        ))}
+                    </div>
+                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">
+                        New {uploadType === 'frame' ? 'Frame' : 'Background'}
+                    </h2>
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-1.5">
                         <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Key (고유이름)</label>
-                        <input
-                            value={key}
-                            onChange={(e) => setKey(e.target.value)}
-                            placeholder="pengu_gold"
-                            className={inputCls}
-                        />
+                        <input value={key} onChange={(e) => setKey(e.target.value)} placeholder={uploadType === 'frame' ? 'pengu_gold' : 'galaxy_bg'} className={inputCls} />
                     </div>
                     <div className="space-y-1.5"><label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">가격 (P)</label><input type="number" min={0} value={pricePoints} onChange={e=>setPricePoints(Number(e.target.value))} className={inputCls}/></div>
 
                     <div className="space-y-1.5">
                         <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Label (표시이름)</label>
-                        <input
-                            value={label}
-                            onChange={(e) => setLabel(e.target.value)}
-                            placeholder="펭구 골드"
-                            className={inputCls}
-                        />
+                        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={uploadType === 'frame' ? '펭구 골드' : '은하수 배경'} className={inputCls} />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Sort Order (정렬)</label>
-                        <input
-                            type="number"
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(Number(e.target.value))}
-                            className={inputCls}
-                        />
+                        <input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} className={inputCls} />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Image File</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                            className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-muted hover:file:bg-surface-2`}
-                        />
+                    <div className="space-y-1.5 sm:col-span-2">
+                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Image File (PNG/WebP/JPG, 5MB 이하)</label>
+                        <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-muted hover:file:bg-surface-2`} />
                     </div>
                 </div>
 
                 <button
                     disabled={busy}
-                    onClick={uploadFrame}
-                    className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
+                    onClick={uploadType === 'frame' ? uploadFrame : uploadBackground}
+                    className={`mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg ${
+                        uploadType === 'frame' ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
+                    }`}
                 >
                     {busy ? <Spinner size={4} /> : null}
-                    {busy ? '처리 중' : '프레임 업로드'}
+                    {busy ? '처리 중' : uploadType === 'frame' ? '프레임 업로드' : '배경 업로드'}
                 </button>
             </section>
             {/* ── CSS 효과 (effect_key) — 가격 편집 ── */}
             <section className="rounded-2xl border border-line bg-surface p-6"><h2 className="text-sm font-black text-fg">랭킹 카드 효과 (CSS)</h2><div className="mt-4 space-y-3">{cssEffects.map((effect)=><div key={effect.id} className="grid gap-2 rounded-xl border border-line bg-surface-2 p-3 sm:grid-cols-[1fr_8rem_auto]"><div><div className="font-bold text-fg">{effect.label}</div><div className="text-xs text-muted">{effect.effect_key}</div></div><input type="number" min={0} value={effect.price_points} onChange={e=>setEffects(effects.map((row)=>row.id===effect.id?{...row,price_points:Number(e.target.value)}:row))} className={inputCls}/><button disabled={busy} onClick={()=>saveEffect(effect)} className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-50">저장</button></div>)}{cssEffects.length===0&&<p className="text-xs text-faint italic">등록된 CSS 효과가 없습니다.</p>}</div></section>
-
-            {/* ── 배경 이미지 업로드 ── */}
-            <section className="rounded-2xl border p-6 bg-surface" style={{ borderColor: 'var(--color-line)' }}>
-                <div className="flex items-center gap-2 mb-6">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">New Background Image</h2>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Key (고유이름)</label>
-                        <input value={bgKey} onChange={(e) => setBgKey(e.target.value)} placeholder="galaxy_bg" className={inputCls} />
-                    </div>
-                    <div className="space-y-1.5"><label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">가격 (P)</label><input type="number" min={0} value={bgPricePoints} onChange={e=>setBgPricePoints(Number(e.target.value))} className={inputCls}/></div>
-
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Label (표시이름)</label>
-                        <input value={bgLabel} onChange={(e) => setBgLabel(e.target.value)} placeholder="은하수 배경" className={inputCls} />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Sort Order (정렬)</label>
-                        <input type="number" value={bgSortOrder} onChange={(e) => setBgSortOrder(Number(e.target.value))} className={inputCls} />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black text-subtle tracking-widest uppercase ml-1">Image File (PNG/WebP)</label>
-                        <input type="file" accept="image/png,image/webp" onChange={(e) => setBgFile(e.target.files?.[0] ?? null)} className={`${inputCls} file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1 file:text-[10px] file:font-black file:text-muted hover:file:bg-surface-2`} />
-                    </div>
-                </div>
-
-                <button disabled={busy} onClick={uploadBackground} className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20">
-                    {busy ? <Spinner size={4} /> : null}
-                    {busy ? '처리 중' : '배경 업로드'}
-                </button>
-            </section>
 
             {/* ── 이미지 배경 목록 ── */}
             <section className="space-y-4">

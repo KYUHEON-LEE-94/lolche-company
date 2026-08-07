@@ -21,8 +21,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, message: 'file/key/label이 필요합니다.' }, { status: 400 })
     }
 
-    if(file.size>2*1024*1024||!['image/png','image/webp'].includes(file.type))return NextResponse.json({ok:false,message:'PNG/WebP 2MB 이하만 업로드할 수 있습니다.'},{status:400})
-    const ext = file.type==='image/webp'?'webp':'png'
+    const EXT: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/gif': 'gif' }
+    if (file.size > 5 * 1024 * 1024) return NextResponse.json({ ok: false, message: `이미지는 5MB 이하만 업로드할 수 있습니다. (현재 ${(file.size / 1024 / 1024).toFixed(1)}MB)` }, { status: 400 })
+    if (!EXT[file.type]) return NextResponse.json({ ok: false, message: `PNG/WebP/JPG/GIF만 가능합니다. (현재 ${file.type || '알 수 없음'})` }, { status: 400 })
+    const ext = EXT[file.type]
     const objectPath = `${key}.${ext}`
 
     const { data: duplicate, error: duplicateError } = await supabase.schema('public')
