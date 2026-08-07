@@ -171,19 +171,19 @@ function shortTierLabel(tier: string | null, rank: string | null) {
 function RankBadge({ idx }: { idx: number }) {
   if (idx === 0)
     return (
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/25 bg-amber-500/10 text-xs font-black text-warn-ink">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 text-xs font-black text-white shadow-md shadow-amber-500/40 ring-1 ring-yellow-300/60">
           1
         </div>
     )
   if (idx === 1)
     return (
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-400/25 bg-slate-400/10 text-xs font-black text-muted">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-slate-300 to-slate-400 text-xs font-black text-slate-900 shadow-md shadow-slate-400/40 ring-1 ring-slate-200/60">
           2
         </div>
     )
   if (idx === 2)
     return (
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-orange-500/25 bg-orange-500/10 text-xs font-black text-orange-700 dark:text-orange-300">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-700 text-xs font-black text-white shadow-md shadow-orange-500/40 ring-1 ring-orange-300/60">
           3
         </div>
     )
