@@ -145,7 +145,10 @@ export default function ShopClient() {
                     </div>
                     <div>
                       <div className="text-fg font-bold">{f.label}</div>
-                      <div className="text-xs text-muted">{f.equipped ? '장착 중' : f.owned ? '장착' : `${f.price_points.toLocaleString()}P`}</div>
+                      <div className="mt-0.5 text-xs">
+                        <span className="font-black text-brand-ink">{f.price_points === 0 ? '무료' : `${f.price_points.toLocaleString()}P`}</span>
+                        {f.equipped ? <span className="text-warn-ink"> · 장착 중</span> : f.owned ? <span className="text-muted"> · 보유</span> : null}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -175,7 +178,10 @@ export default function ShopClient() {
                   <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${rankEffectClass(e.effect_key)}`} aria-hidden />
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-bold text-fg">{e.label}</div>
-                    <div className="text-xs text-muted">{e.equipped ? '장착 중' : e.owned ? '장착' : `${e.price_points.toLocaleString()}P`}</div>
+                    <div className="text-xs whitespace-nowrap">
+                      <span className="font-black text-brand-ink">{e.price_points === 0 ? '무료' : `${e.price_points.toLocaleString()}P`}</span>
+                      {e.equipped ? <span className="text-warn-ink"> · 장착 중</span> : e.owned ? <span className="text-muted"> · 보유</span> : null}
+                    </div>
                   </div>
                 </button>
               )
