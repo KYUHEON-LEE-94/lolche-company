@@ -9,7 +9,8 @@ export default function RankCardBackground({ imagePath }: { imagePath: string | 
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/rank-backgrounds/${encodeURIComponent(p).replaceAll('%2F', '/')}`)
   return (
     <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
-      <Image src={url} alt="" fill sizes="100vw" className="object-cover opacity-90" />
+      {/* unoptimized: Next 이미지 최적화는 GIF 를 정지 프레임으로 만든다. 움짤 배경을 위해 원본 그대로 서빙한다. */}
+      <Image src={url} alt="" fill sizes="100vw" className="object-cover opacity-90" unoptimized />
     </div>
   )
 }
