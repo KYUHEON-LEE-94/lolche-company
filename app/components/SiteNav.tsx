@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AuthButtons from '@/app/components/AuthButtons'
@@ -142,21 +142,25 @@ function PointBalance() {
   const [open, setOpen] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    let mounted = true
+  const loadBalance = useCallback(() => {
     fetch('/api/me/points', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: unknown) => {
-        if (!mounted) return
         const data = d as { balance?: unknown; ledger?: unknown } | null
         setBalance(typeof data?.balance === 'number' ? data.balance : null)
         setLedger(Array.isArray(data?.ledger) ? (data!.ledger as LedgerRow[]) : [])
       })
       .catch(() => {})
-    return () => {
-      mounted = false
-    }
-  }, [pathname])
+  }, [])
+
+  useEffect(() => { loadBalance() }, [pathname, loadBalance])
+
+  // 사이트 출석: 로드 시 1회 시도(하루 1회 5P, 서버가 날짜로 dedup). 성공 후 잔액 갱신.
+  useEffect(() => {
+    fetch('/api/me/attendance', { method: 'POST' })
+      .then(() => loadBalance())
+      .catch(() => {})
+  }, [loadBalance])
 
   useEffect(() => {
     if (!open) return

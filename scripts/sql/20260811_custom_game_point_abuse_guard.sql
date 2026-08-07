@@ -43,8 +43,8 @@ begin
           continue;
         end if;
         insert into public.point_ledger(member_id,amount,reason,reference_key,description,balance_after)
-        values(v_member,10,'custom_game_participation',p_game_id::text,'내전 종료 참가 보상',v_balance+10);
-        update public.point_accounts set balance=v_balance+10,updated_at=pg_catalog.now() where member_id=v_member;
+        values(v_member,15,'custom_game_participation',p_game_id::text,'내전 종료 참가 보상',v_balance+15);
+        update public.point_accounts set balance=v_balance+15,updated_at=pg_catalog.now() where member_id=v_member;
         v_awarded:=v_awarded+1;
       end if;
     end loop;
