@@ -25,6 +25,7 @@ type DashMember = Pick<
   | 'id'
   | 'member_name'
   | 'profile_image_path'
+  | 'profile_frame_path'
   | 'discord_avatar_url'
   | 'tft_tier'
   | 'tft_rank'
@@ -47,9 +48,9 @@ type RecruitingGame = {
 }
 
 const MEMBER_COLUMNS =
-  'id,member_name,profile_image_path,ranking_card_effect_key,ranking_card_bg_image,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
+  'id,member_name,profile_image_path,profile_frame_path,ranking_card_effect_key,ranking_card_bg_image,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
 const LEGACY_MEMBER_COLUMNS =
-  'id,member_name,profile_image_path,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
+  'id,member_name,profile_image_path,profile_frame_path,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
 
 async function fetchDashboardMembers() {
   const full = await withAvatarColumn((cols) => supabase.from('members').select(`${MEMBER_COLUMNS}${cols}`).eq('status', 'approved'))
@@ -150,6 +151,8 @@ export default async function DashboardPage() {
     tft_league_points: m.tft_league_points,
     avatarUrl: resolveAvatarUrl(m),
     rankLabel: formatRank(m.tft_tier, m.tft_rank, m.tft_league_points),
+    discord_avatar_url: m.discord_avatar_url,
+    profile_frame_path: m.profile_frame_path,
     ranking_card_effect_key: m.ranking_card_effect_key,
     ranking_card_bg_image: m.ranking_card_bg_image,
   })

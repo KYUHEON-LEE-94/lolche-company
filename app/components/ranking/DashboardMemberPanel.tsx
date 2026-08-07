@@ -9,6 +9,10 @@ type PanelMember = {
   tft_tier: string | null
   tft_rank: string | null
   tft_league_points: number | null
+  discord_avatar_url?: string | null
+  profile_frame_path?: string | null
+  ranking_card_effect_key?: string | null
+  ranking_card_bg_image?: string | null
 }
 
 /**

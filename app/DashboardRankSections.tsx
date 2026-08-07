@@ -23,6 +23,8 @@ export type DashRankMember = {
   tft_league_points: number | null
   avatarUrl: string | null
   rankLabel: string
+  discord_avatar_url?: string | null
+  profile_frame_path?: string | null
   ranking_card_effect_key?: string | null
   ranking_card_bg_image?: string | null
 }
