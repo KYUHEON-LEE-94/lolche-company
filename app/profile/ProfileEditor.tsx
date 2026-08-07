@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { isDiscordAvatarUrl } from '@/lib/members/avatar'
-import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
@@ -177,7 +177,7 @@ export default function ProfileEditor({ member }: Props) {
                         {/* 프레임 오버레이 — 아바타보다 크게(비례 여백) 둬 장식이 원형 아바타 바깥에 오도록 */}
                         {frameUrl && (
                             <div className="pointer-events-none absolute -inset-[34%] z-20">
-                                <Image src={frameUrl} alt="profile frame" fill className="object-contain" />
+                                <Image src={frameUrl} alt="profile frame" fill className={`object-contain ${isSpinningFrame(framePath) ? 'frame-spin' : ''}`} />
                             </div>
                         )}
                     </div>
@@ -245,7 +245,7 @@ export default function ProfileEditor({ member }: Props) {
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="relative w-12 h-12">
-                                            <Image src={url} alt={f.label} fill className="object-contain"/>
+                                            <Image src={url} alt={f.label} fill className={`object-contain ${isSpinningFrame(f.image_path) ? 'frame-spin' : ''}`}/>
                                         </div>
                                         <div>
                                             <div className="text-fg font-bold">{f.label}</div>

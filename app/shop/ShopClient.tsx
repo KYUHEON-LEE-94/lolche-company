@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import { ALERT } from '@/lib/ui/styles'
@@ -145,7 +145,7 @@ export default function ShopClient() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative w-12 h-12 shrink-0">
-                      <Image src={url} alt={f.label} fill className="object-contain" />
+                      <Image src={url} alt={f.label} fill className={`object-contain ${isSpinningFrame(f.image_path) ? 'frame-spin' : ''}`} />
                     </div>
                     <div>
                       <div className="text-fg font-bold">{f.label}</div>

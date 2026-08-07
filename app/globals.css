@@ -249,3 +249,16 @@ option {
     animation: none;
   }
 }
+
+/* '우리가 만든' 생성 링 프레임(대칭)만 천천히 회전. 펭구 캐릭터 프레임은 제외. */
+.frame-spin {
+  animation: frame-spin 14s linear infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+@keyframes frame-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame-spin { animation: none; }
+}

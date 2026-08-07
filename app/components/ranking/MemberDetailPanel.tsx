@@ -10,7 +10,7 @@ import type { Json } from '@/types/supabase'
 import { rarityBorderClass } from '@/lib/tft/tftLocale'
 import { cachedJson } from '@/lib/client/requestCache'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
-import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { supabaseClient } from '@/lib/supabase'
@@ -584,7 +584,7 @@ export default function MemberDetailPanel({
               <div className="relative h-16 w-16 shrink-0 sm:h-20 sm:w-20">
                 {member.profile_frame_path && (
                   <div className="pointer-events-none absolute -inset-[34%] z-20">
-                    <Image src={panelFrameUrl(member.profile_frame_path)} alt="" fill className="object-contain" />
+                    <Image src={panelFrameUrl(member.profile_frame_path)} alt="" fill className={`object-contain ${isSpinningFrame(member.profile_frame_path) ? 'frame-spin' : ''}`} />
                   </div>
                 )}
                 <div className="relative z-10 h-full w-full overflow-hidden rounded-full border-2 border-white/15 bg-surface-2 shadow-lg">

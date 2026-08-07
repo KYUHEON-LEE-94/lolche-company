@@ -9,7 +9,7 @@ import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 import { CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
-import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
@@ -153,7 +153,7 @@ export default async function LolPage() {
                           alt=""
                           fill
                           sizes="54px"
-                          className="object-contain"
+                          className={`object-contain ${isSpinningFrame(m.profile_frame_path) ? 'frame-spin' : ''}`}
                         />
                       </div>
                     )}

@@ -12,7 +12,7 @@ import { resolveAvatarUrl } from '@/lib/members/avatar'
 import { CONTAINER } from '@/lib/ui/styles'
 import EmptyState from '@/app/components/ui/EmptyState'
 import { invalidateMemberDetailCache } from '@/lib/client/requestCache'
-import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 
@@ -337,7 +337,7 @@ const MemberRow = memo(function MemberRow({
                     alt=""
                     fill
                     sizes="52px"
-                    className="object-contain"
+                    className={`object-contain ${isSpinningFrame(framePath) ? 'frame-spin' : ''}`}
                 />
               </div>
           )}
