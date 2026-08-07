@@ -323,7 +323,7 @@ const MemberRow = memo(function MemberRow({
         {/* 아바타 */}
         <div className="relative w-9 h-9 shrink-0">
           {framePath && (
-              <div className="absolute -inset-[7px] z-20 pointer-events-none">
+              <div className="absolute -inset-[34%] z-20 pointer-events-none">
                 <Image
                     src={getFramePublicUrl(framePath)}
                     alt=""

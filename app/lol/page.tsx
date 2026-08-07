@@ -147,7 +147,7 @@ export default async function LolPage() {
 
                   <div className="relative h-10 w-10 shrink-0">
                     {m.profile_frame_path && (
-                      <div className="pointer-events-none absolute -inset-[7px] z-20">
+                      <div className="pointer-events-none absolute -inset-[34%] z-20">
                         <Image
                           src={resolveFrameUrl(m.profile_frame_path, (path) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-frames/${path}`)}
                           alt=""

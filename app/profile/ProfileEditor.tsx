@@ -175,7 +175,7 @@ export default function ProfileEditor({ member }: Props) {
 
                         {/* 프레임 오버레이 — 아바타보다 크게(비례 여백) 둬 장식이 원형 아바타 바깥에 오도록 */}
                         {frameUrl && (
-                            <div className="pointer-events-none absolute -inset-[18%] z-20">
+                            <div className="pointer-events-none absolute -inset-[34%] z-20">
                                 <Image src={frameUrl} alt="profile frame" fill className="object-contain" />
                             </div>
                         )}
