@@ -279,9 +279,12 @@ export default function ProfileEditor({ member }: Props) {
                     ) : (
                         ownedEffects.map(e=>(
                             <button key={e.id} disabled={savingFrame} onClick={()=>toggleEquip('rank_effect',e)} className={`rounded-2xl border p-4 text-left ${e.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'} disabled:opacity-40`}>
-                                <div className="font-bold text-fg">{e.label}</div>
-                                <div className="mt-1 text-xs text-muted">{e.equipped?'장착 중':'장착'}</div>
-                                <div className="mt-2 text-[11px] text-subtle">{e.description}</div>
+                                {/* 상점과 동일하게 설명 대신 실제 이펙트 미리보기 */}
+                                <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${rankEffectClass(e.effect_key)}`} aria-hidden />
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="font-bold text-fg">{e.label}</div>
+                                    <div className="text-xs text-muted">{e.equipped?'장착 중':'장착'}</div>
+                                </div>
                             </button>
                         ))
                     )}
