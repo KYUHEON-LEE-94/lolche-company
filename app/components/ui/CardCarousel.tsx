@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from 'react'
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = []
@@ -9,8 +9,10 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 /**
- * 아이템이 perPage 를 넘으면 좌우로 넘기는(스와이프/화살표) 페이지 캐러셀.
- * perPage 이하면 그냥 grid 로 렌더한다. pageClassName 은 각 페이지 내부 레이아웃(예: 'grid grid-cols-3 gap-4').
+ * 아이템이 perPage 를 넘으면 좌우로 넘기는 페이지 캐러셀.
+ * - 화살표 버튼 / 트랙패드·터치 스와이프 / 마우스 드래그(끌어서) 모두 지원.
+ * - perPage 이하면 그냥 grid 로 렌더.
+ * pageClassName 은 각 페이지 내부 레이아웃(예: 'grid grid-cols-3 gap-4').
  */
 export default function CardCarousel({
   items,
@@ -22,6 +24,7 @@ export default function CardCarousel({
   pageClassName: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const drag = useRef({ active: false, startX: 0, startScroll: 0, moved: false })
   const pages = chunk(items, perPage)
 
   if (pages.length <= 1) {
@@ -33,11 +36,46 @@ export default function CardCarousel({
     if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' })
   }
 
+  // 마우스 끌어서 넘기기. 터치/트랙패드는 네이티브 스크롤을 그대로 쓴다.
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return
+    const el = ref.current
+    if (!el) return
+    drag.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false }
+    el.style.scrollSnapType = 'none'
+  }
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = ref.current
+    if (!el || !drag.current.active) return
+    const dx = e.clientX - drag.current.startX
+    if (Math.abs(dx) > 4) drag.current.moved = true
+    el.scrollLeft = drag.current.startScroll - dx
+  }
+  const endDrag = () => {
+    const el = ref.current
+    if (!el || !drag.current.active) return
+    drag.current.active = false
+    el.style.scrollSnapType = '' // 스냅 복원 → 가장 가까운 페이지로 정렬
+  }
+  // 드래그로 움직였으면 뒤이어 발생하는 아이템 클릭(구매/장착 등)을 취소한다.
+  const onClickCapture = (e: ReactMouseEvent) => {
+    if (drag.current.moved) {
+      e.preventDefault()
+      e.stopPropagation()
+      drag.current.moved = false
+    }
+  }
+
   return (
     <div className="relative">
       <div
         ref={ref}
-        className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onClickCapture={onClickCapture}
+        className="flex cursor-grab snap-x snap-mandatory overflow-x-auto scroll-smooth select-none active:cursor-grabbing [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {pages.map((page, i) => (
           <div key={i} className={`w-full shrink-0 snap-start ${pageClassName}`}>
@@ -49,7 +87,7 @@ export default function CardCarousel({
         type="button"
         onClick={() => scrollByPage(-1)}
         aria-label="이전"
-        className="absolute -left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/90 text-lg font-black text-fg shadow-md backdrop-blur transition hover:bg-surface-2"
+        className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/85 text-3xl font-black leading-none text-fg shadow-lg backdrop-blur transition hover:bg-surface-2"
       >
         ‹
       </button>
@@ -57,7 +95,7 @@ export default function CardCarousel({
         type="button"
         onClick={() => scrollByPage(1)}
         aria-label="다음"
-        className="absolute -right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/90 text-lg font-black text-fg shadow-md backdrop-blur transition hover:bg-surface-2"
+        className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/85 text-3xl font-black leading-none text-fg shadow-lg backdrop-blur transition hover:bg-surface-2"
       >
         ›
       </button>
