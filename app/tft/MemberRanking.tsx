@@ -513,24 +513,6 @@ export default function MemberRanking({
                 )}
               </div>
 
-              {/* 로고 */}
-              <div className="mb-6 flex justify-center">
-                <div className="relative group w-full max-w-[320px]">
-                  <div className="relative flex h-[64px] items-center justify-center overflow-hidden rounded-2xl border border-line bg-panel/70 px-6">
-                    {/* 상단 하이라이트 */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    <Image
-                        src="/images/logo.png"
-                        alt="롤체 컴퍼니 로고"
-                        width={542}
-                        height={419}
-                        priority
-                        className="max-h-[44px] w-auto object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* 큐 탭 */}
               <div className="inline-flex w-full max-w-sm gap-1 rounded-xl border border-line bg-surface-2 p-1">
                 {(['solo', 'doubleup'] as const).map((q) => (
