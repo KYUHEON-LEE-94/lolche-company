@@ -17,9 +17,10 @@ export async function POST(req: Request) {
 
 
 
-    if (!file || !/^[a-z0-9_-]{1,40}$/.test(key) || !label || label.length > 50 || !Number.isInteger(sortOrder) || !Number.isInteger(pricePoints) || pricePoints < 0 || pricePoints > 100000) {
-        return NextResponse.json({ ok: false, message: 'file/key/label이 필요합니다.' }, { status: 400 })
-    }
+    if (!file) return NextResponse.json({ ok: false, message: '이미지 파일을 선택해 주세요.' }, { status: 400 })
+    if (!/^[a-zA-Z0-9_-]{1,40}$/.test(key)) return NextResponse.json({ ok: false, message: 'key는 영문/숫자/_/- 1~40자만 가능합니다. (공백·특수문자 불가)' }, { status: 400 })
+    if (!label || label.length > 50) return NextResponse.json({ ok: false, message: 'label은 1~50자여야 합니다.' }, { status: 400 })
+    if (!Number.isInteger(sortOrder) || !Number.isInteger(pricePoints) || pricePoints < 0 || pricePoints > 100000) return NextResponse.json({ ok: false, message: '가격(0~100000)·정렬 값을 확인해 주세요.' }, { status: 400 })
 
     const EXT: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/gif': 'gif' }
     if (file.size > 5 * 1024 * 1024) return NextResponse.json({ ok: false, message: `이미지는 5MB 이하만 업로드할 수 있습니다. (현재 ${(file.size / 1024 / 1024).toFixed(1)}MB)` }, { status: 400 })
