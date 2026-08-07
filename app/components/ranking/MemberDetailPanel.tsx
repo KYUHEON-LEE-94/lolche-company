@@ -11,6 +11,8 @@ import { rarityBorderClass } from '@/lib/tft/tftLocale'
 import { cachedJson } from '@/lib/client/requestCache'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
+import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { supabaseClient } from '@/lib/supabase'
 
 function panelFrameUrl(path: string): string {
@@ -215,6 +217,8 @@ type MemberInfo = {
   tft_league_points: number | null
   profile_frame_path?: string | null
   discord_avatar_url?: string | null
+  ranking_card_effect_key?: string | null
+  ranking_card_bg_image?: string | null
 }
 
 function placementColor(p: number) {
@@ -582,28 +586,31 @@ export default function MemberDetailPanel({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="pointer-events-auto flex h-[100dvh] w-full flex-col overflow-hidden bg-panel sm:h-[min(90dvh,900px)] sm:w-[min(94vw,1200px)] sm:rounded-2xl sm:border sm:border-line sm:shadow-2xl"
           >
-          {/* 헤더 */}
-          <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
-            <div className="flex items-center gap-3 min-w-0">
-              {/* 프로필 카드 — 프레임 씌운 아바타(디스코드처럼 상대 프로필 확인) */}
-              <div className="relative h-12 w-12 shrink-0">
+          {/* 헤더 — 본인이 설정한 배경 이펙트/이미지를 배너로 깐다 */}
+          <div className={`relative isolate flex shrink-0 items-center justify-between gap-3 overflow-hidden border-b border-line px-6 py-6 ${rankEffectClass(member.ranking_card_effect_key)}`}>
+            <RankCardBackground imagePath={member.ranking_card_bg_image} />
+            {/* 가독성 스크림 — 좌측 이름 영역을 어둡게 */}
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-panel/85 via-panel/45 to-panel/15" aria-hidden />
+            <div className="flex items-center gap-4 min-w-0">
+              {/* 프로필 카드 — 프레임 씌운 아바타(디스코드 프로필처럼) */}
+              <div className="relative h-16 w-16 shrink-0 sm:h-20 sm:w-20">
                 {member.profile_frame_path && (
                   <div className="pointer-events-none absolute -inset-[34%] z-20">
                     <Image src={panelFrameUrl(member.profile_frame_path)} alt="" fill className="object-contain" />
                   </div>
                 )}
-                <div className="relative z-10 h-full w-full overflow-hidden rounded-full border border-line bg-surface-2">
+                <div className="relative z-10 h-full w-full overflow-hidden rounded-full border-2 border-white/15 bg-surface-2 shadow-lg">
                   {resolveAvatarUrl(member) ? (
-                    <Image src={resolveAvatarUrl(member) as string} alt="" fill sizes="48px" className="object-cover" unoptimized />
+                    <Image src={resolveAvatarUrl(member) as string} alt="" fill sizes="80px" className="object-cover" unoptimized />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center text-sm font-black text-subtle">
+                    <span className="flex h-full w-full items-center justify-center text-lg font-black text-subtle">
                       {member.member_name.slice(0, 1)}
                     </span>
                   )}
                 </div>
               </div>
             <div className="min-w-0">
-              <p id={titleId} className="font-black text-fg text-base leading-tight truncate">{member.member_name}</p>
+              <p id={titleId} className="font-black text-fg text-lg leading-tight truncate drop-shadow">{member.member_name}</p>
               {headerRank.tier ? (
                 <p className="text-[11px] text-subtle mt-0.5">
                   {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
