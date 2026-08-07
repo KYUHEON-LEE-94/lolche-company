@@ -8,6 +8,7 @@ import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
+import CardCarousel from '@/app/components/ui/CardCarousel'
 
 type Props = {
     userId: string
@@ -218,15 +219,15 @@ export default function ProfileEditor({ member }: Props) {
                     </button>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {framesLoading ? (
-                        <div className="text-xs text-muted">불러오는 중...</div>
-                    ) : ownedFrames.length === 0 ? (
-                        <div className="col-span-full text-xs text-muted">
-                            보유한 프레임이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
-                        </div>
-                    ) : (
-                        ownedFrames.map((f) => {
+                {framesLoading ? (
+                    <div className="mt-5 text-xs text-muted">불러오는 중...</div>
+                ) : ownedFrames.length === 0 ? (
+                    <div className="mt-5 text-xs text-muted">
+                        보유한 프레임이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
+                    </div>
+                ) : (
+                    <div className="mt-5">
+                        <CardCarousel perPage={9} pageClassName="grid grid-cols-2 sm:grid-cols-3 gap-4" items={ownedFrames.map((f) => {
                             const selected = framePath === f.image_path
                             const url = framePublicUrl(f.image_path)
                             return (
@@ -253,9 +254,9 @@ export default function ProfileEditor({ member }: Props) {
                                     </div>
                                 </button>
                             )
-                        })
-                    )}
-                </div>
+                        })} />
+                    </div>
+                )}
 
                 {savingFrame && <div className="mt-4 text-xs text-muted">저장 중...</div>}
             </section>
@@ -263,13 +264,13 @@ export default function ProfileEditor({ member }: Props) {
             {/* 랭킹 카드 배경 (보유분만) */}
             <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
                 <div className="text-fg font-extrabold">랭킹 카드 배경</div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    {ownedEffects.length === 0 ? (
-                        <div className="col-span-full text-xs text-muted">
-                            보유한 배경이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
-                        </div>
-                    ) : (
-                        ownedEffects.map(e=>(
+                {ownedEffects.length === 0 ? (
+                    <div className="mt-4 text-xs text-muted">
+                        보유한 배경이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
+                    </div>
+                ) : (
+                    <div className="mt-4">
+                        <CardCarousel perPage={9} pageClassName="grid gap-3 sm:grid-cols-3" items={ownedEffects.map(e=>(
                             <button key={e.id} disabled={savingFrame} onClick={()=>toggleEquip('rank_effect',e)} className={`rounded-2xl border p-4 text-left ${e.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'} disabled:opacity-40`}>
                                 {/* 상점과 동일하게 설명 대신 실제 배경 미리보기 */}
                                 <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${e.image_path ? '' : rankEffectClass(e.effect_key)}`} aria-hidden>
@@ -280,9 +281,9 @@ export default function ProfileEditor({ member }: Props) {
                                     <div className="text-xs text-muted">{e.equipped?'장착 중':'장착'}</div>
                                 </div>
                             </button>
-                        ))
-                    )}
-                </div>
+                        ))} />
+                    </div>
+                )}
             </section>
         </div>
     )
