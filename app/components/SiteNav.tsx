@@ -33,9 +33,10 @@ const NAV_ITEMS: NavItem[] = [
     : []),
   { href: '/custom-games', label: '내전', icon: 'custom', inTabBar: true },
   { href: '/steam', label: '스팀', icon: 'steam', inTabBar: true },
-  // 하단 탭바는 grid-cols-4 고정이라 4개(home/tft/custom/steam)만 담는다. 상점은 inTabBar:false.
-  { href: '/shop', label: '상점', icon: 'shop', inTabBar: false },
+  // 하단 탭바는 grid-cols-4 고정이라 4개(home/tft/custom/steam)만 담는다. 나머지는 inTabBar:false.
   { href: '/hall-of-fame', label: '명예의 전당', icon: 'trophy', inTabBar: false },
+  // 상점은 명예의 전당 뒤. 이모지로 눈에 띄게.
+  { href: '/shop', label: '🛍️ 상점', icon: 'shop', inTabBar: false },
 ]
 
 const TAB_ITEMS = NAV_ITEMS.filter((item) => item.inTabBar)
@@ -120,6 +121,39 @@ function isActive(pathname: string, item: NavItem) {
   return item.exact
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(`${item.href}/`)
+}
+
+/** 네비 우측 상시 포인트 잔액 칩. 승인 멤버만 노출(balance 숫자일 때만).
+ *  경로 변경마다 재조회해 상점 구매 후 다른 페이지로 이동하면 갱신된다. */
+function PointBalance() {
+  const pathname = usePathname()
+  const [balance, setBalance] = useState<number | null>(null)
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/me/points', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: unknown) => {
+        if (!mounted) return
+        const b = (d as { balance?: unknown } | null)?.balance
+        setBalance(typeof b === 'number' ? b : null)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [pathname])
+  if (balance === null) return null
+  return (
+    <Link
+      href="/shop"
+      title="상점에서 사용"
+      aria-label={`보유 포인트 ${balance}P`}
+      className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-xs font-black text-warn-ink transition-colors hover:bg-amber-400/20"
+    >
+      <span aria-hidden>🪙</span>
+      {balance.toLocaleString()}P
+    </Link>
+  )
 }
 
 export default function SiteNav() {
@@ -233,6 +267,7 @@ export default function SiteNav() {
           </div>
 
           <div className="flex items-center gap-1.5">
+            <PointBalance />
             <ThemeToggle />
             <AuthButtons />
           </div>

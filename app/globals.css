@@ -195,6 +195,32 @@ option {
   box-shadow: inset 0 0 26px rgba(129, 140, 248, 0.14);
 }
 
+.rank-card-effect--sunset::before {
+  background:
+    radial-gradient(ellipse at 12% 100%, rgba(251, 146, 60, 0.34), transparent 42%),
+    radial-gradient(ellipse at 60% 8%, rgba(244, 63, 94, 0.22), transparent 46%),
+    radial-gradient(ellipse at 92% 70%, rgba(251, 191, 36, 0.24), transparent 40%),
+    linear-gradient(115deg, rgba(154, 52, 18, 0.1), rgba(190, 24, 93, 0.1) 52%, rgba(180, 83, 9, 0.1));
+  background-size: 130% 150%;
+  animation: rank-card-sunset 8s ease-in-out infinite alternate;
+}
+
+.rank-card-effect--sunset::after {
+  box-shadow: inset 0 0 24px rgba(251, 146, 60, 0.14);
+}
+
+.rank-card-effect--verdant::before {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.26), transparent 55%),
+    radial-gradient(ellipse at 15% 20%, rgba(163, 230, 53, 0.18), transparent 40%),
+    linear-gradient(120deg, rgba(6, 95, 70, 0.12), rgba(21, 128, 61, 0.12));
+  animation: rank-card-verdant 4.5s ease-in-out infinite;
+}
+
+.rank-card-effect--verdant::after {
+  box-shadow: inset 0 0 26px rgba(52, 211, 153, 0.16);
+}
+
 @keyframes rank-card-aurora {
   from { background-position: 0% 45%; }
   to { background-position: 100% 55%; }
@@ -205,9 +231,21 @@ option {
   to { background-position: 86px 0, -112px 0, 134px 0, -158px 0, 0 0; }
 }
 
+@keyframes rank-card-sunset {
+  from { background-position: 0% 60%; }
+  to { background-position: 100% 40%; }
+}
+
+@keyframes rank-card-verdant {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rank-card-effect--aurora::before,
-  .rank-card-effect--starfield::before {
+  .rank-card-effect--starfield::before,
+  .rank-card-effect--sunset::before,
+  .rank-card-effect--verdant::before {
     animation: none;
   }
 }

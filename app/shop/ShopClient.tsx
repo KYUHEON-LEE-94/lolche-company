@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import { ALERT } from '@/lib/ui/styles'
 
 type Frame = {
@@ -170,9 +171,12 @@ export default function ShopClient() {
                   onClick={() => itemAction('rank_effect', e)}
                   className={`rounded-2xl border p-4 text-left ${e.equipped ? 'border-brand bg-brand/10' : 'border-line bg-surface-2'} disabled:opacity-40`}
                 >
-                  <div className="font-bold text-fg">{e.label}</div>
-                  <div className="mt-1 text-xs text-muted">{e.equipped ? '장착 중' : e.owned ? '장착' : `${e.price_points.toLocaleString()}P`}</div>
-                  <div className="mt-2 text-[11px] text-subtle">{e.description}</div>
+                  {/* 실제 이펙트 미리보기 — 설명 대신 눈으로 바로 확인 */}
+                  <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${rankEffectClass(e.effect_key)}`} aria-hidden />
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-bold text-fg">{e.label}</div>
+                    <div className="text-xs text-muted">{e.equipped ? '장착 중' : e.owned ? '장착' : `${e.price_points.toLocaleString()}P`}</div>
+                  </div>
                 </button>
               )
             })
