@@ -136,7 +136,7 @@ export default async function LolPage() {
               return (
                 <li
                   key={m.id}
-                  className={`relative isolate overflow-hidden flex items-center gap-3 rounded-2xl border border-line px-4 py-3 transition-colors hover:border-line-strong ${rankEffectClass(m.ranking_card_effect_key)} ${
+                  className={`relative isolate overflow-hidden flex min-h-[76px] items-center gap-3 rounded-2xl border border-line px-4 py-4 transition-colors hover:border-line-strong ${rankEffectClass(m.ranking_card_effect_key)} ${
                     unranked ? 'bg-surface opacity-70' : 'bg-surface'
                   }`}
                 >
