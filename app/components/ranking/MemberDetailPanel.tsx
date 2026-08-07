@@ -260,13 +260,13 @@ function UnitIcon({ unit }: { unit: ProcessedUnit }) {
 
   return (
     <div className="flex flex-col items-center gap-0.5" title={unit.name}>
-      <div className={`relative w-8 h-8 rounded overflow-hidden border-2 ${border} bg-surface`}>
+      <div className={`relative w-10 h-10 rounded-md overflow-hidden border-2 ${border} bg-surface`}>
         {!imgError ? (
           <Image
             src={unit.imageUrl}
             alt={unit.name}
             fill
-            sizes="32px"
+            sizes="40px"
             className="object-cover"
             onError={() => setImgError(true)}
             unoptimized
@@ -278,7 +278,7 @@ function UnitIcon({ unit }: { unit: ProcessedUnit }) {
         )}
       </div>
       {unit.tier >= 2 && (
-        <div className="text-[7px] text-yellow-300 leading-none tracking-[-1px]">
+        <div className="text-[9px] text-yellow-300 leading-none tracking-[-1px]">
           {'★'.repeat(unit.tier)}
         </div>
       )}
