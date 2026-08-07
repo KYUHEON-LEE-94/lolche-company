@@ -55,7 +55,16 @@ export default function CardCarousel({
     const el = ref.current
     if (!el || !drag.current.active) return
     drag.current.active = false
-    el.style.scrollSnapType = '' // 스냅 복원 → 가장 가까운 페이지로 정렬
+    // 드래그 거리가 페이지의 25% 이상이면 그 방향으로 한 페이지 넘긴다(스냅만으론 중간에 걸린다).
+    const pageW = el.clientWidth || 1
+    const startPage = Math.round(drag.current.startScroll / pageW)
+    const dx = el.scrollLeft - drag.current.startScroll
+    let target = startPage
+    if (dx > pageW * 0.25) target = startPage + 1
+    else if (dx < -pageW * 0.25) target = startPage - 1
+    target = Math.max(0, Math.min(pages.length - 1, target))
+    el.style.scrollSnapType = ''
+    el.scrollTo({ left: target * pageW, behavior: 'smooth' })
   }
   // 드래그로 움직였으면 뒤이어 발생하는 아이템 클릭(구매/장착 등)을 취소한다.
   const onClickCapture = (e: ReactMouseEvent) => {
