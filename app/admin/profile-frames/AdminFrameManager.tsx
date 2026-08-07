@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
+import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 
 // 동일한 스피너 컴포넌트
 function Spinner({ size = 4 }: { size?: number }) {
@@ -47,8 +48,6 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
     // 업로드/삭제 후 router.refresh() 로 서버가 새 initialEffects 를 내려주면 동기화한다.
     useEffect(() => { setEffects(initialEffects) }, [initialEffects])
 
-    const cssEffects = effects.filter((e) => !e.image_path)
-    const bgEffects = effects.filter((e) => e.image_path)
 
     // 프레임/배경 통합 업로드 폼 — 타입만 토글하고 입력 필드는 공유한다.
     const [uploadType, setUploadType] = useState<'frame' | 'background'>('frame')
@@ -296,38 +295,40 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                     {busy ? '처리 중' : uploadType === 'frame' ? '프레임 업로드' : '배경 업로드'}
                 </button>
             </section>
-            {/* ── CSS 효과 (effect_key) — 가격 편집 ── */}
-            <section className="rounded-2xl border border-line bg-surface p-6"><h2 className="text-sm font-black text-fg">랭킹 카드 효과 (CSS)</h2><div className="mt-4 space-y-3">{cssEffects.map((effect)=><div key={effect.id} className="grid gap-2 rounded-xl border border-line bg-surface-2 p-3 sm:grid-cols-[1fr_8rem_auto]"><div><div className="font-bold text-fg">{effect.label}</div><div className="text-xs text-muted">{effect.effect_key}</div></div><input type="number" min={0} value={effect.price_points} onChange={e=>setEffects(effects.map((row)=>row.id===effect.id?{...row,price_points:Number(e.target.value)}:row))} className={inputCls}/><button disabled={busy} onClick={()=>saveEffect(effect)} className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-50">저장</button></div>)}{cssEffects.length===0&&<p className="text-xs text-faint italic">등록된 CSS 효과가 없습니다.</p>}</div></section>
-
-            {/* ── 이미지 배경 목록 ── */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                    <h2 className="text-xs font-black text-muted tracking-widest uppercase">Background Image List</h2>
-                    <span className="text-[10px] font-bold text-faint ml-auto">{bgEffects.length} items</span>
+            {/* ── 랭킹 카드 배경 (CSS 효과 + 이미지 배경 통합) ── */}
+            <section className="rounded-2xl border border-line bg-surface p-6">
+                <div className="mb-2 flex items-center gap-2">
+                    <h2 className="text-sm font-black text-fg">랭킹 카드 배경</h2>
+                    <span className="text-[10px] font-bold text-faint ml-auto">{effects.length} items</span>
                 </div>
-
-                <div className="grid gap-3">
-                    {bgEffects.map((e) => (
-                        <div key={e.id} className="flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-surface" style={{ borderColor: 'var(--color-line)' }}>
-                            <div className="flex items-center gap-4 min-w-0">
-                                <div className="relative w-20 h-12 rounded-xl overflow-hidden bg-surface-2 border border-line flex-shrink-0">
-                                    {e.image_path && <Image src={bgUrl(e.image_path)} alt={e.label} fill className="object-cover" />}
+                <p className="mb-4 text-xs text-subtle">CSS 효과는 코드 내장이라 가격만 수정됩니다. 이미지 배경은 업로드분이라 삭제도 가능합니다.</p>
+                <div className="space-y-3">
+                    {effects.map((e) => (
+                        <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 p-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-line bg-canvas isolate">
+                                    {e.image_path
+                                        ? <Image src={bgUrl(e.image_path)} alt={e.label} fill className="object-cover" unoptimized />
+                                        : <div className={`absolute inset-0 ${rankEffectClass(e.effect_key)}`} />}
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-fg font-bold text-sm truncate">{e.label}</div>
-                                    <div className="text-[11px] text-subtle font-medium mt-0.5">order: {e.sort_order} · {e.price_points}P{e.is_active ? '' : ' · 비활성'}</div>
-                                    <div className="text-[10px] text-faint truncate max-w-[150px] sm:max-w-xs mt-1">{e.image_path}</div>
+                                    <div className="truncate font-bold text-fg">{e.label}</div>
+                                    <div className="truncate text-[11px] text-muted">{e.image_path ? '이미지 배경' : `CSS · ${e.effect_key}`}{e.is_active ? '' : ' · 비활성'}</div>
                                 </div>
                             </div>
-                            <button disabled={busy} onClick={() => deleteBackground(e)} className="px-4 py-2 rounded-xl text-xs font-bold text-danger-ink bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 disabled:opacity-30 transition-all flex-shrink-0">삭제</button>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <label className="flex items-center gap-1 text-[11px] font-bold text-muted">
+                                    <input type="number" min={0} value={e.price_points} onChange={(ev) => setEffects(effects.map((row) => row.id === e.id ? { ...row, price_points: Number(ev.target.value) } : row))} aria-label={`${e.label} 가격`} className="w-20 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-fg focus:border-indigo-500/50 focus:outline-none" />
+                                    P
+                                </label>
+                                <button disabled={busy} onClick={() => saveEffect(e)} className="rounded-xl bg-brand px-3 py-2 text-xs font-bold text-white transition-all hover:bg-indigo-500 disabled:opacity-50">저장</button>
+                                {e.image_path && (
+                                    <button disabled={busy} onClick={() => deleteBackground(e)} className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-danger-ink transition-all hover:bg-red-500/20 disabled:opacity-30">삭제</button>
+                                )}
+                            </div>
                         </div>
                     ))}
-                    {bgEffects.length === 0 && (
-                        <div className="text-center py-12 rounded-2xl border border-dashed border-line">
-                            <p className="text-sm text-faint font-medium italic">등록된 이미지 배경이 없습니다.</p>
-                        </div>
-                    )}
+                    {effects.length === 0 && <p className="text-xs text-faint italic">등록된 배경이 없습니다.</p>}
                 </div>
             </section>
 
