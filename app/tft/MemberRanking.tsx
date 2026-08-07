@@ -331,7 +331,7 @@ const MemberRow = memo(function MemberRow({
               </div>
           )}
           <div className="
-            relative z-10 w-full h-full rounded-lg overflow-hidden
+            relative z-10 w-full h-full rounded-full overflow-hidden
             bg-surface-2 border border-line
             flex items-center justify-center
           ">

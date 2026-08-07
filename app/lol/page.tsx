@@ -154,7 +154,7 @@ export default async function LolPage() {
                         />
                       </div>
                     )}
-                    <div className="relative z-10 h-full w-full overflow-hidden rounded-xl border border-line bg-surface-2">
+                    <div className="relative z-10 h-full w-full overflow-hidden rounded-full border border-line bg-surface-2">
                       {imageUrl ? (
                         <Image
                           src={imageUrl}
