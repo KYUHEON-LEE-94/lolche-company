@@ -44,7 +44,7 @@ export default function CardCarousel({
     drag.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false }
     el.style.scrollSnapType = 'none'
     el.style.scrollBehavior = 'auto' // 드래그 중엔 즉시 반응(smooth 와 충돌 방지)
-    el.setPointerCapture?.(e.pointerId)
+    // ⚠ setPointerCapture 를 쓰면 클릭이 컨테이너로 리다이렉트돼 아이템 버튼의 onClick(장착)이 죽는다. 쓰지 않는다.
   }
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = ref.current
