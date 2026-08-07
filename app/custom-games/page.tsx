@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
@@ -261,7 +260,8 @@ export default function CustomGamesPage() {
                 return (
                   <div
                     key={g.id}
-                    className={`${CARD_HOVER} p-5 flex flex-col gap-3`}
+                    onClick={() => router.push(`/custom-games/${g.id}`)}
+                    className={`${CARD_HOVER} p-5 flex flex-col gap-3 cursor-pointer`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="text-base font-black text-fg leading-snug break-all">{g.title}</h2>
@@ -320,20 +320,10 @@ export default function CustomGamesPage() {
                     </div>
 
                     <div className="flex items-center gap-2 mt-1">
-                      <Link
-                        href={`/custom-games/${g.id}`}
-                        className="inline-flex items-center px-3 py-1.5 rounded-lg
-                          text-xs font-bold transition-all duration-150
-                          bg-indigo-500/10 border border-indigo-500/25 text-brand-ink
-                          hover:bg-indigo-500/20 hover:text-brand-ink"
-                      >
-                        상세
-                      </Link>
-
                       {joinable && !mine && (
                         <button
                           type="button"
-                          onClick={() => handleJoin(g)}
+                          onClick={(e) => { e.stopPropagation(); handleJoin(g) }}
                           disabled={busy}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                             text-xs font-bold transition-all duration-150
@@ -349,7 +339,7 @@ export default function CustomGamesPage() {
                       {joinable && mine && (
                         <button
                           type="button"
-                          onClick={() => handleLeave(g)}
+                          onClick={(e) => { e.stopPropagation(); handleLeave(g) }}
                           disabled={busy}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                             text-xs font-bold transition-all duration-150
@@ -365,7 +355,7 @@ export default function CustomGamesPage() {
                       {g.can_manage && (
                         <button
                           type="button"
-                          onClick={() => handleDelete(g)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(g) }}
                           disabled={busy}
                           className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                             text-xs font-bold transition-all duration-150
