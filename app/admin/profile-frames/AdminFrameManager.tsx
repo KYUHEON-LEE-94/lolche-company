@@ -302,7 +302,7 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                     <span className="text-[10px] font-bold text-faint ml-auto">{effects.length} items</span>
                 </div>
                 <p className="mb-4 text-xs text-subtle">CSS 효과는 코드 내장이라 가격만 수정됩니다. 이미지 배경은 업로드분이라 삭제도 가능합니다.</p>
-                <div className="space-y-3">
+                <div className="grid gap-3 lg:grid-cols-2 max-h-[34rem] overflow-y-auto pr-1">
                     {effects.map((e) => (
                         <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 p-3">
                             <div className="flex min-w-0 items-center gap-3">
@@ -340,7 +340,7 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                     <span className="text-[10px] font-bold text-faint ml-auto">{frames.length} items</span>
                 </div>
 
-                <div className="grid gap-3">
+                <div className="grid gap-3 lg:grid-cols-2 max-h-[34rem] overflow-y-auto pr-1">
                     {frames.map((f, idx) => (
                         <div
                             key={f.id}

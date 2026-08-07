@@ -9,14 +9,16 @@ const H = { 'Cache-Control': 'private, no-store' }
 
 // 네비 상시 표시용 경량 잔액 조회. 미로그인·미승인·마이그레이션 미적용이면 balance:null →
 // 클라이언트(네비 칩)는 숫자일 때만 렌더한다. 상점 전체(cosmetics)보다 가볍게 유지한다.
-export async function GET() {
+export async function GET(request: Request) {
   const mine = await getMyMember()
   if (!mine.ok || !mine.member || mine.member.status !== 'approved') {
     return NextResponse.json({ balance: null }, { headers: H })
   }
+  const parsed = Number(new URL(request.url).searchParams.get('limit') ?? '15')
+  const limit = Number.isInteger(parsed) && parsed >= 1 && parsed <= 200 ? parsed : 15
   const [account, ledger] = await Promise.all([
     supabaseAdmin.from('point_accounts').select('balance').eq('member_id', mine.member.id).maybeSingle(),
-    supabaseAdmin.from('point_ledger').select('id,amount,description,reason,created_at').eq('member_id', mine.member.id).order('created_at', { ascending: false }).limit(15),
+    supabaseAdmin.from('point_ledger').select('id,amount,description,reason,created_at,balance_after').eq('member_id', mine.member.id).order('created_at', { ascending: false }).limit(limit),
   ])
   if (account.error) {
     if (!isMissingTableError(account.error)) console.error('[me/points] 조회 실패', account.error.message)
