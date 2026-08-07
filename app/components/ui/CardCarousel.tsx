@@ -50,7 +50,8 @@ export default function CardCarousel({
     const el = ref.current
     if (!el || !drag.current.active) return
     const dx = e.clientX - drag.current.startX
-    if (Math.abs(dx) > 4) drag.current.moved = true
+    // 클릭(바로 장착) 우선: 8px 넘게 움직여야 '드래그'로 보고 뒤이은 클릭을 취소한다.
+    if (Math.abs(dx) > 8) drag.current.moved = true
     el.scrollLeft = drag.current.startScroll - dx
   }
   const endDrag = () => {
