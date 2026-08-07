@@ -8,6 +8,7 @@ import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import { ALERT } from '@/lib/ui/styles'
+import CardCarousel from '@/app/components/ui/CardCarousel'
 
 type Frame = {
   id: string
@@ -123,10 +124,11 @@ export default function ShopClient() {
       {/* 프레임 카탈로그 */}
       <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
         <div className="text-fg font-extrabold">프로필 프레임</div>
-        <div className="mt-5 grid grid-cols-3 gap-4">
-          {frames.length === 0 ? (
-            <div className="text-xs text-muted">등록된 프레임이 없어요.</div>
-          ) : (
+        {frames.length === 0 ? (
+          <div className="mt-5 text-xs text-muted">등록된 프레임이 없어요.</div>
+        ) : (
+          <div className="mt-5">
+            <CardCarousel perPage={9} pageClassName="grid grid-cols-3 gap-4" items={
             frames.map((f) => {
               const url = framePublicUrl(f.image_path)
               const disabled = busy || (!f.owned && balance < f.price_points)
@@ -156,17 +158,19 @@ export default function ShopClient() {
                 </button>
               )
             })
-          )}
-        </div>
+            } />
+          </div>
+        )}
       </section>
 
       {/* 랭킹 카드 배경 카탈로그 */}
       <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
         <div className="text-fg font-extrabold">랭킹 카드 배경</div>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {effects.length === 0 ? (
-            <div className="text-xs text-muted">등록된 효과가 없어요.</div>
-          ) : (
+        {effects.length === 0 ? (
+          <div className="mt-4 text-xs text-muted">등록된 효과가 없어요.</div>
+        ) : (
+          <div className="mt-4">
+            <CardCarousel perPage={9} pageClassName="grid grid-cols-3 gap-3" items={
             effects.map((e) => {
               const disabled = busy || (!e.owned && balance < e.price_points)
               return (
@@ -190,8 +194,9 @@ export default function ShopClient() {
                 </button>
               )
             })
-          )}
-        </div>
+            } />
+          </div>
+        )}
       </section>
     </div>
   )

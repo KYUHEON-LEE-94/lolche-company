@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/browser'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
+import CardCarousel from '@/app/components/ui/CardCarousel'
 
 // 동일한 스피너 컴포넌트
 function Spinner({ size = 4 }: { size?: number }) {
@@ -302,8 +303,10 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                     <span className="text-[10px] font-bold text-faint ml-auto">{effects.length} items</span>
                 </div>
                 <p className="mb-4 text-xs text-subtle">CSS 효과는 코드 내장이라 가격만 수정됩니다. 이미지 배경은 업로드분이라 삭제도 가능합니다.</p>
-                <div className="grid gap-3 lg:grid-cols-2 max-h-[34rem] overflow-y-auto pr-1">
-                    {effects.map((e) => (
+                {effects.length === 0 ? (
+                    <p className="text-xs text-faint italic">등록된 배경이 없습니다.</p>
+                ) : (
+                    <CardCarousel perPage={6} pageClassName="grid gap-3" items={effects.map((e) => (
                         <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 p-3">
                             <div className="flex min-w-0 items-center gap-3">
                                 <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-line bg-canvas isolate">
@@ -327,9 +330,8 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                                 )}
                             </div>
                         </div>
-                    ))}
-                    {effects.length === 0 && <p className="text-xs text-faint italic">등록된 배경이 없습니다.</p>}
-                </div>
+                    ))} />
+                )}
             </section>
 
             {/* ── 프레임 목록 ── */}
@@ -340,8 +342,10 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                     <span className="text-[10px] font-bold text-faint ml-auto">{frames.length} items</span>
                 </div>
 
-                <div className="grid gap-3 lg:grid-cols-2 max-h-[34rem] overflow-y-auto pr-1">
-                    {frames.map((f, idx) => (
+                {frames.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-faint font-medium italic">등록된 프레임이 없습니다.</p>
+                ) : (
+                    <CardCarousel perPage={6} pageClassName="grid gap-3" items={frames.map((f, idx) => (
                         <div
                             key={f.id}
                             className="flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-surface"
@@ -394,14 +398,8 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                                 </button>
                             </div>
                         </div>
-                    ))}
-
-                    {frames.length === 0 && (
-                        <div className="text-center py-12 rounded-2xl border border-dashed border-line">
-                            <p className="text-sm text-faint font-medium italic">등록된 프레임이 없습니다.</p>
-                        </div>
-                    )}
-                </div>
+                    ))} />
+                )}
             </section>
         </div>
     )
