@@ -45,7 +45,7 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
     const [key, setKey] = useState('')
     const [label, setLabel] = useState('')
     const [sortOrder, setSortOrder] = useState<number>(0)
-    const [pricePoints,setPricePoints]=useState(0)
+    const [pricePoints,setPricePoints]=useState(50)
 
     const [busy, setBusy] = useState(false)
     const [toast, setToast] = useState<string | null>(null)
@@ -97,7 +97,7 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
             setKey('')
             setLabel('')
             setSortOrder(0)
-            setPricePoints(0)
+            setPricePoints(50)
 
             await reloadFrames()
         } catch (e) {
@@ -130,13 +130,32 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
     }
     async function saveEffect(effect:EffectRow){setBusy(true);try{const res=await fetch('/api/admin/rank-effects',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(effect)});const data=await res.json();if(!res.ok)throw new Error(data.error??'수정 실패');show('효과 저장 완료 ✅')}catch(e){show(e instanceof Error?e.message:'수정 중 오류')}finally{setBusy(false)}}
 
+    // 기존 프레임 개별 가격/라벨/정렬 저장 (효과 저장과 대칭)
+    async function saveFrame(frame: FrameRow) {
+        setBusy(true)
+        try {
+            const res = await fetch('/api/admin/profile-frames/update', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: frame.id, label: frame.label, price_points: frame.price_points, is_purchasable: frame.is_purchasable, is_active: frame.is_active, sort_order: frame.sort_order }),
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) throw new Error(data.error ?? '수정 실패')
+            show('프레임 저장 완료 ✅')
+        } catch (e) {
+            show(e instanceof Error ? e.message : '수정 중 오류')
+        } finally {
+            setBusy(false)
+        }
+    }
+
     return (
         <div className="space-y-8">
             {/* ── 헤더 ── */}
             <header className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-fg tracking-tight mb-1">프레임 관리</h1>
-                    <p className="text-sm text-subtle">프로필을 꾸며줄 전용 프레임을 추가하거나 삭제합니다</p>
+                    <h1 className="text-2xl font-black text-fg tracking-tight mb-1">상점 관리</h1>
+                    <p className="text-sm text-subtle">상점에서 판매하는 프레임과 랭킹 카드 배경을 한 곳에서 관리합니다 (기본가 프레임 50P · 배경 100P, 개별 조정 가능)</p>
                 </div>
             </header>
 
@@ -242,13 +261,33 @@ export default function AdminFrameManager({ initialFrames,initialEffects }: { in
                                 </div>
                             </div>
 
-                            <button
-                                disabled={busy}
-                                onClick={() => deleteFrame(f)}
-                                className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-danger-ink bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-danger-ink disabled:opacity-30 transition-all"
-                            >
-                                삭제
-                            </button>
+                            <div className="flex flex-shrink-0 items-center gap-2">
+                                <label className="flex items-center gap-1 text-[11px] font-bold text-muted">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        value={f.price_points}
+                                        onChange={(e) => setFrames(frames.map((row, i) => i === idx ? { ...row, price_points: Number(e.target.value) } : row))}
+                                        aria-label={`${f.label} 가격`}
+                                        className="w-20 px-3 py-2 rounded-xl text-sm font-medium text-fg bg-surface-2 border border-line focus:outline-none focus:border-indigo-500/50"
+                                    />
+                                    P
+                                </label>
+                                <button
+                                    disabled={busy}
+                                    onClick={() => saveFrame(f)}
+                                    className="px-3 py-2 rounded-xl text-xs font-bold bg-brand text-white hover:bg-indigo-500 disabled:opacity-40 transition-all"
+                                >
+                                    저장
+                                </button>
+                                <button
+                                    disabled={busy}
+                                    onClick={() => deleteFrame(f)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-danger-ink bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-danger-ink disabled:opacity-30 transition-all"
+                                >
+                                    삭제
+                                </button>
+                            </div>
                         </div>
                     ))}
 

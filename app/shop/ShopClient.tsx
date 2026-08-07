@@ -111,7 +111,7 @@ export default function ShopClient() {
             onClick={() => router.push('/admin/profile-frames')}
             className="px-4 py-2 rounded-xl text-sm font-bold bg-surface-2 border border-line text-fg hover:bg-surface transition"
           >
-            프레임 관리
+            상점 관리
           </button>
         )}
       </section>

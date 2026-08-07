@@ -1,9 +1,10 @@
 -- 상점 가격 표준화 + 신규 프레임/랭킹배경. SQL Editor 에서 직접 실행.
 -- 코드는 이 SQL 미적용 시에도 degrade(신규 아이템 미노출·구가격 유지)하므로 배포 순서 무관.
 
--- 1) 기본가 표준화: 프레임 50P(무료 기본 프레임 price=0 은 유지), 랭킹 카드 배경 100P.
---    사용자 지정 고정가. 다른 언급 전까지 이 값을 유지한다.
-update public.profile_frames set price_points = 50 where price_points > 0;
+-- 1) 기본가 표준화: 모든 프레임 50P, 랭킹 카드 배경 100P. (사용자 지정 기본가)
+--    ★ 1회성 초기화다. 이후 관리자가 상점 관리 페이지에서 개별 가격을 조정하므로,
+--      이 마이그레이션을 재실행하면 개별 조정이 초기화된다 — 최초 1회만 실행할 것.
+update public.profile_frames set price_points = 50;
 update public.ranking_card_effects set price_points = 100;
 
 -- 2) 신규 프레임 3종 (public/frames/generated 의 생성 PNG). 50P.

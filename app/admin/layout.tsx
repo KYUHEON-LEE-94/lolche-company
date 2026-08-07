@@ -10,7 +10,7 @@ const navItems = [
     { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
     { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
     { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
-    { href: '/admin/profile-frames',  label: '프레임 관리', icon: 'Image' },
+    { href: '/admin/profile-frames',  label: '상점 관리', icon: 'Image' },
     { href: '/admin/points',          label: '포인트 관리', icon: 'Coins' },
 ]
 
