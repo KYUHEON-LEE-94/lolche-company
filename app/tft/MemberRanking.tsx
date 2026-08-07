@@ -315,7 +315,7 @@ const MemberRow = memo(function MemberRow({
           onPointerLeave={cancelPrefetch}
           className={`
         group relative isolate flex items-center gap-2 sm:gap-3
-        min-h-[64px] pl-3 pr-2 sm:pr-3 py-2.5 cursor-pointer
+        min-h-[76px] pl-3 pr-2 sm:pr-3 py-3.5 cursor-pointer
         transition-colors hover:bg-surface-2
         overflow-hidden ${rankRingClass(idx)} ${rankEffectClass(member.ranking_card_effect_key)}
       `}
