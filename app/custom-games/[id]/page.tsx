@@ -380,7 +380,8 @@ export default function CustomGameDetailPage() {
   const loadDetail = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/custom-games/${gameId}`)
+      // 세션 의존(can_manage 등) 데이터라 브라우저 캐시가 stale 권한을 재사용하지 않도록 no-store.
+      const res = await fetch(`/api/custom-games/${gameId}`, { cache: 'no-store' })
       const body = await res.json()
       if (!res.ok) { setLoadError(body.error ?? '로드 실패'); setGame(null); return }
       setLoadError(null)

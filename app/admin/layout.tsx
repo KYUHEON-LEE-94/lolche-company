@@ -97,17 +97,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                             )
                         })}
 
-                        {/* 어드민 밖으로 나가는 명시적 경로 */}
-                        <Link
-                            href="/"
-                            className="ml-1 inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-muted transition-colors hover:text-fg hover:bg-surface-2"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
-                            </svg>
-                            사이트로
-                        </Link>
-
+                        {/* 사이트 홈으로 가는 경로는 좌측 로고가 담당하므로 별도 "사이트로" 링크는 제거(기능 중복) */}
                         <ThemeToggle className="ml-1" />
                     </nav>
                 </div>
