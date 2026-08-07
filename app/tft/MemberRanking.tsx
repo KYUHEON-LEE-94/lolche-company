@@ -168,6 +168,14 @@ function shortTierLabel(tier: string | null, rank: string | null) {
 
 // ─── 랭킹 배지 ───────────────────────────────────────────────────────────────
 
+// 상위 3위 행에 금·은·동 테두리(inset 링). 배경 이펙트와 별개로 순위만 강조한다.
+function rankRingClass(idx: number): string {
+  if (idx === 0) return 'ring-2 ring-inset ring-amber-400/70'
+  if (idx === 1) return 'ring-2 ring-inset ring-slate-300/50'
+  if (idx === 2) return 'ring-2 ring-inset ring-orange-500/60'
+  return ''
+}
+
 function RankBadge({ idx }: { idx: number }) {
   if (idx === 0)
     return (
@@ -309,7 +317,7 @@ const MemberRow = memo(function MemberRow({
         group relative isolate flex items-center gap-2 sm:gap-3
         min-h-[64px] pl-3 pr-2 sm:pr-3 py-2.5 cursor-pointer
         transition-colors hover:bg-surface-2
-        overflow-hidden ${rankEffectClass(member.ranking_card_effect_key)}
+        overflow-hidden ${rankRingClass(idx)} ${rankEffectClass(member.ranking_card_effect_key)}
       `}
       >
         <RankCardBackground imagePath={member.ranking_card_bg_image} />
