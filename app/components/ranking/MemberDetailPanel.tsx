@@ -591,7 +591,7 @@ export default function MemberDetailPanel({
             </div>
             <div className="flex items-center gap-2">
               {/* 큐 전환 — 솔로/더블업. 콘텐츠 탭(개요/전적)과 축이 달라 pill 로 구분한다. */}
-              <div className="flex rounded-lg bg-surface-2 p-0.5" role="tablist" aria-label="큐 선택">
+              <div className="flex rounded-lg bg-surface-2 p-1 ring-1 ring-line" role="tablist" aria-label="큐 선택">
                 {(['solo', 'doubleup'] as const).map((qk) => (
                   <button
                     key={qk}
@@ -599,10 +599,10 @@ export default function MemberDetailPanel({
                     role="tab"
                     aria-selected={queue === qk}
                     onClick={() => setActiveQueue(qk)}
-                    className={`rounded-md px-3 py-1.5 text-xs font-black transition-colors ${
+                    className={`rounded-md px-3.5 py-1.5 text-xs font-black transition-colors ${
                       queue === qk
-                        ? 'bg-panel text-fg shadow-sm'
-                        : 'text-subtle hover:text-muted'
+                        ? 'bg-brand text-white shadow-sm'
+                        : 'text-muted hover:text-fg'
                     }`}
                   >
                     {qk === 'solo' ? '솔로' : '더블업'}
