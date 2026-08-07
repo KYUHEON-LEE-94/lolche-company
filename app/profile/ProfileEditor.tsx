@@ -50,9 +50,6 @@ export default function ProfileEditor({ member }: Props) {
     const displayUrl = isDiscordAvatarUrl(member.discord_avatar_url)
         ? member.discord_avatar_url
         : null
-    const avatarNotice = displayUrl
-        ? 'Discord 프로필 사진을 사용 중이에요.'
-        : 'Discord로 로그인하면 Discord 프로필 사진이 자동으로 사용돼요.'
 
     // 보유 아이템만 렌더한다. 구매는 /shop 에서만.
     const ownedFrames = frames.filter((f) => f.owned)
@@ -184,23 +181,7 @@ export default function ProfileEditor({ member }: Props) {
                 )}
             </section>
 
-            {/* 프로필 이미지 안내 섹션 */}
-            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
-                <div className="flex items-center gap-5">
-                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-surface-2 ring-2 ring-line shrink-0">
-                        {displayUrl ? (
-                            <Image src={displayUrl} alt="avatar preview" fill className="object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted text-xs">없음</div>
-                        )}
-                    </div>
-
-                    <div>
-                        <div className="text-fg font-extrabold">프로필 사진</div>
-                        <div className="mt-1 text-xs text-muted">{avatarNotice}</div>
-                    </div>
-                </div>
-            </section>
+            {/* 프로필 사진 안내는 상단 프리뷰 카드와 중복이라 제거됨 */}
 
             {/* 잔액 + 상점 링크 */}
             <section className="flex items-center justify-between rounded-3xl bg-surface ring-1 ring-line p-5">
