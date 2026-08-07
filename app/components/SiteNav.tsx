@@ -123,36 +123,101 @@ function isActive(pathname: string, item: NavItem) {
     : pathname === item.href || pathname.startsWith(`${item.href}/`)
 }
 
+type LedgerRow = { id: number; amount: number; description: string | null; reason: string; created_at: string }
+
+function formatLedgerDate(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(iso))
+  } catch {
+    return ''
+  }
+}
+
 /** 네비 우측 상시 포인트 잔액 칩. 승인 멤버만 노출(balance 숫자일 때만).
- *  경로 변경마다 재조회해 상점 구매 후 다른 페이지로 이동하면 갱신된다. */
+ *  클릭하면 포인트 사용/획득 내역 드롭다운을 연다. 경로 변경마다 재조회해 갱신된다. */
 function PointBalance() {
   const pathname = usePathname()
   const [balance, setBalance] = useState<number | null>(null)
+  const [ledger, setLedger] = useState<LedgerRow[]>([])
+  const [open, setOpen] = useState(false)
+  const boxRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     let mounted = true
     fetch('/api/me/points', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: unknown) => {
         if (!mounted) return
-        const b = (d as { balance?: unknown } | null)?.balance
-        setBalance(typeof b === 'number' ? b : null)
+        const data = d as { balance?: unknown; ledger?: unknown } | null
+        setBalance(typeof data?.balance === 'number' ? data.balance : null)
+        setLedger(Array.isArray(data?.ledger) ? (data!.ledger as LedgerRow[]) : [])
       })
       .catch(() => {})
     return () => {
       mounted = false
     }
   }, [pathname])
+
+  useEffect(() => {
+    if (!open) return
+    function onDown(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   if (balance === null) return null
+
   return (
-    <Link
-      href="/shop"
-      title="상점에서 사용"
-      aria-label={`보유 포인트 ${balance}P`}
-      className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-xs font-black text-warn-ink transition-colors hover:bg-amber-400/20"
-    >
-      <span aria-hidden>🪙</span>
-      {balance.toLocaleString()}P
-    </Link>
+    <div className="relative" ref={boxRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`보유 포인트 ${balance}P, 내역 보기`}
+        className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-xs font-black text-warn-ink transition-colors hover:bg-amber-400/20"
+      >
+        <span aria-hidden>🪙</span>
+        {balance.toLocaleString()}P
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-line bg-panel/95 shadow-[0_24px_64px_-24px_var(--color-shadow)] backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <span className="text-xs font-black text-muted">포인트 내역</span>
+            <span className="text-sm font-black text-warn-ink">{balance.toLocaleString()}P</span>
+          </div>
+          {ledger.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs text-faint">아직 내역이 없어요.</div>
+          ) : (
+            <ul className="max-h-72 divide-y divide-line overflow-y-auto">
+              {ledger.map((row) => (
+                <li key={row.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-bold text-fg">{row.description ?? '포인트 변동'}</div>
+                    <div className="text-[10px] text-faint">{formatLedgerDate(row.created_at)}</div>
+                  </div>
+                  <b className={`shrink-0 text-xs font-black ${row.amount > 0 ? 'text-ok-ink' : 'text-danger-ink'}`}>
+                    {row.amount > 0 ? '+' : ''}{row.amount.toLocaleString()}P
+                  </b>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/shop" onClick={() => setOpen(false)} className="block border-t border-line px-4 py-2.5 text-center text-xs font-bold text-brand-ink transition-colors hover:bg-surface-2">
+            상점 가기 →
+          </Link>
+        </div>
+      )}
+    </div>
   )
 }
 

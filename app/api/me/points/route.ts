@@ -14,14 +14,13 @@ export async function GET() {
   if (!mine.ok || !mine.member || mine.member.status !== 'approved') {
     return NextResponse.json({ balance: null }, { headers: H })
   }
-  const { data, error } = await supabaseAdmin
-    .from('point_accounts')
-    .select('balance')
-    .eq('member_id', mine.member.id)
-    .maybeSingle()
-  if (error) {
-    if (!isMissingTableError(error)) console.error('[me/points] 조회 실패', error.message)
-    return NextResponse.json({ balance: null }, { headers: H })
+  const [account, ledger] = await Promise.all([
+    supabaseAdmin.from('point_accounts').select('balance').eq('member_id', mine.member.id).maybeSingle(),
+    supabaseAdmin.from('point_ledger').select('id,amount,description,reason,created_at').eq('member_id', mine.member.id).order('created_at', { ascending: false }).limit(15),
+  ])
+  if (account.error) {
+    if (!isMissingTableError(account.error)) console.error('[me/points] 조회 실패', account.error.message)
+    return NextResponse.json({ balance: null, ledger: [] }, { headers: H })
   }
-  return NextResponse.json({ balance: data?.balance ?? 0 }, { headers: H })
+  return NextResponse.json({ balance: account.data?.balance ?? 0, ledger: ledger.data ?? [] }, { headers: H })
 }
