@@ -43,6 +43,8 @@ export default function CardCarousel({
     if (!el) return
     drag.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false }
     el.style.scrollSnapType = 'none'
+    el.style.scrollBehavior = 'auto' // 드래그 중엔 즉시 반응(smooth 와 충돌 방지)
+    el.setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = ref.current
@@ -64,6 +66,7 @@ export default function CardCarousel({
     else if (dx < -pageW * 0.25) target = startPage - 1
     target = Math.max(0, Math.min(pages.length - 1, target))
     el.style.scrollSnapType = ''
+    el.style.scrollBehavior = ''
     el.scrollTo({ left: target * pageW, behavior: 'smooth' })
   }
   // 드래그로 움직였으면 뒤이어 발생하는 아이템 클릭(구매/장착 등)을 취소한다.
