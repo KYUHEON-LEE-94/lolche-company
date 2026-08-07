@@ -10,7 +10,8 @@ export async function POST(req: Request) {
 
     const form = await req.formData()
     const file = form.get('file') as File | null
-    const key = String(form.get('key') ?? '').trim()
+    // DB CHECK(key ~ '^[a-z0-9_-]+$')가 소문자만 허용하므로 자동 소문자화(라벨은 대소문자 유지).
+    const key = String(form.get('key') ?? '').trim().toLowerCase()
     const label = String(form.get('label') ?? '').trim()
     const sortOrder = Number(form.get('sort_order') ?? 0)
     const pricePoints = Number(form.get('price_points') ?? 0)
