@@ -6,6 +6,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { CARD } from '@/lib/ui/styles'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
+import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 
 // 차트·framer-motion 이 홈 초기 번들에 들어가지 않도록 지연 로드한다.
 const DashboardMemberPanel = dynamic(
@@ -23,6 +24,7 @@ export type DashRankMember = {
   avatarUrl: string | null
   rankLabel: string
   ranking_card_effect_key?: string | null
+  ranking_card_bg_image?: string | null
 }
 
 export type DashMover = {
@@ -79,8 +81,9 @@ export default function DashboardRankSections({
                   onClick={() => open(m)}
                   aria-haspopup="dialog"
                   aria-label={`${m.member_name} 상세 전적 보기`}
-                  className={`relative overflow-hidden flex w-full items-center gap-3 rounded-xl px-2 py-3 min-h-[48px] text-left transition-colors hover:bg-surface-2 ${rankEffectClass(m.ranking_card_effect_key)} ${TRIGGER_FOCUS}`}
+                  className={`relative isolate overflow-hidden flex w-full items-center gap-3 rounded-xl px-2 py-3 min-h-[48px] text-left transition-colors hover:bg-surface-2 ${rankEffectClass(m.ranking_card_effect_key)} ${TRIGGER_FOCUS}`}
                 >
+                  <RankCardBackground imagePath={m.ranking_card_bg_image} />
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${i < 3 ? 'bg-warn/10 text-warn-ink' : 'bg-surface-2 text-subtle'}`}>{i + 1}</span>
                   {m.avatarUrl ? (
                     <Image
@@ -118,8 +121,9 @@ export default function DashboardRankSections({
                     onClick={() => open(member)}
                     aria-haspopup="dialog"
                     aria-label={`${member.member_name} 상세 전적 보기`}
-                    className={`relative overflow-hidden w-full min-h-[44px] text-left rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:border-line-strong ${rankEffectClass(member.ranking_card_effect_key)} ${TRIGGER_FOCUS}`}
+                    className={`relative isolate overflow-hidden w-full min-h-[44px] text-left rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:border-line-strong ${rankEffectClass(member.ranking_card_effect_key)} ${TRIGGER_FOCUS}`}
                   >
+                    <RankCardBackground imagePath={member.ranking_card_bg_image} />
                     <div className="flex items-center justify-between gap-2">
                       <span className="min-w-0 truncate text-sm font-bold text-fg">{member.member_name}</span>
                       <span className={`shrink-0 text-xs font-black ${up ? 'text-ok-ink' : 'text-danger-ink'}`}>

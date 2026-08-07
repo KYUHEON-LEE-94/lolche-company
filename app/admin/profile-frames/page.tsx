@@ -14,7 +14,7 @@ export default async function AdminProfileFramesPage() {
             .order('sort_order', { ascending: true }),
         admin.supabase
             .from('ranking_card_effects')
-            .select('id,label,description,effect_key,price_points,is_active,is_purchasable,sort_order')
+            .select('id,label,description,effect_key,image_path,price_points,is_active,is_purchasable,sort_order')
             .order('sort_order', { ascending: true }),
     ])
 

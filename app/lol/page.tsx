@@ -11,6 +11,7 @@ import PageHeader from '@/app/components/ui/PageHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
+import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 
 export const revalidate = 60
@@ -28,6 +29,7 @@ type LolMember = Pick<
   | 'profile_image_path'
   | 'profile_frame_path'
   | 'ranking_card_effect_key'
+  | 'ranking_card_bg_image'
   | 'discord_avatar_url'
   | 'lol_tier'
   | 'lol_rank'
@@ -87,7 +89,7 @@ export default async function LolPage() {
     supabase
       .from('members')
       .select(
-        `id,member_name,riot_game_name,riot_tagline,profile_image_path,profile_frame_path,ranking_card_effect_key,lol_tier,lol_rank,lol_league_points,lol_wins,lol_losses${cols}`,
+        `id,member_name,riot_game_name,riot_tagline,profile_image_path,profile_frame_path,ranking_card_effect_key,ranking_card_bg_image,lol_tier,lol_rank,lol_league_points,lol_wins,lol_losses${cols}`,
       )
       // 승인 대기/거절 상태의 자가 등록 멤버는 랭킹에 노출하지 않는다.
       .eq('status', 'approved')
@@ -95,7 +97,7 @@ export default async function LolPage() {
   )
   if (result.error && isMissingColumnError(result.error)) {
     const legacy = await withAvatarColumn((cols) => supabase.from('members').select(`id,member_name,riot_game_name,riot_tagline,profile_image_path,lol_tier,lol_rank,lol_league_points,lol_wins,lol_losses${cols}`).eq('status','approved').order('member_name',{ascending:true}))
-    result = legacy.error ? legacy : { ...legacy, data:((legacy.data??[]) as unknown as Record<string,unknown>[]).map(row=>({...row,profile_frame_path:null,ranking_card_effect_key:null})) }
+    result = legacy.error ? legacy : { ...legacy, data:((legacy.data??[]) as unknown as Record<string,unknown>[]).map(row=>({...row,profile_frame_path:null,ranking_card_effect_key:null,ranking_card_bg_image:null})) }
   }
   const { data, error } = result
 
@@ -134,10 +136,11 @@ export default async function LolPage() {
               return (
                 <li
                   key={m.id}
-                  className={`relative overflow-hidden flex items-center gap-3 rounded-2xl border border-line px-4 py-3 transition-colors hover:border-line-strong ${rankEffectClass(m.ranking_card_effect_key)} ${
+                  className={`relative isolate overflow-hidden flex items-center gap-3 rounded-2xl border border-line px-4 py-3 transition-colors hover:border-line-strong ${rankEffectClass(m.ranking_card_effect_key)} ${
                     unranked ? 'bg-surface opacity-70' : 'bg-surface'
                   }`}
                 >
+                  <RankCardBackground imagePath={m.ranking_card_bg_image} />
                   <div className="flex w-8 shrink-0 items-center justify-center text-xs font-bold text-subtle">
                     {unranked ? '-' : `#${idx + 1}`}
                   </div>

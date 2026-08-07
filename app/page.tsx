@@ -34,6 +34,7 @@ type DashMember = Pick<
   | 'tft_lp_prev'
   | 'last_synced_at'
   | 'ranking_card_effect_key'
+  | 'ranking_card_bg_image'
 >
 
 type RecruitingGame = {
@@ -46,7 +47,7 @@ type RecruitingGame = {
 }
 
 const MEMBER_COLUMNS =
-  'id,member_name,profile_image_path,ranking_card_effect_key,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
+  'id,member_name,profile_image_path,ranking_card_effect_key,ranking_card_bg_image,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
 const LEGACY_MEMBER_COLUMNS =
   'id,member_name,profile_image_path,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev,last_synced_at'
 
@@ -54,7 +55,7 @@ async function fetchDashboardMembers() {
   const full = await withAvatarColumn((cols) => supabase.from('members').select(`${MEMBER_COLUMNS}${cols}`).eq('status', 'approved'))
   if (!full.error || !isMissingColumnError(full.error)) return full
   const legacy = await withAvatarColumn((cols) => supabase.from('members').select(`${LEGACY_MEMBER_COLUMNS}${cols}`).eq('status', 'approved'))
-  return legacy.error ? legacy : { ...legacy, data: ((legacy.data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({ ...row, ranking_card_effect_key: null })) }
+  return legacy.error ? legacy : { ...legacy, data: ((legacy.data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({ ...row, ranking_card_effect_key: null, ranking_card_bg_image: null })) }
 }
 
 function formatSyncedAt(value: string | null) {
@@ -150,6 +151,7 @@ export default async function DashboardPage() {
     avatarUrl: resolveAvatarUrl(m),
     rankLabel: formatRank(m.tft_tier, m.tft_rank, m.tft_league_points),
     ranking_card_effect_key: m.ranking_card_effect_key,
+    ranking_card_bg_image: m.ranking_card_bg_image,
   })
 
   const leaderboardView: DashRankMember[] = leaderboard.map(toDashRank)

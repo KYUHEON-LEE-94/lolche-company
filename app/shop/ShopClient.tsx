@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { resolveFrameUrl } from '@/lib/cosmetics/frameUrl'
+import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import { ALERT } from '@/lib/ui/styles'
 
@@ -18,13 +19,17 @@ type Frame = {
   owned: boolean
   equipped: boolean
 }
-type Effect = { id: string; label: string; description: string | null; effect_key: string; price_points: number; owned: boolean; equipped: boolean }
+type Effect = { id: string; label: string; description: string | null; effect_key: string | null; image_path: string | null; price_points: number; owned: boolean; equipped: boolean }
 type LedgerItem = { id: number; amount: number; description: string | null; created_at: string; balance_after: number }
 
 type Status = 'loading' | 'ok' | 'unauth' | 'forbidden' | 'migration' | 'error'
 
 function framePublicUrl(imagePath: string) {
   return resolveFrameUrl(imagePath, (path) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-frames/${encodeURIComponent(path).replaceAll('%2F', '/')}`)
+}
+
+function bgPublicUrl(imagePath: string) {
+  return resolveRankBgUrl(imagePath, (path) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/rank-backgrounds/${encodeURIComponent(path).replaceAll('%2F', '/')}`)
 }
 
 export default function ShopClient() {
@@ -174,8 +179,10 @@ export default function ShopClient() {
                   onClick={() => itemAction('rank_effect', e)}
                   className={`rounded-2xl border p-4 text-left ${e.equipped ? 'border-brand bg-brand/10' : 'border-line bg-surface-2'} disabled:opacity-40`}
                 >
-                  {/* 실제 이펙트 미리보기 — 설명 대신 눈으로 바로 확인 */}
-                  <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${rankEffectClass(e.effect_key)}`} aria-hidden />
+                  {/* 실제 배경 미리보기 — 이미지 배경이면 이미지, 아니면 CSS 이펙트 */}
+                  <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${e.image_path ? '' : rankEffectClass(e.effect_key)}`} aria-hidden>
+                    {e.image_path && <Image src={bgPublicUrl(e.image_path)} alt="" fill sizes="200px" className="object-cover" />}
+                  </div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-bold text-fg">{e.label}</div>
                     <div className="text-xs whitespace-nowrap">
