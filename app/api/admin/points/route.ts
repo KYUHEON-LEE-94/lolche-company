@@ -53,8 +53,8 @@ export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null)
   if (!isRecord(body) || Object.keys(body).some((key) => !POST_KEYS.has(key))) return NextResponse.json({ error: '요청 형식이 올바르지 않습니다.' }, { status: 400, headers: NO_STORE })
   const description = typeof body.description === 'string' ? body.description.trim() : ''
-  if (typeof body.memberId !== 'string' || !UUID_RE.test(body.memberId) || typeof body.requestId !== 'string' || !UUID_RE.test(body.requestId) || typeof body.amount !== 'number' || !Number.isInteger(body.amount) || body.amount < 1 || body.amount > 10000 || description.length < 1 || description.length > 200) {
-    return NextResponse.json({ error: '멤버, 포인트(1~10,000), 사유를 확인해 주세요.' }, { status: 400, headers: NO_STORE })
+  if (typeof body.memberId !== 'string' || !UUID_RE.test(body.memberId) || typeof body.requestId !== 'string' || !UUID_RE.test(body.requestId) || typeof body.amount !== 'number' || !Number.isInteger(body.amount) || body.amount === 0 || body.amount < -10000 || body.amount > 10000 || description.length < 1 || description.length > 200) {
+    return NextResponse.json({ error: '멤버, 포인트(-10,000~10,000, 0 제외), 사유를 확인해 주세요.' }, { status: 400, headers: NO_STORE })
   }
   const { data, error } = await supabaseAdmin.rpc('grant_member_points', { p_member_id: body.memberId, p_amount: body.amount, p_request_id: body.requestId, p_actor_user_id: admin.user.id, p_description: description })
   if (error) {
@@ -64,6 +64,6 @@ export async function POST(request: Request) {
   }
   const result = data?.[0]
   if (!result) return NextResponse.json({ error: '지급 결과가 없습니다.' }, { status: 500, headers: NO_STORE })
-  const statusCode = result.status === 'forbidden' ? 403 : result.status === 'not_found' ? 404 : result.status === 'request_conflict' ? 409 : result.status.startsWith('invalid_') ? 400 : 200
+  const statusCode = result.status === 'forbidden' ? 403 : result.status === 'not_found' ? 404 : result.status === 'insufficient' ? 409 : result.status === 'request_conflict' ? 409 : result.status.startsWith('invalid_') ? 400 : 200
   return NextResponse.json(result, { status: statusCode, headers: NO_STORE })
 }

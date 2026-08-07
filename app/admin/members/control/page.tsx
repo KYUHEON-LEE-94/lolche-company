@@ -401,7 +401,7 @@ export default function AdminMemberControlPage() {
                           승인
                         </button>
                     )}
-                    {m.status !== 'rejected' && (
+                    {m.status === 'pending' && (
                         <button
                             onClick={() => handleReject(m)}
                             disabled={busyId === m.id}

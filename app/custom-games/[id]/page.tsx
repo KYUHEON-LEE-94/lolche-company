@@ -518,7 +518,7 @@ export default function CustomGameDetailPage() {
     setJoining(true)
     try {
       const res = await fetch(`/api/custom-games/${gameId}/join`, { method: 'POST' })
-      const body = await res.json()
+      const body = await res.json().catch(() => ({}))
       if (!res.ok) { showMsg('error', body.error ?? '신청 실패'); return }
       showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.position}번으로 신청되었습니다`)
       await loadDetail()
@@ -531,7 +531,7 @@ export default function CustomGameDetailPage() {
     setJoining(true)
     try {
       const res = await fetch(`/api/custom-games/${gameId}/join`, { method: 'DELETE' })
-      const body = await res.json()
+      const body = await res.json().catch(() => ({}))
       if (!res.ok) { showMsg('error', body.error ?? '취소 실패'); return }
       showMsg('success', '참가가 취소되었습니다')
       await loadDetail()

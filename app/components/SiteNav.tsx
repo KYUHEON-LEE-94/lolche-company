@@ -7,7 +7,7 @@ import AuthButtons from '@/app/components/AuthButtons'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import { LOL_ENABLED } from '@/lib/constants/features'
 
-type IconKey = 'home' | 'tft' | 'lol' | 'steam' | 'custom' | 'trophy'
+type IconKey = 'home' | 'tft' | 'lol' | 'steam' | 'custom' | 'trophy' | 'shop'
 
 type NavItem = {
   href: string
@@ -33,6 +33,8 @@ const NAV_ITEMS: NavItem[] = [
     : []),
   { href: '/custom-games', label: '내전', icon: 'custom', inTabBar: true },
   { href: '/steam', label: '스팀', icon: 'steam', inTabBar: true },
+  // 하단 탭바는 grid-cols-4 고정이라 4개(home/tft/custom/steam)만 담는다. 상점은 inTabBar:false.
+  { href: '/shop', label: '상점', icon: 'shop', inTabBar: false },
   { href: '/hall-of-fame', label: '명예의 전당', icon: 'trophy', inTabBar: false },
 ]
 
@@ -86,6 +88,13 @@ const ICON_PATHS: Record<IconKey, React.ReactNode> = {
       <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
       <path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" />
       <path d="M12 14v3M8.5 20h7l-.5-3h-6z" />
+    </>
+  ),
+  shop: (
+    <>
+      <path d="M4 4h2l1.2 3M7.2 7l1.4 7.5a1.5 1.5 0 0 0 1.5 1.2h6.4a1.5 1.5 0 0 0 1.5-1.2L20.5 7z" />
+      <circle cx="10" cy="20" r="1.2" />
+      <circle cx="17" cy="20" r="1.2" />
     </>
   ),
 }
