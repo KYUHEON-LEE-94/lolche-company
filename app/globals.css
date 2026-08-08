@@ -53,6 +53,13 @@
 
   /* 상단 네비 높이. SHELL 의 min-h 계산과 동일한 3.5rem */
   --color-nav-h: 3.5rem;
+
+  /* ── surface-2 의 불투명 변형 ──
+     surface-2 는 다크에서 rgba(255,255,255,0.06) 라 반투명이다. 카드/패널 위에서는 문제없지만
+     사용자가 장착한 임의 밝기의 배너 이미지 위에 놓이면 컨테이너가 사실상 사라지고
+     그 안의 보조 텍스트 대비가 무너진다. 배너 위에 얹히는 칩·필은 이 토큰을 쓴다.
+     다크 값은 surface-2 를 panel(#0d1117) 위에 합성한 결과와 같아, 배너가 없을 때 외형이 바뀌지 않는다. */
+  --color-surface-2-solid: #1b1f25;
 }
 
 /* ── 라이트 (기본) ──
@@ -63,6 +70,8 @@
   --color-canvas: #f3f5f9;
   --color-surface: #ffffff;
   --color-surface-2: #f0f3f8;
+  /* 라이트의 surface-2 는 이미 불투명 — 값이 같아 라이트 외형은 그대로다. */
+  --color-surface-2-solid: #f0f3f8;
   --color-line: rgba(30, 41, 59, 0.1);
   --color-line-strong: rgba(30, 41, 59, 0.2);
   --color-panel: #ffffff;
@@ -86,6 +95,7 @@
   --color-canvas: #07090f;
   --color-surface: rgba(255, 255, 255, 0.03);
   --color-surface-2: rgba(255, 255, 255, 0.06);
+  --color-surface-2-solid: #1b1f25;
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-strong: rgba(255, 255, 255, 0.2);
   --color-panel: #0d1117;

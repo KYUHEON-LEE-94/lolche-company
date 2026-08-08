@@ -612,9 +612,12 @@ export default function MemberDetailPanel({
               ) : null}
             </div>
             </div>
-            <div className="flex items-center gap-2">
+            {/* 헤더 컨트롤은 사용자가 장착한 임의 밝기의 배너 이미지 위에 놓인다.
+                반투명 토큰(surface-2)을 쓰면 배너가 그대로 비쳐 컨테이너가 사라지므로
+                여기서는 불투명 변형(surface-2-solid)을 쓴다. */}
+            <div className="relative flex items-center gap-2">
               {/* 큐 전환 — 솔로/더블업. 콘텐츠 탭(개요/전적)과 축이 달라 pill 로 구분한다. */}
-              <div className="flex rounded-lg bg-surface-2 p-1 ring-1 ring-line" role="tablist" aria-label="큐 선택">
+              <div className="flex rounded-lg bg-surface-2-solid p-1 shadow-sm ring-1 ring-line-strong" role="tablist" aria-label="큐 선택">
                 {(['solo', 'doubleup'] as const).map((qk) => (
                   <button
                     key={qk}
@@ -625,19 +628,22 @@ export default function MemberDetailPanel({
                     className={`rounded-md px-3.5 py-1.5 text-xs font-black transition-colors ${
                       queue === qk
                         ? 'bg-brand text-white shadow-sm'
-                        : 'text-muted hover:text-fg'
+                        : 'text-fg/80 hover:text-fg'
                     }`}
                   >
                     {qk === 'solo' ? '솔로' : '더블업'}
                   </button>
                 ))}
               </div>
+              {/* 닫기 버튼은 배너 위 오버레이 칩이라 테마 토큰이 아니라 고정 흑/백을 쓴다
+                  (배너 밝기를 가정할 수 없어 양 테마에서 같은 값이어야 한다).
+                  black/40 은 밝은 배너·라이트 테마에서 흰 글리프 대비가 3:1 미만이라 55% 로 올렸다. */}
               <button
                 ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 aria-label="닫기"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/40 text-white ring-1 ring-white/15 backdrop-blur-sm transition-colors hover:bg-black/60"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/55 text-white ring-1 ring-white/25 backdrop-blur-sm transition-colors hover:bg-black/70"
               >
                 ✕
               </button>
