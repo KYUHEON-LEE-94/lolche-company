@@ -169,10 +169,12 @@ function shortTierLabel(tier: string | null, rank: string | null) {
 // ─── 랭킹 배지 ───────────────────────────────────────────────────────────────
 
 // 상위 3위 행에 금·은·동 테두리(inset 링). 배경 이펙트와 별개로 순위만 강조한다.
+// 두께 4px — 행 높이가 76px 로 올라간 뒤 2px 링은 시상대 느낌이 나지 않아 키웠다.
+// 은(slate-300)은 다크 배경에서 금·동보다 먼저 묻히므로 불투명도를 한 단 더 준다.
 function rankRingClass(idx: number): string {
-  if (idx === 0) return 'ring-2 ring-inset ring-amber-400/70'
-  if (idx === 1) return 'ring-2 ring-inset ring-slate-300/50'
-  if (idx === 2) return 'ring-2 ring-inset ring-orange-500/60'
+  if (idx === 0) return 'ring-4 ring-inset ring-amber-400/90'
+  if (idx === 1) return 'ring-4 ring-inset ring-slate-300/80'
+  if (idx === 2) return 'ring-4 ring-inset ring-orange-500/85'
   return ''
 }
 
