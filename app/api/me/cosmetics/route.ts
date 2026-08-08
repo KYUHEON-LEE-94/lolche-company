@@ -24,5 +24,21 @@ export async function GET(){
   return NextResponse.json({error:'상점 정보를 불러오지 못했습니다.'},{status:500,headers:H})
  }
  const ownedFrames=new Set((fi.data??[]).map((r)=>r.frame_id)); const ownedEffects=new Set((ei.data??[]).map((r)=>r.effect_id))
- return NextResponse.json({migration_required:false,balance:account.data?.balance??0,isAdmin:admin,frames:(frames.data??[]).map((f)=>({...f,owned:admin||f.price_points===0||ownedFrames.has(f.id),equipped:member.data?.profile_frame_path===f.image_path})),effects:(effects.data??[]).map((e)=>({...e,owned:admin||ownedEffects.has(e.id),equipped:e.image_path?member.data?.ranking_card_bg_image===e.image_path:member.data?.ranking_card_effect_key===e.effect_key})),ledger:ledger.data??[]},{headers:H})
+ return NextResponse.json({migration_required:false,balance:account.data?.balance??0,isAdmin:admin,viewer:await loadPreviewViewer(mine.member.id,mine.member.member_name),frames:(frames.data??[]).map((f)=>({...f,owned:admin||f.price_points===0||ownedFrames.has(f.id),equipped:member.data?.profile_frame_path===f.image_path})),effects:(effects.data??[]).map((e)=>({...e,owned:admin||ownedEffects.has(e.id),equipped:e.image_path?member.data?.ranking_card_bg_image===e.image_path:member.data?.ranking_card_effect_key===e.effect_key})),ledger:ledger.data??[]},{headers:H})
+}
+
+/**
+ * 상점 미리보기용 내 프로필(아바타·랭크). 순수 표시용이라 실패해도 상점을 막지 않는다.
+ *
+ * ★ 위 Promise.all 에 넣지 않는다. 그 배열은 에러 하나가 통합 판정(21행)에 걸려
+ *   상점 전체를 legacy/500 으로 떨어뜨리므로, discord_avatar_url 미적용(42703) 같은
+ *   사소한 사유로 상점이 통째로 퇴행한다. 여기서는 실패를 삼키고 미리보기만 포기한다.
+ */
+async function loadPreviewViewer(memberId:string,memberName:string){
+ const fallback={name:memberName,avatarUrl:null,tier:null,rank:null,lp:null}
+ try{
+  const {data,error}=await supabaseAdmin.from('members').select('discord_avatar_url,tft_tier,tft_rank,tft_league_points').eq('id',memberId).single()
+  if(error||!data)return fallback
+  return {name:memberName,avatarUrl:data.discord_avatar_url??null,tier:data.tft_tier??null,rank:data.tft_rank??null,lp:data.tft_league_points??null}
+ }catch{return fallback}
 }
