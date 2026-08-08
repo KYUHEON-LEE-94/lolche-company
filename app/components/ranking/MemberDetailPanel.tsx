@@ -576,7 +576,8 @@ export default function MemberDetailPanel({
           >
           {/* 헤더 — 본인이 설정한 배경 이펙트/이미지를 배너로 깐다 */}
           <div className={`relative isolate flex shrink-0 items-center justify-between gap-3 overflow-hidden border-b border-line px-6 py-6 ${rankEffectClass(member.ranking_card_effect_key)}`}>
-            <RankCardBackground imagePath={member.ranking_card_bg_image} />
+            {/* scrim=false: 바로 아래 헤더 전용 스크림(좌측 강)이 이미 있어 이중 적용이 된다 */}
+            <RankCardBackground imagePath={member.ranking_card_bg_image} scrim={false} />
             {/* 가독성 스크림 — 좌측 이름 영역을 어둡게 */}
             <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-panel/85 via-panel/45 to-panel/15" aria-hidden />
             <div className="flex items-center gap-4 min-w-0">
@@ -599,11 +600,14 @@ export default function MemberDetailPanel({
               </div>
             <div className="min-w-0">
               <p id={titleId} className="font-black text-fg text-lg leading-tight truncate drop-shadow">{member.member_name}</p>
+              {/* 배너 위 텍스트. 헤더 스크림은 좌측이 강하지만 이 위치(가로 14%)에서도
+                  text-subtle 은 2.4:1, text-muted 는 4.4:1 로 AA(4.5)에 못 미친다.
+                  스크림을 더 어둡게 하면 구매한 배경을 가리므로 큐 전환 탭과 같은 방식으로 글자를 올린다. */}
               {headerRank.tier ? (
-                <p className="text-[11px] text-subtle mt-0.5">
+                <p className="text-[11px] text-fg/75 mt-0.5 drop-shadow">
                   {headerRank.tier} {headerRank.rank} · {headerRank.lp ?? 0} LP
                   {subAccountSelected && selectedAccount && (
-                    <span className="text-faint">
+                    <span className="text-subtle">
                       {' '}
                       · {selectedAccount.riot_game_name}#{selectedAccount.riot_tagline}
                     </span>

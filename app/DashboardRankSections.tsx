@@ -127,12 +127,13 @@ export default function DashboardRankSections({
                   >
                     <RankCardBackground imagePath={member.ranking_card_bg_image} />
                     <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-sm font-bold text-fg">{member.member_name}</span>
+                      <span className="min-w-0 truncate text-sm font-bold text-fg drop-shadow">{member.member_name}</span>
                       <span className={`shrink-0 text-xs font-black ${up ? 'text-ok-ink' : 'text-danger-ink'}`}>
                         {up ? '▲' : '▼'} {Math.abs(delta)}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-subtle truncate">
+                    {/* 배경 이미지 위 — text-subtle 은 밝은 배경에서 AA 미만 */}
+                    <p className="mt-1 text-xs text-muted truncate drop-shadow">
                       {prevLabel}
                       {' → '}
                       {member.rankLabel}

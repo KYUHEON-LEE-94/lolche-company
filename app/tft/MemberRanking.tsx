@@ -358,12 +358,13 @@ const MemberRow = memo(function MemberRow({
           </div>
         </div>
 
-        {/* 이름 · 라이엇 ID */}
+        {/* 이름 · 라이엇 ID — 배경 이미지 위에 놓이므로 스크림(RankCardBackground)과
+            drop-shadow 로 대비를 보강한다. text-subtle 은 밝은 배경에서 AA 미만이라 muted 로 올렸다. */}
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-fg text-sm leading-tight truncate">{member.member_name}</p>
-          <p className="text-[11px] text-subtle leading-tight truncate">
+          <p className="font-bold text-fg text-sm leading-tight truncate drop-shadow">{member.member_name}</p>
+          <p className="text-[11px] text-muted leading-tight truncate drop-shadow">
             {member.riot_game_name}
-            <span className="text-faint">#{member.riot_tagline}</span>
+            <span className="text-subtle">#{member.riot_tagline}</span>
           </p>
         </div>
 

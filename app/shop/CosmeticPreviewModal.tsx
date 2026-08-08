@@ -125,6 +125,8 @@ export default function CosmeticPreviewModal({
                 {bgImageUrl && (
                   <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
                     <Image src={bgImageUrl} alt="" fill sizes="512px" className="object-cover opacity-90" unoptimized />
+                    {/* RankCardBackground 의 스크림과 동일하게 유지할 것 — 미리보기가 실물과 달라지면 안 된다 */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-panel/88 from-28% via-panel/30 via-50% to-panel/88 to-74%" />
                   </div>
                 )}
                 <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-gradient-to-b from-yellow-400 to-amber-500 opacity-70" />
@@ -146,7 +148,7 @@ export default function CosmeticPreviewModal({
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold leading-tight text-fg drop-shadow">{viewer.name}</p>
-                  <p className="truncate text-[11px] leading-tight text-subtle">{rankText}</p>
+                  <p className="truncate text-[11px] leading-tight text-muted drop-shadow">{rankText}</p>
                 </div>
               </div>
             </div>
@@ -162,7 +164,8 @@ export default function CosmeticPreviewModal({
                     <Image src={bgImageUrl} alt="" fill sizes="512px" className="object-cover opacity-90" unoptimized />
                   </div>
                 )}
-                {/* 실제 패널과 동일한 가독성 스크림 */}
+                {/* 실제 패널과 동일한 가독성 스크림. 패널은 RankCardBackground 의 공용 스크림을
+                    scrim={false} 로 끄고 이 좌측 강조형만 쓰므로 미리보기도 그대로 맞춘다. */}
                 <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-panel/85 via-panel/45 to-panel/15" aria-hidden />
 
                 <div className="relative h-20 w-20 shrink-0">
@@ -178,7 +181,8 @@ export default function CosmeticPreviewModal({
 
                 <div className="min-w-0">
                   <p className="truncate text-lg font-black leading-tight text-fg drop-shadow">{viewer.name}</p>
-                  <p className="mt-0.5 text-[11px] text-subtle">{rankText}</p>
+                  {/* 실제 패널과 동일: 헤더 스크림이 약한 위치라 muted 로는 AA 미달 */}
+                  <p className="mt-0.5 text-[11px] text-fg/75 drop-shadow">{rankText}</p>
                 </div>
               </div>
             </div>
