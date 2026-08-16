@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { isDiscordAvatarUrl } from '@/lib/members/avatar'
@@ -10,9 +10,10 @@ import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import CardCarousel from '@/app/components/ui/CardCarousel'
 import { profileThemeClass } from '@/lib/profile/themes'
+import TitleBadges from '@/app/components/TitleBadges'
+import type { PublicTitleBadge } from '@/lib/achievements/titles'
 
 type Props = {
-    userId: string
     member: {
         id: string
         member_name: string
@@ -21,6 +22,7 @@ type Props = {
         profile_frame_path: string | null
         profile_updated_at: string | null
     }
+    equippedTitles: PublicTitleBadge[]
 }
 
 type Frame = {
@@ -36,7 +38,9 @@ type Frame = {
 type Effect={id:string;label:string;description:string|null;effect_key:string|null;image_path:string|null;price_points:number;owned:boolean;equipped:boolean}
 type Theme={id:string;key:string;label:string;description:string;price_points:number;owned:boolean;equipped:boolean}
 
-export default function ProfileEditor({ member }: Props) {
+type CosmeticTab = 'theme' | 'frame' | 'background'
+
+export default function ProfileEditor({ member, equippedTitles }: Props) {
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
     const [framePath, setFramePath] = useState<string | null>(member.profile_frame_path)
     const [frameUrl, setFrameUrl] = useState<string | null>(null)
@@ -53,6 +57,7 @@ export default function ProfileEditor({ member }: Props) {
     const [savingFrame, setSavingFrame] = useState(false)
 
     const [toast, setToast] = useState<string | null>(null)
+    const [activeTab, setActiveTab] = useState<CosmeticTab>('theme')
 
     // 프로필 사진은 Discord 프로필 전용이다(직접 업로드 제거).
     const displayUrl = isDiscordAvatarUrl(member.discord_avatar_url)
@@ -143,27 +148,44 @@ export default function ProfileEditor({ member }: Props) {
         }
     }
 
+    const ownedThemes = themes.filter((theme) => theme.owned)
+    const tabs: { key: CosmeticTab; label: string; count: number }[] = [
+        { key: 'theme', label: '카드 테마', count: ownedThemes.length },
+        { key: 'frame', label: '프레임', count: ownedFrames.length },
+        { key: 'background', label: '랭킹 배경', count: ownedEffects.length },
+    ]
+
+    function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, current: CosmeticTab) {
+        const currentIndex = tabs.findIndex((tab) => tab.key === current)
+        let nextIndex = currentIndex
+        if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+        else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+        else if (event.key === 'Home') nextIndex = 0
+        else if (event.key === 'End') nextIndex = tabs.length - 1
+        else return
+
+        event.preventDefault()
+        const nextKey = tabs[nextIndex].key
+        setActiveTab(nextKey)
+        document.getElementById(`cosmetic-tab-${nextKey}`)?.focus()
+    }
+
     return (
-        <div className="grid gap-6">
-            {/* 미리보기 카드 */}
-            <section className={`relative isolate overflow-hidden rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl ${profileThemeClass(themeKey)} ${bgImage ? '' : rankEffectClass(effectKey)}`}>
+        <section className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line shadow-xl">
+            <div className={`relative isolate overflow-hidden p-5 sm:p-7 ${profileThemeClass(themeKey)} ${bgImage ? '' : rankEffectClass(effectKey)}`}>
                 <RankCardBackground imagePath={bgImage} />
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <div className="text-lg font-bold text-fg">{member.member_name}</div>
+                <div className="flex items-center justify-between gap-5">
+                    <div className="relative min-w-0 flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-ink">Profile preview</p>
+                        <div className="mt-1 truncate text-xl font-black text-fg drop-shadow">{member.member_name}</div>
                         <div className="mt-1 text-sm text-muted">{member.riot_id}</div>
-                        <div className="mt-2 text-xs text-muted">
-                            프로필 사진은 Discord 프로필을 사용해요(프레임은 선택).
-                        </div>
+                        <TitleBadges titles={equippedTitles} className="mt-3" />
                     </div>
 
-                    {/* 아바타 + 프레임 */}
-                    <div className="relative h-24 w-24 shrink-0">
-                        {/* 프로필 이미지 */}
-                        <div
-                            className="absolute inset-0 rounded-full overflow-hidden bg-surface-2 ring-2 ring-line z-10">
+                    <div className="relative h-20 w-20 shrink-0 sm:h-24 sm:w-24">
+                        <div className="absolute inset-0 z-10 overflow-hidden rounded-full bg-surface-2 ring-2 ring-line">
                             {displayUrl ? (
-                                <Image src={displayUrl} alt="profile image" fill className="object-cover"/>
+                                <Image src={displayUrl} alt={`${member.member_name} 프로필`} fill sizes="96px" className="object-cover"/>
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-muted">
                                     <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
@@ -179,122 +201,86 @@ export default function ProfileEditor({ member }: Props) {
                             )}
                         </div>
 
-                        {/* 프레임 오버레이 — 아바타보다 크게(비례 여백) 둬 장식이 원형 아바타 바깥에 오도록 */}
                         {frameUrl && (
                             <div className="pointer-events-none absolute -inset-[34%] z-20">
-                                <Image src={frameUrl} alt="profile frame" fill className={`object-contain ${isSpinningFrame(framePath) ? 'frame-spin' : ''}`} />
+                                <Image src={frameUrl} alt="" fill sizes="132px" className={`object-contain ${isSpinningFrame(framePath) ? 'frame-spin' : ''}`} />
                             </div>
                         )}
                     </div>
-
                 </div>
 
-                {/* 토스트 */}
                 {toast && (
-                    <div
-                        className="mt-4 rounded-2xl bg-surface-2 ring-1 ring-line px-4 py-3 text-sm text-fg">
+                    <div className="relative mt-4 rounded-2xl bg-surface-2 px-4 py-3 text-sm text-fg ring-1 ring-line" role="status">
                         {toast}
                     </div>
                 )}
-            </section>
+            </div>
 
-            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
-                <div className="text-fg font-extrabold">프로필 카드 테마</div>
-                {themes.filter((theme)=>theme.owned).length===0 ? <div className="mt-4 text-xs text-muted">보유한 테마가 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link></div> : <div className="mt-4 grid gap-3 sm:grid-cols-2">{themes.filter((theme)=>theme.owned).map((theme)=><button type="button" key={theme.id} disabled={savingFrame} onClick={()=>toggleEquip('profile_theme',theme)} className={`rounded-2xl border p-4 text-left ${theme.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'}`}><div className={`relative h-16 overflow-hidden rounded-xl ${profileThemeClass(theme.key)}`} /><div className="mt-3 font-bold text-fg">{theme.label}</div><div className="mt-1 text-xs text-muted">{theme.equipped?'장착 중':'장착'}</div></button>)}</div>}
-            </section>
-
-            {/* 프로필 사진 안내는 상단 프리뷰 카드와 중복이라 제거됨 */}
-
-            {/* 잔액 + 상점 링크 */}
-            <section className="flex items-center justify-between rounded-3xl bg-surface ring-1 ring-line p-5">
-                <div>
-                    <div className="text-xs text-muted">보유 포인트</div>
-                    <div className="mt-0.5 text-xl font-black text-brand-ink">{balance.toLocaleString()}P</div>
-                </div>
-                <Link href="/shop" className="px-4 py-2 rounded-xl text-sm font-bold bg-brand text-white hover:bg-brand/85 transition">
-                    상점 가기
-                </Link>
-            </section>
-
-            {/* 프레임 선택 섹션 (보유분만) */}
-            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="text-fg font-extrabold">프레임</div>
-                    <button
-                        disabled={savingFrame}
-                        onClick={() => saveFrame(null)}
-                        className="px-4 py-2 rounded-xl text-sm font-bold bg-surface-2 border border-line text-fg hover:bg-surface disabled:opacity-50"
-                    >
-                        해제
-                    </button>
+            <div className="border-t border-line p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 className="font-extrabold text-fg">꾸미기</h2>
+                        <p className="mt-1 text-xs text-muted">보유 아이템을 골라 바로 장착할 수 있어요.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-black text-brand-ink">{balance.toLocaleString()}P</span>
+                        <Link href="/shop" className="min-h-10 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white transition hover:bg-brand/85">상점</Link>
+                    </div>
                 </div>
 
-                {framesLoading ? (
-                    <div className="mt-5 text-xs text-muted">불러오는 중...</div>
-                ) : ownedFrames.length === 0 ? (
-                    <div className="mt-5 text-xs text-muted">
-                        보유한 프레임이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
-                    </div>
-                ) : (
-                    <div className="mt-5">
-                        <CardCarousel perPage={9} pageClassName="grid grid-cols-2 sm:grid-cols-3 gap-4" items={ownedFrames.map((f) => {
-                            const selected = framePath === f.image_path
-                            const url = framePublicUrl(f.image_path)
-                            return (
-                                <button
-                                    key={f.id}
-                                    disabled={savingFrame}
-                                    onClick={() => toggleEquip('frame',f)}
-                                    className={[
-                                        'rounded-2xl p-4 ring-1 transition text-left',
-                                        selected
-                                            ? 'bg-amber-500/10 ring-amber-400/60'
-                                            : 'bg-surface-2 ring-line hover:bg-surface',
-                                        savingFrame ? 'opacity-50' : '',
-                                    ].join(' ')}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative w-12 h-12">
-                                            <Image src={url} alt={f.label} fill className={`object-contain ${isSpinningFrame(f.image_path) ? 'frame-spin' : ''}`}/>
-                                        </div>
-                                        <div>
-                                            <div className="text-fg font-bold">{f.label}</div>
-                                            <div className="text-xs text-muted">{selected ? '장착 중' : '장착'}</div>
-                                        </div>
-                                    </div>
-                                </button>
-                            )
-                        })} />
-                    </div>
-                )}
+                <div className="mt-5 flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1" role="tablist" aria-label="꾸미기 종류">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            id={`cosmetic-tab-${tab.key}`}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === tab.key}
+                            aria-controls={`cosmetic-panel-${tab.key}`}
+                            tabIndex={activeTab === tab.key ? 0 : -1}
+                            onClick={() => setActiveTab(tab.key)}
+                            onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
+                            className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3 text-xs font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 ${activeTab === tab.key ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-fg'}`}
+                        >
+                            {tab.label} <span className="opacity-70">{tab.count}</span>
+                        </button>
+                    ))}
+                </div>
 
-                {savingFrame && <div className="mt-4 text-xs text-muted">저장 중...</div>}
-            </section>
-
-            {/* 랭킹 카드 배경 (보유분만) */}
-            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
-                <div className="text-fg font-extrabold">랭킹 카드 배경</div>
-                {ownedEffects.length === 0 ? (
-                    <div className="mt-4 text-xs text-muted">
-                        보유한 배경이 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link>
-                    </div>
-                ) : (
-                    <div className="mt-4">
-                        <CardCarousel perPage={9} pageClassName="grid gap-3 sm:grid-cols-3" items={ownedEffects.map(e=>(
-                            <button key={e.id} disabled={savingFrame} onClick={()=>toggleEquip('rank_effect',e)} className={`rounded-2xl border p-4 text-left ${e.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'} disabled:opacity-40`}>
-                                {/* 상점과 동일하게 설명 대신 실제 배경 미리보기 */}
-                                <div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl ring-1 ring-line bg-canvas ${e.image_path ? '' : rankEffectClass(e.effect_key)}`} aria-hidden>
-                                    {e.image_path && <Image src={bgPublicUrl(e.image_path)} alt="" fill sizes="200px" className="object-cover" />}
-                                </div>
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="font-bold text-fg">{e.label}</div>
-                                    <div className="text-xs text-muted">{e.equipped?'장착 중':'장착'}</div>
-                                </div>
-                            </button>
+                <div
+                    id={`cosmetic-panel-${activeTab}`}
+                    className="mt-5"
+                    role="tabpanel"
+                    aria-labelledby={`cosmetic-tab-${activeTab}`}
+                >
+                    {framesLoading ? <div className="py-8 text-center text-sm text-muted">보유 아이템을 불러오는 중...</div> : activeTab === 'theme' ? (
+                        ownedThemes.length === 0 ? <EmptyOwned label="테마" /> : (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {ownedThemes.map((theme) => <button type="button" key={theme.id} disabled={savingFrame} onClick={() => toggleEquip('profile_theme', theme)} className={`rounded-2xl border p-4 text-left ${theme.equipped ? 'border-brand bg-brand/10' : 'border-line bg-surface-2'}`}><div className={`relative h-16 overflow-hidden rounded-xl ${profileThemeClass(theme.key)}`} /><div className="mt-3 font-bold text-fg">{theme.label}</div><div className="mt-1 text-xs text-muted">{theme.equipped ? '장착 중' : '장착'}</div></button>)}
+                            </div>
+                        )
+                    ) : activeTab === 'frame' ? (
+                        ownedFrames.length === 0 ? <EmptyOwned label="프레임" /> : (
+                            <>
+                                <div className="mb-3 flex justify-end"><button type="button" disabled={savingFrame} onClick={() => saveFrame(null)} className="min-h-10 rounded-xl border border-line bg-surface-2 px-4 text-sm font-bold text-fg disabled:opacity-50">프레임 해제</button></div>
+                                <CardCarousel perPage={9} pageClassName="grid grid-cols-2 gap-3 sm:grid-cols-3" items={ownedFrames.map((frame) => {
+                                    const selected = framePath === frame.image_path
+                                    return <button key={frame.id} type="button" disabled={savingFrame} onClick={() => toggleEquip('frame', frame)} className={`rounded-2xl p-4 text-left ring-1 transition ${selected ? 'bg-amber-500/10 ring-amber-400/60' : 'bg-surface-2 ring-line'}`}><div className="flex items-center gap-3"><div className="relative h-12 w-12 shrink-0"><Image src={framePublicUrl(frame.image_path)} alt={frame.label} fill sizes="48px" className={`object-contain ${isSpinningFrame(frame.image_path) ? 'frame-spin' : ''}`} /></div><div className="min-w-0"><div className="truncate font-bold text-fg">{frame.label}</div><div className="text-xs text-muted">{selected ? '장착 중' : '장착'}</div></div></div></button>
+                                })} />
+                            </>
+                        )
+                    ) : ownedEffects.length === 0 ? <EmptyOwned label="랭킹 배경" /> : (
+                        <CardCarousel perPage={9} pageClassName="grid gap-3 sm:grid-cols-3" items={ownedEffects.map((effect) => (
+                            <button key={effect.id} type="button" disabled={savingFrame} onClick={() => toggleEquip('rank_effect', effect)} className={`rounded-2xl border p-4 text-left ${effect.equipped ? 'border-brand bg-brand/10' : 'border-line bg-surface-2'} disabled:opacity-40`}><div className={`relative mb-3 h-16 w-full overflow-hidden rounded-xl bg-canvas ring-1 ring-line ${effect.image_path ? '' : rankEffectClass(effect.effect_key)}`} aria-hidden>{effect.image_path && <Image src={bgPublicUrl(effect.image_path)} alt="" fill sizes="200px" className="object-cover" />}</div><div className="flex items-center justify-between gap-2"><div className="truncate font-bold text-fg">{effect.label}</div><div className="shrink-0 text-xs text-muted">{effect.equipped ? '장착 중' : '장착'}</div></div></button>
                         ))} />
-                    </div>
-                )}
-            </section>
-        </div>
+                    )}
+                    {savingFrame && <div className="mt-4 text-xs text-muted" role="status">저장 중...</div>}
+                </div>
+            </div>
+        </section>
     )
+}
+
+function EmptyOwned({ label }: { label: string }) {
+    return <div className="rounded-2xl bg-surface-2 px-4 py-8 text-center text-sm text-muted">보유한 {label}가 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 보기</Link></div>
 }

@@ -11,3 +11,8 @@ export type TitleView = {
   available: boolean
   equipped_slot: number | null
 }
+
+export type PublicTitleBadge = {
+  id: string
+  label: string
+}

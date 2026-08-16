@@ -13,6 +13,7 @@ type PanelMember = {
   profile_frame_path?: string | null
   ranking_card_effect_key?: string | null
   ranking_card_bg_image?: string | null
+  equipped_titles?: { id: string; label: string }[]
 }
 
 /**

@@ -82,6 +82,7 @@ export type Member = {
   ranking_card_bg_image: string | null
   profile_card_theme_key: string | null
   profile_updated_at: string | null
+  equipped_titles?: { id: string; label: string }[]
 
   created_at: string
   last_synced_at: string | null

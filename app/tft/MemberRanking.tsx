@@ -15,6 +15,7 @@ import { invalidateMemberDetailCache } from '@/lib/client/requestCache'
 import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
+import TitleBadges from '@/app/components/TitleBadges'
 
 type QueueType = 'solo' | 'doubleup'
 
@@ -366,6 +367,7 @@ const MemberRow = memo(function MemberRow({
             {member.riot_game_name}
             <span className="text-subtle">#{member.riot_tagline}</span>
           </p>
+          <TitleBadges titles={member.equipped_titles} compact className="mt-1" />
         </div>
 
         {/* 최근 5경기 (md+) */}

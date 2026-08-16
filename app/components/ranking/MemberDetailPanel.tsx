@@ -14,6 +14,8 @@ import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { supabaseClient } from '@/lib/supabase'
+import TitleBadges from '@/app/components/TitleBadges'
+import type { PublicTitleBadge } from '@/lib/achievements/titles'
 
 function panelFrameUrl(path: string): string {
   return resolveFrameUrl(path, (p) => supabaseClient.storage.from('profile-frames').getPublicUrl(p).data.publicUrl)
@@ -217,6 +219,7 @@ type MemberInfo = {
   discord_avatar_url?: string | null
   ranking_card_effect_key?: string | null
   ranking_card_bg_image?: string | null
+  equipped_titles?: PublicTitleBadge[]
 }
 
 function placementColor(p: number) {
@@ -600,6 +603,7 @@ export default function MemberDetailPanel({
               </div>
             <div className="min-w-0">
               <p id={titleId} className="font-black text-fg text-lg leading-tight truncate drop-shadow">{member.member_name}</p>
+              <TitleBadges titles={member.equipped_titles} compact className="mt-1.5" />
               {/* 배너 위 텍스트. 헤더 스크림은 좌측이 강하지만 이 위치(가로 14%)에서도
                   text-subtle 은 2.4:1, text-muted 는 4.4:1 로 AA(4.5)에 못 미친다.
                   스크림을 더 어둡게 하면 구매한 배경을 가리므로 큐 전환 탭과 같은 방식으로 글자를 올린다. */}

@@ -6,12 +6,11 @@ import { getDiscordId } from '@/lib/auth/discord'
 import type { MemberStatus } from '@/types/supabase'
 import { listRiotAccounts, pickPrimaryAccount } from '@/lib/members/primaryAccount'
 import { withAvatarColumn } from '@/lib/members/avatar'
-import ProfileEditor from './ProfileEditor'
 import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
 import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import ProfileChecklist from '@/app/components/ProfileChecklist'
-import TitleBadgeManager from './TitleBadgeManager'
+import ProfileCustomization from './ProfileCustomization'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,33 +127,14 @@ export default async function ProfilePage() {
                     kicker="Profile"
                     accent="indigo"
                     title="프로필 관리"
-                    description="라이엇 계정을 직접 등록하고, 승인 후 프로필 이미지·프레임을 설정할 수 있어요."
-                    className="mb-8"
+                    description="공개 프로필과 칭호, 꾸미기 아이템을 한곳에서 관리하세요."
+                    className="mb-6"
                 />
 
                 <div className="grid gap-6">
-                    {/* 개인화 데이터라 서버에서 렌더하지 않는다(클라이언트 아일랜드 + force-dynamic API). */}
-                    <ProfileChecklist />
-
-                    <MemberSelfForm
-                        initial={
-                            member
-                                ? {
-                                      member_name: member.member_name,
-                                      riot_game_name: member.riot_game_name,
-                                      riot_tagline: member.riot_tagline,
-                                  }
-                                : null
-                        }
-                        status={status}
-                        rejectedReason={member?.rejected_reason ?? null}
-                        accounts={accounts}
-                        migrationRequired={migrationRequired}
-                    />
-
                     {member && status === 'approved' ? (
-                        <><TitleBadgeManager /><ProfileEditor
-                            userId={user.id}
+                        <>
+                          <ProfileCustomization
                             member={{
                                 id: member.id,
                                 member_name: member.member_name,
@@ -163,14 +143,47 @@ export default async function ProfilePage() {
                                 profile_frame_path: member.profile_frame_path,
                                 profile_updated_at: member.profile_updated_at,
                             }}
-                        /></>
+                          />
+                          <details className={`${CARD} overflow-hidden`}>
+                            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-extrabold text-fg marker:hidden sm:px-6">
+                              <span>계정 정보 · 라이엇 계정</span>
+                              <span className="text-xs font-bold text-muted">열어보기</span>
+                            </summary>
+                            <div className="border-t border-line p-1 sm:p-2">
+                              <MemberSelfForm
+                                initial={{
+                                  member_name: member.member_name,
+                                  riot_game_name: member.riot_game_name,
+                                  riot_tagline: member.riot_tagline,
+                                }}
+                                status={status}
+                                rejectedReason={member.rejected_reason}
+                                accounts={accounts}
+                                migrationRequired={migrationRequired}
+                              />
+                            </div>
+                          </details>
+                          <ProfileChecklist />
+                        </>
                     ) : (
-                        <section className={`${CARD} p-6`}>
-                            <div className="text-fg font-extrabold">프로필 이미지 · 프레임</div>
-                            <p className="mt-2 text-sm text-muted">
-                                관리자 승인이 완료되면 이곳에서 프로필 이미지와 프레임을 설정할 수 있어요.
-                            </p>
-                        </section>
+                        <>
+                          <ProfileChecklist />
+                          <MemberSelfForm
+                            initial={member ? {
+                              member_name: member.member_name,
+                              riot_game_name: member.riot_game_name,
+                              riot_tagline: member.riot_tagline,
+                            } : null}
+                            status={status}
+                            rejectedReason={member?.rejected_reason ?? null}
+                            accounts={accounts}
+                            migrationRequired={migrationRequired}
+                          />
+                          <section className={`${CARD} p-6`}>
+                              <div className="text-fg font-extrabold">프로필 꾸미기</div>
+                              <p className="mt-2 text-sm text-muted">관리자 승인이 완료되면 칭호와 꾸미기 설정이 열려요.</p>
+                          </section>
+                        </>
                     )}
                 </div>
             </div>

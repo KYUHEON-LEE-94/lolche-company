@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic'
 import { CARD } from '@/lib/ui/styles'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
+import TitleBadges from '@/app/components/TitleBadges'
+import type { PublicTitleBadge } from '@/lib/achievements/titles'
 
 // 차트·framer-motion 이 홈 초기 번들에 들어가지 않도록 지연 로드한다.
 const DashboardMemberPanel = dynamic(
@@ -27,6 +29,7 @@ export type DashRankMember = {
   profile_frame_path?: string | null
   ranking_card_effect_key?: string | null
   ranking_card_bg_image?: string | null
+  equipped_titles?: PublicTitleBadge[]
 }
 
 export type DashMover = {
@@ -98,7 +101,10 @@ export default function DashboardRankSections({
                   ) : (
                     <span className="h-8 w-8 shrink-0 rounded-full bg-surface-2" aria-hidden />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-fg">{m.member_name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-fg">{m.member_name}</span>
+                    <TitleBadges titles={m.equipped_titles} compact className="mt-1" />
+                  </span>
                   <span className="shrink-0 text-xs font-bold text-muted">{m.rankLabel}</span>
                 </button>
               </li>
@@ -132,6 +138,7 @@ export default function DashboardRankSections({
                         {up ? '▲' : '▼'} {Math.abs(delta)}
                       </span>
                     </div>
+                    <TitleBadges titles={member.equipped_titles} compact className="mt-1" />
                     {/* 배경 이미지 위 — text-subtle 은 밝은 배경에서 AA 미만 */}
                     <p className="mt-1 text-xs text-muted truncate drop-shadow">
                       {prevLabel}

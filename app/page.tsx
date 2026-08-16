@@ -17,6 +17,7 @@ import { isApexTier, tierScore } from '@/lib/tft/tierScore'
 import { formatKstShort, gameKindLabel } from '@/lib/customGames/display'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
+import { getEquippedTitlesByMemberIds } from '@/lib/achievements/publicTitles'
 
 export const revalidate = 60
 
@@ -118,6 +119,7 @@ export default async function DashboardPage() {
   // 이 프로젝트의 Database 제네릭은 select 결과를 추론하지 못한다(전역적으로 never).
   // app/tft/page.tsx 와 동일하게 명시 캐스팅으로 처리한다.
   const members = (membersResult.data ?? []) as unknown as DashMember[]
+  const titlesByMember = await getEquippedTitlesByMemberIds(members.map((member) => member.id))
   const activeSeason = seasonResult.data as Pick<Season, 'season_name' | 'set_number'> | null
 
   const lastSyncedAt = members.reduce<string | null>((acc, m) => {
@@ -155,6 +157,7 @@ export default async function DashboardPage() {
     profile_frame_path: m.profile_frame_path,
     ranking_card_effect_key: m.ranking_card_effect_key,
     ranking_card_bg_image: m.ranking_card_bg_image,
+    equipped_titles: titlesByMember.get(m.id) ?? [],
   })
 
   const leaderboardView: DashRankMember[] = leaderboard.map(toDashRank)
