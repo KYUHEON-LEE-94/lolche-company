@@ -80,6 +80,7 @@ export type Member = {
   profile_frame_path: string | null
   ranking_card_effect_key: string | null
   ranking_card_bg_image: string | null
+  profile_card_theme_key: string | null
   profile_updated_at: string | null
 
   created_at: string
@@ -263,6 +264,8 @@ export type MemberRankHistory = {
   recorded_at: string
 }
 
+export type ProfileCardTheme = { id: string; key: string; label: string; description: string; price_points: number; is_active: boolean; is_purchasable: boolean; sort_order: number; created_at: string }
+
 export type SyncLog = {
   id: string
   type: string
@@ -428,6 +431,8 @@ export interface Database {
       ranking_card_effects: { Row: RankingCardEffect; Insert: Optional<Omit<RankingCardEffect,'id'|'created_at'>> & { key:string; label:string; price_points:number }; Update: Optional<RankingCardEffect> }
       member_frame_inventory: { Row: MemberFrameInventory; Insert: Optional<MemberFrameInventory> & { member_id:string; frame_id:string; price_paid:number }; Update: Optional<MemberFrameInventory> }
       member_rank_effect_inventory: { Row: MemberRankEffectInventory; Insert: Optional<MemberRankEffectInventory> & { member_id:string; effect_id:string; price_paid:number }; Update: Optional<MemberRankEffectInventory> }
+      profile_card_themes: { Row: ProfileCardTheme; Insert: Optional<Omit<ProfileCardTheme,'id'|'created_at'>> & { id?:string; created_at?:string; key:string; label:string; price_points:number }; Update: Optional<ProfileCardTheme> }
+      member_profile_theme_inventory: { Row: { member_id:string; theme_id:string; price_paid:number; created_at:string }; Insert: { member_id:string; theme_id:string; price_paid:number }; Update: { price_paid?:number } }
       seasons: {
         Row: Season
         Insert: Optional<Omit<Season, 'id' | 'created_at'>> & {

@@ -12,10 +12,10 @@ export async function POST(req: Request) {
   if (!mine.member || mine.member.status !== 'approved') return NextResponse.json({ error: '승인된 멤버만 사용할 수 있습니다.' }, { status: 403 })
   let body: unknown
   try { body = await req.json() } catch (e) { return NextResponse.json({ error: e instanceof Error ? '요청 형식이 올바르지 않습니다.' : '오류 발생' }, { status: 400 }) }
-  if (!isRecord(body) || Object.keys(body).some((key) => !['itemType','itemId'].includes(key)) || (body.itemType !== 'frame' && body.itemType !== 'rank_effect') || (body.itemId !== null && (typeof body.itemId !== 'string' || !UUID_RE.test(body.itemId)))) return NextResponse.json({ error: '장착 정보가 올바르지 않습니다.' }, { status: 400 })
+  if (!isRecord(body) || Object.keys(body).some((key) => !['itemType','itemId'].includes(key)) || (body.itemType !== 'frame' && body.itemType !== 'rank_effect' && body.itemType !== 'profile_theme') || (body.itemId !== null && (typeof body.itemId !== 'string' || !UUID_RE.test(body.itemId)))) return NextResponse.json({ error: '장착 정보가 올바르지 않습니다.' }, { status: 400 })
   if (body.itemId === null) {
     // rank_effect 는 CSS 키·이미지 두 미러를 항상 함께 비운다(한쪽 잔류 방지).
-    const update = body.itemType === 'frame' ? { profile_frame_path: null } : { ranking_card_effect_key: null, ranking_card_bg_image: null }
+    const update = body.itemType === 'frame' ? { profile_frame_path: null } : body.itemType === 'profile_theme' ? { profile_card_theme_key: null } : { ranking_card_effect_key: null, ranking_card_bg_image: null }
     const { error } = await supabaseAdmin.from('members').update(update).eq('id', mine.member.id)
     if (error) {
       if (body.itemType === 'rank_effect' && isMissingColumnError(error)) {
@@ -27,10 +27,10 @@ export async function POST(req: Request) {
     invalidate(); return NextResponse.json({ ok: true })
   }
   const admin = (await requireAdmin()).ok
-  const table = body.itemType === 'frame' ? 'profile_frames' : 'ranking_card_effects'
-  const inventory = body.itemType === 'frame' ? 'member_frame_inventory' : 'member_rank_effect_inventory'
-  const idColumn = body.itemType === 'frame' ? 'frame_id' : 'effect_id'
-  const selectColumns = body.itemType === 'frame' ? 'id,image_path,price_points' : 'id,effect_key,image_path,price_points'
+  const table = body.itemType === 'frame' ? 'profile_frames' : body.itemType === 'profile_theme' ? 'profile_card_themes' : 'ranking_card_effects'
+  const inventory = body.itemType === 'frame' ? 'member_frame_inventory' : body.itemType === 'profile_theme' ? 'member_profile_theme_inventory' : 'member_rank_effect_inventory'
+  const idColumn = body.itemType === 'frame' ? 'frame_id' : body.itemType === 'profile_theme' ? 'theme_id' : 'effect_id'
+  const selectColumns = body.itemType === 'frame' ? 'id,image_path,price_points' : body.itemType === 'profile_theme' ? 'id,key,price_points' : 'id,effect_key,image_path,price_points'
   const itemResult = await supabaseAdmin.from(table).select(selectColumns).eq('id', body.itemId).eq('is_active', true).maybeSingle()
   let itemRecord = itemResult.data as unknown as Record<string, unknown> | null
   if (itemResult.error && body.itemType === 'frame' && isMissingColumnError(itemResult.error)) {
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   // rank_effect 는 CSS 키·이미지 두 미러를 항상 함께 set(한쪽 null) — 재장착 시 이전 값 잔류 방지.
   const update = body.itemType === 'frame'
     ? { profile_frame_path: itemRecord.image_path }
-    : { ranking_card_effect_key: itemRecord.effect_key ?? null, ranking_card_bg_image: itemRecord.image_path ?? null }
+    : body.itemType === 'profile_theme' ? { profile_card_theme_key: itemRecord.key } : { ranking_card_effect_key: itemRecord.effect_key ?? null, ranking_card_bg_image: itemRecord.image_path ?? null }
   const { error } = await supabaseAdmin.from('members').update(update).eq('id', mine.member.id)
   if (error) {
     // 이미지 배경 컬럼 미적용 환경: CSS 효과 장착이면 effect_key 만으로 1회 재시도한다.

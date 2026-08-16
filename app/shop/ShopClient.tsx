@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
+import { profileThemeClass } from '@/lib/profile/themes'
 import { ALERT } from '@/lib/ui/styles'
 import CardCarousel from '@/app/components/ui/CardCarousel'
 import CosmeticPreviewModal, { type PreviewTarget, type PreviewViewer, type EquippedLook } from './CosmeticPreviewModal'
@@ -22,6 +23,7 @@ type Frame = {
   equipped: boolean
 }
 type Effect = { id: string; label: string; description: string | null; effect_key: string | null; image_path: string | null; price_points: number; owned: boolean; equipped: boolean }
+type Theme = { id:string; key:string; label:string; description:string; price_points:number; owned:boolean; equipped:boolean }
 
 type Status = 'loading' | 'ok' | 'unauth' | 'forbidden' | 'migration' | 'error'
 
@@ -47,6 +49,7 @@ export default function ShopClient() {
   const [status, setStatus] = useState<Status>('loading')
   const [frames, setFrames] = useState<Frame[]>([])
   const [effects, setEffects] = useState<Effect[]>([])
+  const [themes, setThemes] = useState<Theme[]>([])
   const [balance, setBalance] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -63,9 +66,10 @@ export default function ShopClient() {
       if (response.status === 401) { setStatus('unauth'); return }
       if (response.status === 403) { setStatus('forbidden'); return }
       if (!response.ok || !data || typeof data !== 'object') { setStatus('error'); return }
-      const shop = data as { frames?: Frame[]; effects?: Effect[]; balance?: number; isAdmin?: boolean; migration_required?: boolean; viewer?: PreviewViewer }
+      const shop = data as { frames?: Frame[]; effects?: Effect[]; themes?: Theme[]; balance?: number; isAdmin?: boolean; migration_required?: boolean; viewer?: PreviewViewer }
       setFrames(shop.frames ?? [])
       setEffects(shop.effects ?? [])
+      setThemes(shop.themes ?? [])
       setBalance(shop.balance ?? 0)
       setIsAdmin(Boolean(shop.isAdmin))
       setViewer(shop.viewer ?? null)
@@ -80,18 +84,20 @@ export default function ShopClient() {
   }
 
   /** 소유 상태만 갱신 — 구매는 장착을 겸하지 않는다(장착은 별도 버튼). */
-  function markOwned(itemType: 'frame' | 'rank_effect', itemId: string) {
+  function markOwned(itemType: 'frame' | 'rank_effect' | 'profile_theme', itemId: string) {
     if (itemType === 'frame') setFrames((prev) => prev.map((f) => (f.id === itemId ? { ...f, owned: true } : f)))
-    else setEffects((prev) => prev.map((e) => (e.id === itemId ? { ...e, owned: true } : e)))
+    else if (itemType === 'rank_effect') setEffects((prev) => prev.map((e) => (e.id === itemId ? { ...e, owned: true } : e)))
+    else setThemes((prev) => prev.map((t) => (t.id === itemId ? { ...t, owned: true } : t)))
   }
 
   /** 장착은 한 축에 하나뿐이라 같은 종류의 나머지는 모두 해제한다. */
-  function markEquipped(itemType: 'frame' | 'rank_effect', itemId: string, nextEquipped: boolean) {
+  function markEquipped(itemType: 'frame' | 'rank_effect' | 'profile_theme', itemId: string, nextEquipped: boolean) {
     if (itemType === 'frame') setFrames((prev) => prev.map((f) => ({ ...f, equipped: f.id === itemId ? nextEquipped : false })))
-    else setEffects((prev) => prev.map((e) => ({ ...e, equipped: e.id === itemId ? nextEquipped : false })))
+    else if (itemType === 'rank_effect') setEffects((prev) => prev.map((e) => ({ ...e, equipped: e.id === itemId ? nextEquipped : false })))
+    else setThemes((prev) => prev.map((t) => ({ ...t, equipped: t.id === itemId ? nextEquipped : false })))
   }
 
-  async function purchase(itemType: 'frame' | 'rank_effect', item: { id: string; label: string; price_points: number }) {
+  async function purchase(itemType: 'frame' | 'rank_effect' | 'profile_theme', item: { id: string; label: string; price_points: number }) {
     if (!confirm(`'${item.label}'을(를) ${item.price_points.toLocaleString()}P로 구매할까요?`)) return
     setBusy(true)
     try {
@@ -108,7 +114,7 @@ export default function ShopClient() {
     }
   }
 
-  async function equip(itemType: 'frame' | 'rank_effect', item: { id: string; equipped: boolean }) {
+  async function equip(itemType: 'frame' | 'rank_effect' | 'profile_theme', item: { id: string; equipped: boolean }) {
     setBusy(true)
     try {
       const next = !item.equipped
@@ -212,6 +218,21 @@ export default function ShopClient() {
             } />
           </div>
         )}
+      </section>
+
+      <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
+        <div className="text-fg font-extrabold">프로필 카드 테마</div>
+        <p className="mt-1 text-xs text-muted">내 프로필 미리보기 카드에만 적용됩니다.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {themes.map((theme) => {
+            const tooPoor = !theme.owned && balance < theme.price_points
+            return <div key={theme.id} className={`rounded-2xl border p-4 ${theme.equipped ? 'border-brand bg-brand/10' : 'border-line bg-surface-2'}`}>
+              <div className={`relative h-16 overflow-hidden rounded-xl ${profileThemeClass(theme.key)}`} />
+              <div className="mt-3 flex items-center justify-between gap-2"><div><div className="font-bold text-fg">{theme.label}</div><div className="mt-1 text-xs text-muted">{theme.description}</div></div><span className="text-xs font-black text-brand-ink">{theme.price_points}P</span></div>
+              <div className="mt-3 flex gap-2">{theme.owned ? <button type="button" disabled={busy} onClick={() => equip('profile_theme', theme)} className={theme.equipped ? UNEQUIP_BTN : EQUIP_BTN}>{theme.equipped ? '해제' : '장착'}</button> : <button type="button" disabled={busy || tooPoor} onClick={() => purchase('profile_theme', theme)} className={BUY_BTN}>{tooPoor ? '포인트 부족' : '구매'}</button>}</div>
+            </div>
+          })}
+        </div>
       </section>
 
       {/* 랭킹 카드 배경 카탈로그 */}

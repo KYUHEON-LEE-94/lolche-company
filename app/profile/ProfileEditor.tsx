@@ -9,6 +9,7 @@ import { resolveRankBgUrl } from '@/lib/cosmetics/rankBgUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import CardCarousel from '@/app/components/ui/CardCarousel'
+import { profileThemeClass } from '@/lib/profile/themes'
 
 type Props = {
     userId: string
@@ -33,6 +34,7 @@ type Frame = {
     equipped: boolean
 }
 type Effect={id:string;label:string;description:string|null;effect_key:string|null;image_path:string|null;price_points:number;owned:boolean;equipped:boolean}
+type Theme={id:string;key:string;label:string;description:string;price_points:number;owned:boolean;equipped:boolean}
 
 export default function ProfileEditor({ member }: Props) {
     // DB 초기값 → state로 복사해서 이후 즉시 반영되게
@@ -45,6 +47,8 @@ export default function ProfileEditor({ member }: Props) {
     const [balance,setBalance]=useState(0)
     const [effectKey,setEffectKey]=useState<string|null>(null)
     const [bgImage,setBgImage]=useState<string|null>(null)
+    const [themes,setThemes]=useState<Theme[]>([])
+    const [themeKey,setThemeKey]=useState<string|null>(null)
 
     const [savingFrame, setSavingFrame] = useState(false)
 
@@ -79,9 +83,10 @@ export default function ProfileEditor({ member }: Props) {
                 showToast('보유 아이템을 불러오지 못했습니다.')
                 setFrames([])
             } else {
-                const shop=data as {frames?:Frame[];effects?:Effect[];balance?:number}
+                const shop=data as {frames?:Frame[];effects?:Effect[];themes?:Theme[];balance?:number}
                 const equippedEffect=shop.effects?.find(e=>e.equipped)??null
-                setFrames(shop.frames??[]);setEffects(shop.effects??[]);setBalance(shop.balance??0);setEffectKey(equippedEffect?.effect_key??null);setBgImage(equippedEffect?.image_path??null)
+                const equippedTheme=shop.themes?.find(t=>t.equipped)??null
+                setFrames(shop.frames??[]);setEffects(shop.effects??[]);setThemes(shop.themes??[]);setBalance(shop.balance??0);setEffectKey(equippedEffect?.effect_key??null);setBgImage(equippedEffect?.image_path??null);setThemeKey(equippedTheme?.key??null)
             }
             setFramesLoading(false)
         })()
@@ -105,11 +110,11 @@ export default function ProfileEditor({ member }: Props) {
     }
 
     // 보유분만 다루므로 장착/해제(equip)만 호출한다. 구매 경로 없음.
-    async function toggleEquip(itemType:'frame'|'rank_effect',item:{id:string;equipped:boolean}){
+    async function toggleEquip(itemType:'frame'|'rank_effect'|'profile_theme',item:{id:string;equipped:boolean}){
       setSavingFrame(true)
       try{
         const r=await fetch('/api/me/cosmetics/equip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:item.equipped?null:item.id})});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error??'장착 실패')
-        if(itemType==='frame'){const selected=frames.find(f=>f.id===item.id);setFramePath(item.equipped?null:selected?.image_path??null);setFrames(frames.map(f=>({...f,equipped:f.id===item.id?!item.equipped:false})))}else{const selected=effects.find(e=>e.id===item.id);setEffectKey(item.equipped?null:selected?.effect_key??null);setBgImage(item.equipped?null:selected?.image_path??null);setEffects(effects.map(e=>({...e,equipped:e.id===item.id?!item.equipped:false})))}
+        if(itemType==='frame'){const selected=frames.find(f=>f.id===item.id);setFramePath(item.equipped?null:selected?.image_path??null);setFrames(frames.map(f=>({...f,equipped:f.id===item.id?!item.equipped:false})))}else if(itemType==='profile_theme'){const selected=themes.find(t=>t.id===item.id);setThemeKey(item.equipped?null:selected?.key??null);setThemes(themes.map(t=>({...t,equipped:t.id===item.id?!item.equipped:false})))}else{const selected=effects.find(e=>e.id===item.id);setEffectKey(item.equipped?null:selected?.effect_key??null);setBgImage(item.equipped?null:selected?.image_path??null);setEffects(effects.map(e=>({...e,equipped:e.id===item.id?!item.equipped:false})))}
         showToast('반영됐어요 ✅')
       }catch(e){showToast(e instanceof Error?e.message:'처리 중 오류')}finally{setSavingFrame(false)}
     }
@@ -141,7 +146,7 @@ export default function ProfileEditor({ member }: Props) {
     return (
         <div className="grid gap-6">
             {/* 미리보기 카드 */}
-            <section className={`relative isolate overflow-hidden rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl ${bgImage ? '' : rankEffectClass(effectKey)}`}>
+            <section className={`relative isolate overflow-hidden rounded-3xl bg-surface ring-1 ring-line p-6 shadow-xl ${profileThemeClass(themeKey)} ${bgImage ? '' : rankEffectClass(effectKey)}`}>
                 <RankCardBackground imagePath={bgImage} />
                 <div className="flex items-start justify-between gap-4">
                     <div>
@@ -191,6 +196,11 @@ export default function ProfileEditor({ member }: Props) {
                         {toast}
                     </div>
                 )}
+            </section>
+
+            <section className="rounded-3xl bg-surface ring-1 ring-line p-6">
+                <div className="text-fg font-extrabold">프로필 카드 테마</div>
+                {themes.filter((theme)=>theme.owned).length===0 ? <div className="mt-4 text-xs text-muted">보유한 테마가 없어요. <Link href="/shop" className="font-bold text-brand-ink underline">상점에서 구매하기</Link></div> : <div className="mt-4 grid gap-3 sm:grid-cols-2">{themes.filter((theme)=>theme.owned).map((theme)=><button type="button" key={theme.id} disabled={savingFrame} onClick={()=>toggleEquip('profile_theme',theme)} className={`rounded-2xl border p-4 text-left ${theme.equipped?'border-brand bg-brand/10':'border-line bg-surface-2'}`}><div className={`relative h-16 overflow-hidden rounded-xl ${profileThemeClass(theme.key)}`} /><div className="mt-3 font-bold text-fg">{theme.label}</div><div className="mt-1 text-xs text-muted">{theme.equipped?'장착 중':'장착'}</div></button>)}</div>}
             </section>
 
             {/* 프로필 사진 안내는 상단 프리뷰 카드와 중복이라 제거됨 */}

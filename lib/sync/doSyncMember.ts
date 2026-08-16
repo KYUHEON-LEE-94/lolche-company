@@ -384,6 +384,14 @@ export async function doSyncMember(memberId: string) {
     if (recentUpdateError) console.error('members.tft_recent5 update error', recentUpdateError)
   }
 
+  // 조건형 TFT 연승/챌린저 업적은 전적 적재 뒤에만 계산한다. 실패해도 랭크 동기화는 유지한다.
+  try {
+    const { refreshMemberTitles } = await import('@/lib/achievements/refreshTitles')
+    await refreshMemberTitles(memberId)
+  } catch (e) {
+    console.warn('[sync] 칭호 갱신 실패:', e instanceof Error ? e.message : '오류 발생')
+  }
+
   // ── 티어 승급 축하 알림 ─────────────────────────────────────────────────
   //   member(함수 시작 시점 = 이전 값)와 최종 members 값을 비교해 등급 자체가
   //   오른 경우(실버→골드)만 디스코드로 알린다. 디비전 상승·언랭·강등은 제외.

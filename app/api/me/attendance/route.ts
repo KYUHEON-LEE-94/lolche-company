@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/supabase/route'
 import { getDiscordAvatarUrl } from '@/lib/auth/discord'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { refreshMemberTitles } from '@/lib/achievements/refreshTitles'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,8 @@ export async function POST() {
     return NextResponse.json({ ok: false }, { headers: H })
   }
   const memberId = mine.member.id
-  await claimDailyLogin(memberId)
+  const awarded = await claimDailyLogin(memberId)
+  if (awarded) await refreshMemberTitles(memberId)
 
   // 세션 소유 행(members.id = 세션에서 해석한 내 멤버)에만 쓴다 — 탈취 방지.
   const user = await getCurrentUser()

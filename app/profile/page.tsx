@@ -11,6 +11,7 @@ import MemberSelfForm, { type RiotAccountView } from './MemberSelfForm'
 import { CARD, CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import ProfileChecklist from '@/app/components/ProfileChecklist'
+import TitleBadgeManager from './TitleBadgeManager'
 
 export const dynamic = 'force-dynamic'
 
@@ -152,7 +153,7 @@ export default async function ProfilePage() {
                     />
 
                     {member && status === 'approved' ? (
-                        <ProfileEditor
+                        <><TitleBadgeManager /><ProfileEditor
                             userId={user.id}
                             member={{
                                 id: member.id,
@@ -162,7 +163,7 @@ export default async function ProfilePage() {
                                 profile_frame_path: member.profile_frame_path,
                                 profile_updated_at: member.profile_updated_at,
                             }}
-                        />
+                        /></>
                     ) : (
                         <section className={`${CARD} p-6`}>
                             <div className="text-fg font-extrabold">프로필 이미지 · 프레임</div>
