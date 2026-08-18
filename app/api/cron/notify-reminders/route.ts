@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isMissingColumnError } from '@/lib/customGames/game'
 import { isMissingTableError } from '@/lib/db/pgErrors'
-import { sendDiscordWebhook, DISCORD_COLOR, type DiscordEmbed } from '@/lib/discord/notify'
+import { sendDiscordWebhook, DISCORD_COLOR, notifySeasonEndingSoon, type DiscordEmbed } from '@/lib/discord/notify'
 import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGames/display'
 
 export const dynamic = 'force-dynamic'
@@ -172,5 +172,44 @@ export async function GET(req: Request) {
   }
 
   const calendar = await sendCalendarReminders(req, now)
-  return NextResponse.json({ ok: true, sent: customGameSent + calendar.sent, custom_game_sent: customGameSent, calendar_sent: calendar.sent, calendar_migration_required: calendar.migrationRequired, ...(customGameMigrationRequired ? { migration_required: true } : {}) })
+  const season = await sendSeasonEndReminder(now)
+  return NextResponse.json({ ok: true, sent: customGameSent + calendar.sent + season.sent, custom_game_sent: customGameSent, calendar_sent: calendar.sent, season_reminder_sent: season.sent, calendar_migration_required: calendar.migrationRequired, ...(customGameMigrationRequired ? { migration_required: true } : {}) })
+}
+
+/** 시즌 마감 며칠 전부터 "임박" 알림을 보낼지(일). */
+const seasonEndDays = Number(process.env.SEASON_END_REMINDER_DAYS ?? '3')
+const SEASON_END_DAYS = Number.isFinite(seasonEndDays) && seasonEndDays >= 1 && seasonEndDays <= 30 ? seasonEndDays : 3
+
+/**
+ * 활성 시즌의 예약 종료(scheduled_end_at)가 SEASON_END_DAYS 이내로 들어오면 1회 알린다.
+ * end_reminder_sent_at 을 선점 갱신해 중복 발송을 막는다. 컬럼 부재(20260817 미적용)는 조용히 skip.
+ */
+async function sendSeasonEndReminder(now: Date): Promise<{ sent: number }> {
+  const { data: season, error } = await supabaseAdmin
+    .from('seasons')
+    .select('id, season_name, scheduled_end_at, end_reminder_sent_at')
+    .eq('is_active', true)
+    .maybeSingle()
+  if (error) return { sent: 0 } // 컬럼/테이블 부재 등 → skip
+  if (!season || !season.scheduled_end_at || season.end_reminder_sent_at) return { sent: 0 }
+
+  const endMs = new Date(season.scheduled_end_at).getTime()
+  const nowMs = now.getTime()
+  const windowMs = SEASON_END_DAYS * 86_400_000
+  // 종료 전 & 종료까지 SEASON_END_DAYS 이내일 때만.
+  if (nowMs >= endMs || nowMs < endMs - windowMs) return { sent: 0 }
+
+  // 선점: 실제로 내가 찍은 경우에만 발송(중복 방지).
+  const { data: claimed } = await supabaseAdmin
+    .from('seasons')
+    .update({ end_reminder_sent_at: now.toISOString() })
+    .eq('id', season.id)
+    .is('end_reminder_sent_at', null)
+    .select('id')
+    .maybeSingle()
+  if (!claimed) return { sent: 0 }
+
+  const daysLeft = Math.max(1, Math.ceil((endMs - nowMs) / 86_400_000))
+  await notifySeasonEndingSoon(season.season_name, season.scheduled_end_at, daysLeft)
+  return { sent: 1 }
 }

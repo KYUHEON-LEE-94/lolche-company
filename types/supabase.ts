@@ -233,6 +233,8 @@ export type Season = {
   is_active: boolean
   start_date: string | null
   end_date: string | null
+  scheduled_end_at: string | null
+  end_reminder_sent_at: string | null
   created_at: string
 }
 

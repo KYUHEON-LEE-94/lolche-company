@@ -214,3 +214,26 @@ export async function rolloverSeasonAction(input: {
         }
     }
 }
+
+/**
+ * 활성 시즌의 예약 종료일(scheduled_end_at)을 설정/해제한다.
+ * 값이 바뀌면 알림을 다시 무장하도록 end_reminder_sent_at 을 초기화한다.
+ * scheduledEndAtIso 가 null 이면 예약을 해제한다.
+ */
+export async function setSeasonScheduledEndAction(id: number, scheduledEndAtIso: string | null) {
+    const { ok } = await requireAdmin()
+    if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
+    try {
+        const { supabaseService } = await import('@/lib/supabase/service')
+        const { error } = await supabaseService
+            .schema('public')
+            .from('seasons')
+            .update({ scheduled_end_at: scheduledEndAtIso, end_reminder_sent_at: null })
+            .eq('id', id)
+        if (error) throw error
+        revalidatePath('/admin/seasons')
+        return { ok: true }
+    } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' }
+    }
+}

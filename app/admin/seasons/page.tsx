@@ -5,6 +5,7 @@ import { supabaseClient } from '@/lib/supabase'
 import { archiveSeason, updateSeasonStatusAction, deleteSeasonHallOfFameAction } from '@/lib/actions/season-actions'
 import {Spinner} from '@/app/components/Spinner'
 import SeasonRolloverPanel from '@/app/admin/seasons/SeasonRolloverPanel'
+import SeasonEndScheduler from '@/app/admin/seasons/SeasonEndScheduler'
 
 
 
@@ -23,6 +24,7 @@ type Season = {
     is_active: boolean
     start_date: string | null
     end_date: string | null
+    scheduled_end_at?: string | null
 }
 
 export default function AdminSeasonManagementPage() {
@@ -185,6 +187,7 @@ export default function AdminSeasonManagementPage() {
                             </button>
                             <SeasonRolloverPanel currentSeason={activeSeason} onCompleted={loadSeasons} />
                         </div>
+                        <SeasonEndScheduler seasonId={activeSeason.id} initial={activeSeason.scheduled_end_at ?? null} />
                     </div>
                 ) : (
                     <div

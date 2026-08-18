@@ -122,3 +122,24 @@ export async function notifyTop5Entry(
     },
   ])
 }
+
+// ── 시즌 마감 임박 ────────────────────────────────────────────────────────────
+
+/** 활성 시즌 종료가 임박했을 때 1회 알린다. daysLeft 는 남은 일수(정수). */
+export async function notifySeasonEndingSoon(
+  seasonName: string,
+  endAtIso: string,
+  daysLeft: number,
+): Promise<void> {
+  const when = new Intl.DateTimeFormat('ko-KR', {
+    month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul',
+  }).format(new Date(endAtIso))
+  await sendDiscordWebhook([
+    {
+      title: '⏳ 시즌 마감 임박',
+      description: `**${seasonName}** 시즌이 약 **${daysLeft}일 후**(${when}) 마감됩니다.\n마지막 랭크를 챙겨두세요!`,
+      color: DISCORD_COLOR.reminder,
+      timestamp: new Date().toISOString(),
+    },
+  ])
+}
