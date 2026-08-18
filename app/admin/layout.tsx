@@ -12,6 +12,7 @@ const navItems = [
     { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
     { href: '/admin/profile-frames',  label: '상점 관리', icon: 'Image' },
     { href: '/admin/points',          label: '포인트 관리', icon: 'Coins' },
+    { href: '/admin/logs',            label: '동기화 로그', icon: 'Logs' },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -41,6 +42,8 @@ function NavIcon({ name }: { name: string }) {
         )
     if (name === 'Coins')
         return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+    if (name === 'Logs')
+        return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     return null
 }
 
