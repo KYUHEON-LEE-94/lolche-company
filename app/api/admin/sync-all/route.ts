@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { syncOneMember } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
+import { notifyTop5EntriesIfAny } from '@/lib/sync/notifyTop5'
 import { requireAdmin } from '@/app/lib/isAdmin'
 
 export const maxDuration = 300
@@ -201,6 +202,11 @@ async function runSyncAll(params: {
     revalidatePath('/')
     revalidatePath('/tft')
     revalidatePath('/lol')
+  }
+
+  // 동기화 라운드 완료 시 TOP5 신규 진입 알림(실패해도 동기화엔 영향 없음).
+  if (done) {
+    try { await notifyTop5EntriesIfAny() } catch (e) { console.warn('[sync-all] TOP5 알림 실패', e instanceof Error ? e.message : '오류') }
   }
 
   console.log('[sync-all] end', {

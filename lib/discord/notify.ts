@@ -103,3 +103,22 @@ export async function notifyTierPromotion(
     },
   ])
 }
+
+// ── TOP 5 진입 알림 ───────────────────────────────────────────────────────────
+
+/** 롤체 랭킹 TOP 5 에 새로 진입한 멤버를 축하한다. entrants 가 비면 아무것도 보내지 않는다. */
+export async function notifyTop5Entry(
+  entrants: { name: string; rank: number; rankLabel: string }[],
+): Promise<void> {
+  if (entrants.length === 0) return
+  await sendDiscordWebhook([
+    {
+      title: '🏆 롤체 랭킹 TOP 5 진입!',
+      description: entrants
+        .map((e) => `**${e.rank}위 · ${e.name}** — ${e.rankLabel}`)
+        .join('\n'),
+      color: DISCORD_COLOR.tft,
+      timestamp: new Date().toISOString(),
+    },
+  ])
+}
