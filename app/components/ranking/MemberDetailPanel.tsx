@@ -357,6 +357,59 @@ function MatchCard({ match }: { match: MatchRow }) {
   )
 }
 
+/** 최근 매치 카드 자리를 미리 그려주는 스켈레톤. MatchCard 레이아웃(순위 + 본문)을 그대로 흉내낸다. */
+function MatchCardSkeleton() {
+  return (
+    <div className="rounded-xl bg-surface border border-line p-3 flex gap-3" aria-hidden>
+      <div className="flex-shrink-0 w-12 flex justify-center pt-1">
+        <div className="skeleton h-7 w-8 rounded-md" />
+      </div>
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="skeleton h-3 w-24 rounded" />
+        <div className="flex flex-wrap gap-1">
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton h-7 w-7 rounded-md" />)}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {[14, 10, 12].map((w, i) => <div key={i} className="skeleton h-4 rounded-md" style={{ width: `${w * 4}px` }} />)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** 최근 매치 로딩: 카드 3장 분량의 스켈레톤. */
+function MatchListSkeleton() {
+  return (
+    <div className="space-y-2" role="status" aria-label="최근 매치 불러오는 중">
+      {Array.from({ length: 3 }).map((_, i) => <MatchCardSkeleton key={i} />)}
+    </div>
+  )
+}
+
+/** 등수 분포(히스토그램) 로딩: 8개 막대 자리를 흉내낸 스켈레톤. */
+function HistogramSkeleton() {
+  const heights = [40, 68, 92, 76, 60, 48, 34, 26]
+  return (
+    <div className="h-28 flex items-end justify-between gap-1.5 px-1" role="status" aria-label="등수 분포 불러오는 중" aria-hidden>
+      {heights.map((h, i) => <div key={i} className="skeleton flex-1 rounded-t-md" style={{ height: `${h}%` }} />)}
+    </div>
+  )
+}
+
+/** 전적 요약 로딩: 스탯 박스 4개 스켈레톤. */
+function StatsSummarySkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="status" aria-label="전적 요약 불러오는 중">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="rounded-xl bg-surface border border-line p-3 space-y-2">
+          <div className="skeleton h-2.5 w-10 rounded" />
+          <div className="skeleton h-5 w-14 rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function MemberDetailPanel({
   member,
   queue: initialQueue = 'solo',
@@ -694,7 +747,7 @@ export default function MemberDetailPanel({
                     전적 요약 ({queueLabel})
                   </h3>
                   {stats === null ? (
-                    <div className="text-faint text-xs text-center py-4">불러오는 중…</div>
+                    <StatsSummarySkeleton />
                   ) : stats.total === 0 ? (
                     <div className="text-faint text-xs text-center py-4">매치 데이터 없음</div>
                   ) : (
@@ -731,7 +784,7 @@ export default function MemberDetailPanel({
                     랭크 그래프 ({queueLabel})
                   </h3>
                   {history === null ? (
-                    <div className="h-40 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
+                    <div className="skeleton h-40 w-full rounded-xl" role="status" aria-label="랭크 그래프 불러오는 중" />
                   ) : (
                     <RankLineChart history={history} queue={queue} />
                   )}
@@ -746,7 +799,7 @@ export default function MemberDetailPanel({
                     등수 분포
                   </h3>
                   {stats === null ? (
-                    <div className="h-28 flex items-center justify-center text-faint text-xs">불러오는 중…</div>
+                    <HistogramSkeleton />
                   ) : (
                     <PlacementHistogram distribution={stats.distribution} />
                   )}
@@ -759,7 +812,7 @@ export default function MemberDetailPanel({
                     최근 매치
                   </h3>
                   {matches === null ? (
-                    <div className="text-faint text-xs text-center py-4">불러오는 중…</div>
+                    <MatchListSkeleton />
                   ) : matches.length === 0 ? (
                     <div className="text-faint text-xs text-center py-4">매치 데이터 없음</div>
                   ) : (

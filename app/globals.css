@@ -281,6 +281,13 @@ option {
 .profile-card-theme--neon_arcade::before, .profile-card-theme--deep_ocean::before, .profile-card-theme--blossom_garden::before, .profile-card-theme--starlit_library::before { content: ''; pointer-events: none; position: absolute; inset: 0; opacity: .42; background-image: linear-gradient(115deg, transparent 0 46%, rgb(255 255 255 / .11) 50%, transparent 54%); background-size: 220% 100%; animation: profile-theme-shimmer 7s linear infinite; }
 @keyframes profile-theme-shimmer { to { background-position: -220% 0; } }
 
+/* 로딩 스켈레톤 — 콘텐츠가 들어올 자리를 실제 모양으로 미리 보여주는 shimmer 플레이스홀더.
+   "불러오는 중…" 텍스트보다 무엇이 로딩되는지 직관적으로 전달한다. */
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / .09), transparent); animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+@keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; } }
+
 @keyframes rank-card-aurora {
   from { background-position: 0% 45%; }
   to { background-position: 100% 55%; }
