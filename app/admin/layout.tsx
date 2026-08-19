@@ -6,13 +6,29 @@ import type { ReactNode } from 'react'
 import { CONTAINER, PANEL } from '@/lib/ui/styles'
 import ThemeToggle from '@/app/components/ThemeToggle'
 
-const navItems = [
-    { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
-    { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
-    { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
-    { href: '/admin/profile-frames',  label: '상점 관리', icon: 'Image' },
-    { href: '/admin/points',          label: '포인트 관리', icon: 'Coins' },
-    { href: '/admin/logs',            label: '동기화 로그', icon: 'Logs' },
+// 상단 탭을 성격별로 분류한다: 멤버(사람 축) · 시즌 · 상점(경제 축).
+const navGroups = [
+    {
+        label: '멤버',
+        items: [
+            { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
+            { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
+            { href: '/admin/logs',            label: '동기화 로그', icon: 'Logs' },
+        ],
+    },
+    {
+        label: '시즌',
+        items: [
+            { href: '/admin/seasons',         label: '시즌 관리',  icon: 'Trophy' },
+        ],
+    },
+    {
+        label: '상점',
+        items: [
+            { href: '/admin/profile-frames',  label: '상점 관리', icon: 'Image' },
+            { href: '/admin/points',          label: '포인트 관리', icon: 'Coins' },
+        ],
+    },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -78,30 +94,38 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         </div>
                     </Link>
 
-                    {/* 네비게이션 */}
+                    {/* 네비게이션 — 그룹(멤버/시즌/상점)별로 라벨 + 구분선으로 분류해 보여준다. */}
                     <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
-                        {navItems.map((item) => {
-                            const active = isActive(item.href)
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={[
-                                        'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors',
-                                        active
-                                            ? 'bg-brand/15 text-brand-ink'
-                                            : 'text-muted hover:text-fg hover:bg-surface-2',
-                                    ].join(' ')}
-                                    aria-current={active ? 'page' : undefined}
-                                >
-                                    <NavIcon name={item.icon} />
-                                    {item.label}
-                                </Link>
-                            )
-                        })}
+                        {navGroups.map((group, groupIndex) => (
+                            <div key={group.label} className="flex shrink-0 items-center gap-1">
+                                {groupIndex > 0 && <span className="mx-1.5 h-5 w-px shrink-0 bg-line" aria-hidden />}
+                                <span className="shrink-0 px-1 text-[10px] font-black uppercase tracking-wider text-faint" aria-hidden>
+                                    {group.label}
+                                </span>
+                                {group.items.map((item) => {
+                                    const active = isActive(item.href)
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={[
+                                                'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors',
+                                                active
+                                                    ? 'bg-brand/15 text-brand-ink'
+                                                    : 'text-muted hover:text-fg hover:bg-surface-2',
+                                            ].join(' ')}
+                                            aria-current={active ? 'page' : undefined}
+                                        >
+                                            <NavIcon name={item.icon} />
+                                            {item.label}
+                                        </Link>
+                                    )
+                                })}
+                            </div>
+                        ))}
 
                         {/* 사이트 홈으로 가는 경로는 좌측 로고가 담당하므로 별도 "사이트로" 링크는 제거(기능 중복) */}
-                        <ThemeToggle className="ml-1" />
+                        <ThemeToggle className="ml-1 shrink-0" />
                     </nav>
                 </div>
             </header>

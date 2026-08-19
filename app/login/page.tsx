@@ -15,6 +15,22 @@ function DiscordIcon() {
   )
 }
 
+/** 서비스가 무엇을 제공하는지 로그인 전에 한눈에 보여주는 소개 항목. */
+const LOGIN_FEATURES: { title: string; desc: string; path: string }[] = [
+  { title: '실시간 랭킹', desc: 'TFT · LoL 티어 추적', path: 'M8 21h8m-4-4v4M5 3H3a2 2 0 00-2 2v3c0 2.8 2 5 4.5 5.5M19 3h2a2 2 0 012 2v3c0 2.8-2 5-4.5 5.5M5 3h14v5a7 7 0 01-14 0V3z' },
+  { title: '내전 모집', desc: '대기열 · 팀 배정', path: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+  { title: '스팀 라운지', desc: '함께할 게임 찾기', path: 'M21 12a9 9 0 11-6.219-8.56M9 12l2 2 4-4' },
+  { title: '포인트 · 꾸미기', desc: '출석 · 프레임 · 배경', path: 'M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7 5 3zm12 5l1 2.5L20.5 12 18 13l-1 2.5L16 13l-2.5-1 2.5-1 1-2.5z' },
+]
+
+function FeatureIcon({ path }: { path: string }) {
+  return (
+      <svg className="h-4 w-4 text-brand-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d={path} />
+      </svg>
+  )
+}
+
 function LoginInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -62,32 +78,73 @@ function LoginInner() {
   }
 
   return (
-      <div className="min-h-screen bg-canvas px-4 py-20 flex items-start justify-center">
-        <div className="w-full max-w-md">
-          <div className={`${CARD} p-8`}>
-            <h1 className="text-2xl font-black text-fg mb-2">로그인</h1>
-            <p className="text-muted text-sm mb-6">
-              랭킹을 보려면 Discord 로그인이 필요합니다.
-            </p>
+      <div className="relative min-h-screen overflow-hidden bg-canvas px-4 py-12 sm:py-16 flex items-center justify-center">
+        {/* 배경 장식 — 브랜드 컬러 글로우(테마 토큰 기반, 은은하게) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-brand/15 blur-3xl" />
+          <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl" />
+        </div>
 
-            <div className="space-y-4">
-              {displayError && (
-                  <div className={ALERT.error}>
-                    {displayError}
-                  </div>
-              )}
-
-              <button
-                  type="button"
-                  onClick={handleDiscordLogin}
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition disabled:opacity-60"
-              >
-                <DiscordIcon />
-                {loading ? '디스코드로 이동 중...' : '디스코드로 로그인'}
-              </button>
+        <div className="relative w-full max-w-md">
+          {/* 브랜드 히어로 */}
+          <div className="mb-8 text-center">
+            <div
+                className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-xl"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}
+            >
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 21h8m-4-4v4M5 3H3a2 2 0 00-2 2v3c0 2.8 2 5 4.5 5.5M19 3h2a2 2 0 012 2v3c0 2.8-2 5-4.5 5.5M5 3h14v5a7 7 0 01-14 0V3z" />
+              </svg>
             </div>
+            <h1 className="text-3xl font-black tracking-tight text-fg">롤체 컴퍼니</h1>
+            <p className="mt-2 text-sm text-muted">카카오톡 단톡방 전용 TFT 랭킹 · 내전 · 스팀 라운지</p>
           </div>
+
+          <div className={`${CARD} p-7 sm:p-8`}>
+            <h2 className="text-lg font-black text-fg">로그인하고 시작하기</h2>
+            <p className="mt-1 text-sm text-muted">Discord 계정 하나면 아래 기능을 모두 이용할 수 있어요.</p>
+
+            {/* 기능 소개 */}
+            <ul className="mt-5 grid grid-cols-2 gap-2">
+              {LOGIN_FEATURES.map((feature) => (
+                  <li key={feature.title} className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2 p-3">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                      <FeatureIcon path={feature.path} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-black text-fg">{feature.title}</span>
+                      <span className="block text-[11px] leading-tight text-muted">{feature.desc}</span>
+                    </span>
+                  </li>
+              ))}
+            </ul>
+
+            {displayError && (
+                <div className={`${ALERT.error} mt-5`}>
+                  {displayError}
+                </div>
+            )}
+
+            <button
+                type="button"
+                onClick={handleDiscordLogin}
+                disabled={loading}
+                className="mt-5 w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl font-bold text-white bg-[#5865F2] hover:bg-[#4752c4] shadow-lg shadow-[#5865F2]/25 transition disabled:opacity-60"
+            >
+              <DiscordIcon />
+              {loading ? '디스코드로 이동 중...' : '디스코드로 로그인'}
+            </button>
+
+            <p className="mt-3 text-center text-xs text-faint">
+              {GUILD_GATE_ID
+                ? '롤체 컴퍼니 Discord 서버 멤버만 로그인할 수 있어요.'
+                : '로그인하면 자동으로 멤버 프로필이 준비됩니다.'}
+            </p>
+          </div>
+
+          <p className="mt-6 text-center text-[11px] font-medium text-faint">
+            © 2025 롤체 컴퍼니 · Powered by Riot Games API
+          </p>
         </div>
       </div>
   )
