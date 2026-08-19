@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { getKstDateRange, parseDiscordActivitySummary, type ParsedDiscordActivitySummary } from './activityHelpers'
+import { getKstDateRange, parseDiscordActivitySummary, type DiscordActivityPeriod, type ParsedDiscordActivitySummary } from './activityHelpers'
 
 const DEFAULT_API_BASE_URL = 'https://tactician-discord-bot.up.railway.app'
 const REQUEST_TIMEOUT_MS = 5_000
@@ -8,10 +8,10 @@ const CACHE_SECONDS = 300
 
 export type DiscordGuildActivityResult =
   | ({ status: 'ready' } & ParsedDiscordActivitySummary)
-  | { status: 'unconfigured' | 'unavailable'; period: { from: string; to: string } }
+  | { status: 'unconfigured' | 'unavailable'; period: DiscordActivityPeriod }
 
-export async function fetchDiscordGuildActivity(now: Date = new Date()): Promise<DiscordGuildActivityResult> {
-  const period = getKstDateRange(now)
+/** 지정한 KST 기간의 길드 활동 요약을 조회한다. 실패/미설정은 status 로 안전하게 degrade 한다. */
+export async function fetchDiscordGuildActivityForPeriod(period: DiscordActivityPeriod): Promise<DiscordGuildActivityResult> {
   const apiKey = process.env.DISCORD_ACTIVITY_API_KEY?.trim()
   const guildId = process.env.DISCORD_ACTIVITY_GUILD_ID?.trim()
   const baseUrl = process.env.DISCORD_ACTIVITY_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL
@@ -51,4 +51,9 @@ export async function fetchDiscordGuildActivity(now: Date = new Date()): Promise
     console.warn('Discord activity API is unavailable: request failed')
     return { status: 'unavailable', period }
   }
+}
+
+/** 최근 30일 활동 요약(기본 뷰). `/tft` 의 Discord 활동 패널이 사용한다. */
+export function fetchDiscordGuildActivity(now: Date = new Date()): Promise<DiscordGuildActivityResult> {
+  return fetchDiscordGuildActivityForPeriod(getKstDateRange(now, 30))
 }

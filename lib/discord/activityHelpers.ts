@@ -44,6 +44,31 @@ export function getKstDateRange(now: Date = new Date(), days = 30): DiscordActiv
   }
 }
 
+/** KST 기준 오늘 날짜(YYYY-MM-DD). 기간 프리셋의 기준일로 쓴다. */
+export function getKstTodayDate(now: Date = new Date()): string {
+  return getKstDateRange(now, 1).to
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+export function isValidActivityDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !DATE_RE.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && formatUtcDate(date) === value
+}
+
+/**
+ * 외부에서 들어온 from/to 문자열을 검증해 기간으로 만든다.
+ * - 형식(YYYY-MM-DD)·실재 날짜·from≤to·최대 폭(기본 366일)을 강제한다.
+ * - 하나라도 어긋나면 null(호출부에서 400/기본값 처리).
+ */
+export function parseActivityPeriod(from: unknown, to: unknown, maxDays = 366): DiscordActivityPeriod | null {
+  if (!isValidActivityDate(from) || !isValidActivityDate(to) || from > to) return null
+  const spanDays = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1
+  if (spanDays < 1 || spanDays > maxDays) return null
+  return { from, to }
+}
+
 export function formatDiscordVoiceDuration(seconds: number): string {
   const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0
   if (safeSeconds < 60) return '0분'

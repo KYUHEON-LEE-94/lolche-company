@@ -174,6 +174,18 @@ NEXT_PUBLIC_DISCORD_GUILD_ID=       # 값 있으면 그 Discord 서버(길드) �
 외부 API 요청은 5초 타임아웃과 5분 fetch cache를 사용한다. 환경변수가 없거나 API가 실패하면 활동 보기만 조회 불가 상태가 되고 TFT 랭킹은 계속 렌더링된다.
 실제 `DISCORD_ACTIVITY_API_KEY` 값은 소스·문서·로그에 기록하지 않고 Vercel의 서버 환경변수로만 등록한다.
 
+**공용 조회 계층 (`lib/discord/`):**
+- `activity.ts` — `fetchDiscordGuildActivityForPeriod({from,to})`(임의 기간) + `fetchDiscordGuildActivity()`(최근 30일 래퍼).
+  외부 summary API 호출·스키마 검증·degrade의 단일 지점. 전부 `import 'server-only'`.
+- `activityHelpers.ts` — KST 기간 계산(`getKstDateRange`/`getKstTodayDate`), 입력 검증(`parseActivityPeriod`, from≤to·최대 366일), `formatDiscordVoiceDuration`. 순수 함수라 서버·클라 공용.
+- `memberActivity.ts` — 활동을 DB `members.discord_id`로 매칭. `includeUnlinked:true`=관리자(전체 유저, 미연결은 API `user_name` 폴백), `false`=공개(approved+활동데이터만). 음성시간 desc 정렬.
+
+**소비처:**
+- `/tft` → `DiscordActivityPanel`(최근 30일, 승인 멤버 매칭).
+- `/`(대시보드) → `fetchWeeklyDiscordTop5()` → `DashboardDiscordTop5`(최근 7일 음성 TOP5, 우측 열에서 '모집 중 내전'과 반반). ISR(revalidate 60)이지만 공개 집계라 세션 접근 없음.
+- `/admin/discord-activity` → `DiscordActivityAdminClient`(일/주/월/기간지정 → `GET /api/admin/discord-activity?from&to`, requireAdmin, force-dynamic).
+  일·주·월·기간은 전부 프런트에서 from/to(YYYY-MM-DD)로 환산해 보내고, 기준일은 서버(KST)에서 시드한다.
+
 ### Discord 길드 로그인 게이트 — `NEXT_PUBLIC_DISCORD_GUILD_ID`
 
 특정 Discord 서버(길드) 멤버만 로그인하도록 막는 스위치. 상수는 `lib/constants/features.ts` → `GUILD_GATE_ID`.

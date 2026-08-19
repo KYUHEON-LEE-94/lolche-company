@@ -13,6 +13,7 @@ const navGroups = [
         items: [
             { href: '/admin/members/control', label: '멤버 관리',  icon: 'UserPlus' },
             { href: '/admin/members/sync',    label: '멤버 동기화', icon: 'Users' },
+            { href: '/admin/discord-activity', label: '디스코드 활동', icon: 'Activity' },
             { href: '/admin/logs',            label: '동기화 로그', icon: 'Logs' },
         ],
     },
@@ -60,6 +61,8 @@ function NavIcon({ name }: { name: string }) {
         return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
     if (name === 'Logs')
         return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    if (name === 'Activity')
+        return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
     return null
 }
 
