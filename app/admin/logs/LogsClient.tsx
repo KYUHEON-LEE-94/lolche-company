@@ -40,7 +40,6 @@ export default function LogsClient() {
   const [err, setErr] = useState<string | null>(null)
 
   const load = useCallback((f: Filter) => {
-    setLoading(true)
     fetch(`/api/admin/sync-logs?limit=150${f ? `&status=${f}` : ''}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('불러오기 실패'))))
       .then((d: Payload) => { setData(d); setErr(null) })
@@ -61,7 +60,7 @@ export default function LogsClient() {
           <h1 className="text-2xl font-black tracking-tight text-fg">동기화 로그</h1>
           <p className="text-sm text-subtle">멤버 랭크 동기화의 성공·스킵·실패 기록과 지연 현황을 봅니다.</p>
         </div>
-        <button onClick={() => load(filter)} disabled={loading} className="rounded-xl border border-line bg-surface-2 px-4 py-2 text-sm font-bold text-fg transition hover:bg-surface disabled:opacity-50">
+        <button onClick={() => { setLoading(true); load(filter) }} disabled={loading} className="rounded-xl border border-line bg-surface-2 px-4 py-2 text-sm font-bold text-fg transition hover:bg-surface disabled:opacity-50">
           {loading ? '불러오는 중…' : '새로고침'}
         </button>
       </header>
@@ -109,7 +108,7 @@ export default function LogsClient() {
       {/* 필터 */}
       <div className="flex gap-1.5">
         {([['', '전체'], ['error', '실패'], ['skipped', '스킵'], ['success', '성공']] as [Filter, string][]).map(([f, label]) => (
-          <button key={f} onClick={() => setFilter(f)} className={`rounded-lg px-3 py-1.5 text-xs font-black transition-colors ${filter === f ? 'bg-brand text-white' : 'bg-surface-2 text-muted hover:text-fg'}`}>
+          <button key={f} onClick={() => { if (f !== filter) { setLoading(true); setFilter(f) } }} className={`rounded-lg px-3 py-1.5 text-xs font-black transition-colors ${filter === f ? 'bg-brand text-white' : 'bg-surface-2 text-muted hover:text-fg'}`}>
             {label}
           </button>
         ))}
