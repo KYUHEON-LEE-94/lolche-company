@@ -97,7 +97,7 @@ Discord 활동 보기를 사용하려면 Vercel에 아래 서버 환경변수를
 
 ```text
 DISCORD_ACTIVITY_API_KEY=
-DISCORD_ACTIVITY_GUILD_ID=1535594309217419304
+DISCORD_ACTIVITY_GUILD_ID=1408525217940377723
 DISCORD_ACTIVITY_API_BASE_URL=https://tactician-discord-bot.up.railway.app
 ```
 
