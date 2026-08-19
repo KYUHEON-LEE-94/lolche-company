@@ -40,6 +40,11 @@
 - **시작 임박(기본 30분 전)** 자동 알림 — 내전당 1회만 발송
 - 웹훅 방식이라 봇 불필요. URL 은 `DISCORD_WEBHOOK_URL` 환경변수로만 관리(서버 전용)
 
+### Discord 활동
+- TFT 페이지에서 승인 멤버의 최근 30일 음성 시간·활동일·메시지 수 확인
+- DB에 연결된 Discord 계정만 활동 봇 데이터와 서버에서 매칭하며 Discord ID는 브라우저에 노출하지 않음
+- Railway 활동 API 장애 시 활동 보기만 조회 불가로 전환되고 기존 TFT 랭킹은 정상 유지
+
 ### 명예의 전당
 - 시즌 마감 시점 랭크 스냅샷, 공동 순위, 추방 후에도 이름 보존
 
@@ -87,6 +92,14 @@ Vercel Hobby 는 크론 빈도(하루 1회)·함수 시간에 제약이 있어, 
 
 > GitHub 저장소 Secrets 에 `SITE_URL`·`CRON_SECRET`, Vercel 환경변수에
 > `CRON_SECRET`·`DISCORD_WEBHOOK_URL` 등록 필요.
+
+Discord 활동 보기를 사용하려면 Vercel에 아래 서버 환경변수를 추가한 뒤 재배포합니다. API 키 실제 값은 저장소에 기록하지 않습니다.
+
+```text
+DISCORD_ACTIVITY_API_KEY=
+DISCORD_ACTIVITY_GUILD_ID=1535594309217419304
+DISCORD_ACTIVITY_API_BASE_URL=https://tactician-discord-bot.up.railway.app
+```
 
 ---
 

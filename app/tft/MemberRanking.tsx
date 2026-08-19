@@ -16,8 +16,12 @@ import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import TitleBadges from '@/app/components/TitleBadges'
+import DiscordActivityPanel from './DiscordActivityPanel'
+import type { DiscordActivityOverview } from '@/types/discordActivity'
 
 type QueueType = 'solo' | 'doubleup'
+type ViewType = QueueType | 'discord'
+type PublicMember = Omit<Member, 'discord_id'>
 
 type Season = {
   id: number
@@ -63,7 +67,7 @@ function getFramePublicUrl(framePath: string) {
 
 type LpDelta = { value: number; tierChanged: boolean; prevLabel: string; currLabel: string }
 
-function calcLpDelta(member: Member): LpDelta | null {
+function calcLpDelta(member: PublicMember): LpDelta | null {
   const curr = member.tft_league_points
   const prev = member.tft_lp_prev
   if (curr === null || prev === null) return null
@@ -106,7 +110,7 @@ function LpDeltaBadge({ delta }: { delta: LpDelta }) {
 
 // ─── 티어 헬퍼 ───────────────────────────────────────────────────────────────
 
-function getQueueTierAndLp(m: Member, queue: QueueType) {
+function getQueueTierAndLp(m: PublicMember, queue: QueueType) {
   if (queue === 'solo') {
     return { tier: m.tft_tier, rank: m.tft_rank, lp: m.tft_league_points ?? 0 }
   }
@@ -264,14 +268,14 @@ const MemberRow = memo(function MemberRow({
                       onSync,
                       onDetailOpen,
                     }: {
-  member: Member
+  member: PublicMember
   idx: number
   queue: QueueType
   isSyncing: boolean
   syncMsg: string
   effectiveLastSyncedAt: string | null | undefined
   onSync: (id: string) => void
-  onDetailOpen: (member: Member) => void
+  onDetailOpen: (member: PublicMember) => void
 }) {
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
@@ -422,12 +426,14 @@ const MemberRow = memo(function MemberRow({
 export default function MemberRanking({
                                         members = [],
                                         currentSeason,
+                                        discordActivity,
                                       }: {
-  members?: Member[]
+  members?: PublicMember[]
   currentSeason?: Season | null
+  discordActivity: DiscordActivityOverview
 }) {
-  const [queueType, setQueueType] = useState<QueueType>('solo')
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+  const [viewType, setViewType] = useState<ViewType>('solo')
+  const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null)
 
   // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
@@ -468,13 +474,14 @@ export default function MemberRanking({
 
   // 정렬
   const sorted = useMemo(() => {
+    if (viewType === 'discord') return []
     if (!members.length) return []
     return [...members]
-        .filter((m) => getQueueTierAndLp(m, queueType).tier !== null)
+        .filter((m) => getQueueTierAndLp(m, viewType).tier !== null)
         .sort((a, b) =>
-          compareRank(getQueueTierAndLp(a, queueType), getQueueTierAndLp(b, queueType)),
+          compareRank(getQueueTierAndLp(a, viewType), getQueueTierAndLp(b, viewType)),
         )
-  }, [members, queueType])
+  }, [members, viewType])
 
   // ─── 렌더 ────────────────────────────────────────────────────────────────
 
@@ -519,37 +526,44 @@ export default function MemberRanking({
               </div>
 
               {/* 큐 탭 */}
-              <div className="inline-flex w-full max-w-sm gap-1 rounded-xl border border-line bg-surface-2 p-1">
-                {(['solo', 'doubleup'] as const).map((q) => (
+              <div className="inline-flex w-full max-w-xl gap-1 rounded-xl border border-line bg-surface-2 p-1">
+                {(['solo', 'doubleup', 'discord'] as const).map((view) => (
                     <button
-                        key={q}
+                        key={view}
                         type="button"
-                        onClick={() => setQueueType(q)}
+                        onClick={() => setViewType(view)}
+                        aria-pressed={viewType === view}
                         className={`
-                    flex min-h-11 flex-1 items-center justify-center gap-2 px-3 sm:px-6 py-2.5 rounded-lg text-sm font-bold transition-colors
-                    ${queueType === q
+                    flex min-h-11 flex-1 items-center justify-center gap-1.5 px-2 sm:px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors
+                    ${viewType === view
                             ? 'bg-brand text-white shadow-sm'
                             : 'text-muted hover:text-fg'
                         }
                   `}
                     >
-                      {q === 'solo' ? (
+                      {view === 'solo' ? (
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
-                      ) : (
+                      ) : view === 'doubleup' ? (
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                           </svg>
+                      ) : (
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19.54 5.34A16.3 16.3 0 0015.44 4l-.5 1.02a15.2 15.2 0 00-5.88 0L8.56 4a16.5 16.5 0 00-4.1 1.35C1.86 9.2 1.16 12.94 1.51 16.63a16.6 16.6 0 005.03 2.54l1.22-1.66a10.7 10.7 0 01-1.92-.92l.47-.36c3.7 1.71 7.72 1.71 11.37 0l.47.36c-.62.36-1.26.67-1.92.92l1.22 1.66a16.5 16.5 0 005.03-2.54c.41-4.28-.7-7.98-2.94-11.29zM8.67 14.36c-1.11 0-2.02-1.02-2.02-2.27s.89-2.27 2.02-2.27c1.14 0 2.04 1.03 2.02 2.27 0 1.25-.89 2.27-2.02 2.27zm6.66 0c-1.11 0-2.02-1.02-2.02-2.27s.89-2.27 2.02-2.27c1.14 0 2.04 1.03 2.02 2.27 0 1.25-.88 2.27-2.02 2.27z" />
+                          </svg>
                       )}
-                      {q === 'solo' ? '솔로 랭크' : '더블업 랭크'}
+                      {view === 'solo' ? '솔로 랭크' : view === 'doubleup' ? '더블업 랭크' : 'Discord 활동'}
                     </button>
                 ))}
               </div>
             </header>
 
             {/* ── 랭킹 리스트 ── */}
-            {sorted.length === 0 ? (
+            {viewType === 'discord' ? (
+                <DiscordActivityPanel overview={discordActivity} />
+            ) : sorted.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
                 <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_52px_-34px_var(--color-shadow)] divide-y divide-line">
@@ -560,7 +574,7 @@ export default function MemberRanking({
                             key={m.id}
                             member={m}
                             idx={idx}
-                            queue={queueType}
+                            queue={viewType}
                             isSyncing={syncingId === m.id}
                             syncMsg={syncMsgById[m.id] ?? ''}
                             effectiveLastSyncedAt={effectiveLastSyncedAt}
@@ -581,7 +595,7 @@ export default function MemberRanking({
         {selectedMember && (
           <MemberDetailPanel
             member={selectedMember}
-            queue={queueType}
+            queue={viewType === 'discord' ? 'solo' : viewType}
             onClose={() => setSelectedMember(null)}
           />
         )}

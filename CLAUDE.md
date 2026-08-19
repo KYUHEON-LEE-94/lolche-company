@@ -156,6 +156,9 @@ STEAM_PRESENCE_TTL_MS=60000         # "지금 접속 중" 인메모리 캐시 TT
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 DISCORD_WEBHOOK_URL=                 # ⚠ 서버 전용. 내전 생성·임박 알림용 디스코드 웹훅. 비우면 알림 skip
+DISCORD_ACTIVITY_API_KEY=            # ⚠ 서버 전용. Discord 활동 요약 API Bearer 키. NEXT_PUBLIC_ 금지
+DISCORD_ACTIVITY_GUILD_ID=1535594309217419304  # 활동을 조회할 롤체컴퍼니 Discord 서버 ID
+DISCORD_ACTIVITY_API_BASE_URL=https://tactician-discord-bot.up.railway.app
 REMINDER_WINDOW_MIN=30              # 내전 시작 몇 분 전부터 "임박" 알림을 보낼지
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
@@ -163,6 +166,13 @@ SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 �
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 NEXT_PUBLIC_DISCORD_GUILD_ID=       # 값 있으면 그 Discord 서버(길드) 멤버만 로그인 허용, 비우면 게이트 off (기존 동작)
 ```
+
+### Discord 활동 요약
+
+`/tft`의 `Discord 활동` 보기는 서버 전용 API를 통해 KST 기준 최근 30일 음성 시간·활동일·메시지 수를 조회한다.
+`members.status='approved'`인 멤버만 DB의 `discord_id`로 매칭하며, API 원본 `user_id`와 `discord_id`는 Client Component에 전달하지 않는다.
+외부 API 요청은 5초 타임아웃과 5분 fetch cache를 사용한다. 환경변수가 없거나 API가 실패하면 활동 보기만 조회 불가 상태가 되고 TFT 랭킹은 계속 렌더링된다.
+실제 `DISCORD_ACTIVITY_API_KEY` 값은 소스·문서·로그에 기록하지 않고 Vercel의 서버 환경변수로만 등록한다.
 
 ### Discord 길드 로그인 게이트 — `NEXT_PUBLIC_DISCORD_GUILD_ID`
 
