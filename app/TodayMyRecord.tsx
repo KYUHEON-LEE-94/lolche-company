@@ -25,6 +25,14 @@ type ReadyDashboard = {
   }
   lol: { position: number | null; label: string } | null
   recentMatches: Array<{ id: string; playedAt: string | null; placement: number | null }>
+  steam?: { linked: boolean; recent: Array<{ appid: number; name: string; minutes2w: number }> }
+}
+
+function formatPlaytime(minutes: number) {
+  if (minutes < 60) return `${minutes}분`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest ? `${hours}시간 ${rest}분` : `${hours}시간`
 }
 
 function formatSyncedAt(value: string | null) {
@@ -107,6 +115,7 @@ export default function TodayMyRecord() {
             {data.lol ? <Record label="롤 전체 순위" value={data.lol.position ? `${data.lol.position}위` : '언랭'} detail={data.lol.label} /> : <RecentMatches matches={data.recentMatches} />}
           </div>
           {data.lol && <RecentMatches matches={data.recentMatches} wide />}
+          {data.steam?.linked && <SteamRecent recent={data.steam.recent} />}
         </div>
       </div>
       {panelMounted && <DashboardMemberPanel member={selected} onClose={() => setSelected(null)} />}
@@ -120,6 +129,26 @@ function Record({ label, value, detail }: { label: string; value: string; detail
       <p className="text-[11px] font-bold text-subtle">{label}</p>
       <p className="mt-1.5 text-base font-black tracking-tight text-fg">{value}</p>
       {detail && <p className="mt-0.5 truncate text-xs text-muted">{detail}</p>}
+    </div>
+  )
+}
+
+function SteamRecent({ recent }: { recent: NonNullable<ReadyDashboard['steam']>['recent'] }) {
+  return (
+    <div className="border-t border-line p-4">
+      <p className="text-xs font-bold text-subtle">최근 플레이한 스팀 게임</p>
+      {recent.length === 0 ? (
+        <p className="mt-1 text-sm font-black text-fg">최근 2주 플레이 없음</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {recent.map((game) => (
+            <span key={game.appid} className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1 text-xs font-bold text-fg">
+              <span className="truncate max-w-[160px]">{game.name}</span>
+              <span className="text-[10px] font-bold text-muted">{formatPlaytime(game.minutes2w)}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

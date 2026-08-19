@@ -71,7 +71,7 @@ export async function GET() {
   if (mine.member.status !== 'approved') return NextResponse.json({ state: 'not_approved' })
 
   const memberId = mine.member.id
-  const [membersResult, seasonResult, matchesResult] = await Promise.all([
+  const [membersResult, seasonResult, matchesResult, steamResult, steamLinkResult] = await Promise.all([
     withAvatarColumn((avatarColumns) =>
       supabaseAdmin.from('members').select(`${MEMBER_COLUMNS}${avatarColumns}`).eq('status', 'approved'),
     ),
@@ -83,6 +83,15 @@ export async function GET() {
       .eq('queue_id', 1100)
       .order('game_datetime', { ascending: false })
       .limit(5),
+    // 최근 2주 플레이한 스팀 게임(playtime_2weeks 내림차순). 스팀 미연동/미적용이면 빈 결과로 degrade.
+    supabaseAdmin
+      .from('steam_owned_games')
+      .select('appid,playtime_2weeks,steam_apps!inner(name)')
+      .eq('member_id', memberId)
+      .gt('playtime_2weeks', 0)
+      .order('playtime_2weeks', { ascending: false })
+      .limit(3),
+    supabaseAdmin.from('members').select('steam_id64').eq('id', memberId).maybeSingle(),
   ])
 
   if (membersResult.error || seasonResult.error || matchesResult.error) {
@@ -122,6 +131,11 @@ export async function GET() {
   const delta = currentScore >= 0 && previousScore >= 0 ? currentScore - previousScore : null
   const matches = (matchesResult.data ?? []) as unknown as MatchRow[]
 
+  // 스팀은 부가 정보라 실패해도 대시보드를 막지 않는다(미연동·미적용 환경 포함).
+  type SteamOwnedRow = { appid: number; playtime_2weeks: number; steam_apps: { name: string | null } | null }
+  const steamRows = steamResult.error ? [] : ((steamResult.data ?? []) as unknown as SteamOwnedRow[])
+  const steamLinked = !steamLinkResult.error && Boolean((steamLinkResult.data as { steam_id64: string | null } | null)?.steam_id64)
+
   return NextResponse.json({
     state: 'ready',
     member: {
@@ -150,5 +164,13 @@ export async function GET() {
       playedAt: match.game_datetime,
       placement: match.tft_match_participants[0]?.placement ?? null,
     })),
+    steam: {
+      linked: steamLinked,
+      recent: steamRows.map((row) => ({
+        appid: row.appid,
+        name: row.steam_apps?.name ?? `앱 ${row.appid}`,
+        minutes2w: row.playtime_2weeks,
+      })),
+    },
   })
 }
