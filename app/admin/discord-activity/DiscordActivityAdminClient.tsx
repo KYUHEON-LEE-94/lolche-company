@@ -21,10 +21,22 @@ type ApiResult = {
 }
 
 type Mode = 'day' | 'week' | 'month' | 'range'
-type SortKey = 'voice' | 'days' | 'messages'
+type SortKey = 'voice' | 'days' | 'messages' | 'joins'
+type SortDir = 'asc' | 'desc'
 
 const MODE_LABELS: Record<Mode, string> = { day: '일별', week: '주별', month: '월별', range: '기간 지정' }
-const SORT_LABELS: Record<SortKey, string> = { voice: '음성 시간', days: '활동일', messages: '메시지' }
+
+// 표 컬럼 = 정렬 키. 헤더를 클릭하면 그 컬럼 기준으로 정렬한다.
+const METRIC_COLUMNS: { key: SortKey; label: string; render: (row: Row) => string }[] = [
+  { key: 'voice', label: '음성 시간', render: (row) => formatDiscordVoiceDuration(row.voiceSeconds) },
+  { key: 'days', label: '활동일', render: (row) => `${row.attendanceDays}일` },
+  { key: 'messages', label: '메시지', render: (row) => row.messages.toLocaleString('ko-KR') },
+  { key: 'joins', label: '음성 참여', render: (row) => `${row.voiceJoins}회` },
+]
+
+function metricValue(row: Row, key: SortKey): number {
+  return key === 'voice' ? row.voiceSeconds : key === 'days' ? row.attendanceDays : key === 'messages' ? row.messages : row.voiceJoins
+}
 
 /** 날짜 문자열 산술은 UTC 자정 기준으로 처리해 브라우저 타임존 영향을 없앤다(KST는 DST 없음). */
 function addDays(date: string, delta: number): string {
@@ -43,6 +55,12 @@ export default function DiscordActivityAdminClient({ today }: { today: string })
   const [rangeFrom, setRangeFrom] = useState(addDays(today, -6))
   const [rangeTo, setRangeTo] = useState(today)
   const [sortKey, setSortKey] = useState<SortKey>('voice')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) setSortDir((dir) => (dir === 'desc' ? 'asc' : 'desc'))
+    else { setSortKey(key); setSortDir('desc') }
+  }
 
   const [data, setData] = useState<ApiResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -89,10 +107,11 @@ export default function DiscordActivityAdminClient({ today }: { today: string })
     if (!data) return []
     const measured = data.rows.filter((r) => r.voiceSeconds > 0 || r.attendanceDays > 0 || r.messages > 0)
     return [...measured].sort((a, b) => {
-      const metric = sortKey === 'voice' ? b.voiceSeconds - a.voiceSeconds : sortKey === 'days' ? b.attendanceDays - a.attendanceDays : b.messages - a.messages
-      return metric || a.displayName.localeCompare(b.displayName, 'ko')
+      const diff = metricValue(b, sortKey) - metricValue(a, sortKey)
+      const directed = sortDir === 'desc' ? diff : -diff
+      return directed || a.displayName.localeCompare(b.displayName, 'ko')
     })
-  }, [data, sortKey])
+  }, [data, sortKey, sortDir])
 
   const totals = useMemo(() => rows.reduce(
     (acc, r) => ({ voice: acc.voice + r.voiceSeconds, messages: acc.messages + r.messages, active: acc.active + 1 }),
@@ -144,12 +163,6 @@ export default function DiscordActivityAdminClient({ today }: { today: string })
             <DateField label="종료" value={rangeTo} max={today} onChange={setRangeTo} />
           </>
         )}
-        <label className="ml-auto flex items-center gap-2 text-xs font-bold text-muted">
-          정렬
-          <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className={INPUT}>
-            {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => <option key={key} value={key}>{SORT_LABELS[key]}</option>)}
-          </select>
-        </label>
       </div>
 
       {/* 요약 */}
@@ -171,30 +184,52 @@ export default function DiscordActivityAdminClient({ today }: { today: string })
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">이 기간에 활동 기록이 없습니다.</div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-line bg-surface">
-          <div className="hidden grid-cols-[40px_minmax(0,1fr)_120px_90px_90px_90px] gap-3 border-b border-line px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-faint sm:grid">
-            <span className="text-center">#</span><span>멤버</span>
-            <span className="text-right">음성 시간</span><span className="text-right">활동일</span><span className="text-right">메시지</span><span className="text-right">음성 참여</span>
-          </div>
-          <div className="divide-y divide-line">
-            {rows.map((row, index) => (
-              <div key={row.memberId ?? row.displayName + index} className="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 sm:grid-cols-[40px_minmax(0,1fr)_120px_90px_90px_90px] sm:px-4">
-                <span className="text-center text-xs font-black tabular-nums text-subtle">{index + 1}</span>
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-line bg-surface-2">
-                    {row.avatarUrl ? <Image src={row.avatarUrl} alt="" fill sizes="32px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[11px] font-black text-muted">{row.displayName.slice(0, 1)}</span>}
-                  </div>
-                  <span className="min-w-0 truncate text-sm font-bold text-fg">{row.displayName}</span>
-                  {!row.linked && <span className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-faint">미연결</span>}
-                </div>
-                <p className="text-right text-sm font-black tabular-nums text-brand-ink sm:text-sm">{formatDiscordVoiceDuration(row.voiceSeconds)}</p>
-                <p className="hidden text-right text-xs font-bold tabular-nums text-muted sm:block">{row.attendanceDays}일</p>
-                <p className="hidden text-right text-xs font-bold tabular-nums text-muted sm:block">{row.messages.toLocaleString('ko-KR')}</p>
-                <p className="hidden text-right text-xs font-bold tabular-nums text-muted sm:block">{row.voiceJoins}회</p>
-                <p className="col-start-2 col-end-4 text-[11px] text-muted sm:hidden">활동 {row.attendanceDays}일 · 메시지 {row.messages.toLocaleString('ko-KR')} · 참여 {row.voiceJoins}회</p>
-              </div>
-            ))}
-          </div>
+        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <table className="w-full min-w-[560px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-line">
+                <th className="w-10 px-3 py-2.5 text-center text-[11px] font-black uppercase tracking-wide text-faint">#</th>
+                <th className="px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-wide text-faint">멤버</th>
+                {METRIC_COLUMNS.map((col) => {
+                  const activeCol = sortKey === col.key
+                  return (
+                    <th key={col.key} className="px-3 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(col.key)}
+                        aria-sort={activeCol ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
+                        className={`ml-auto inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide transition-colors ${activeCol ? 'text-brand-ink' : 'text-faint hover:text-fg'}`}
+                      >
+                        {col.label}
+                        <span className="text-[9px] leading-none">{activeCol ? (sortDir === 'desc' ? '▼' : '▲') : '↕'}</span>
+                      </button>
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {rows.map((row, index) => (
+                <tr key={row.memberId ?? row.displayName + index}>
+                  <td className="px-3 py-2.5 text-center text-xs font-black tabular-nums text-subtle">{index + 1}</td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-line bg-surface-2">
+                        {row.avatarUrl ? <Image src={row.avatarUrl} alt="" fill sizes="32px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[11px] font-black text-muted">{row.displayName.slice(0, 1)}</span>}
+                      </div>
+                      <span className="min-w-0 truncate text-sm font-bold text-fg">{row.displayName}</span>
+                      {!row.linked && <span className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-faint">미연결</span>}
+                    </div>
+                  </td>
+                  {METRIC_COLUMNS.map((col) => (
+                    <td key={col.key} className={`px-3 py-2.5 text-right tabular-nums ${sortKey === col.key ? 'text-sm font-black text-brand-ink' : 'text-xs font-bold text-muted'}`}>
+                      {col.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
