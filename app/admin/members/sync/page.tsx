@@ -289,7 +289,7 @@ export default function AdminMemberSyncPage() {
           <SummaryCard label="승인 / 대기 / 거절" value={`${summary.approved} / ${summary.pending} / ${summary.rejected}`} />
           <SummaryCard label="로그인 미연결" value={summary.unlinked} tone={summary.unlinked > 0 ? 'warn' : undefined} />
           <SummaryCard label="동기화 실패" value={summary.failed} tone={summary.failed > 0 ? 'danger' : undefined} />
-          <SummaryCard label="마지막 동기화" value={formatSyncTime(summary.lastSync)} className="col-span-2 sm:col-span-1" />
+          <SummaryCard label="마지막 동기화" value={formatSyncTime(summary.lastSync)} className="col-span-2 sm:col-span-1 lg:col-span-2" nowrap />
         </div>
 
         {/* ── 알림 배너 ── */}
@@ -509,13 +509,13 @@ export default function AdminMemberSyncPage() {
 // ─── 요약 카드 ────────────────────────────────────────────────────────────────
 
 function SummaryCard({
-                       label, value, tone, className = '',
-                     }: { label: string; value: string | number; tone?: 'warn' | 'danger'; className?: string }) {
+                       label, value, tone, className = '', nowrap = false,
+                     }: { label: string; value: string | number; tone?: 'warn' | 'danger'; className?: string; nowrap?: boolean }) {
   const valueColor = tone === 'danger' ? 'text-danger-ink' : tone === 'warn' ? 'text-warn-ink' : 'text-fg'
   return (
       <div className={`${CARD} px-4 py-3 ${className}`}>
         <div className={`${KICKER} text-subtle mb-1`}>{label}</div>
-        <div className={`text-lg font-black tracking-tight ${valueColor}`}>{value}</div>
+        <div className={`text-lg font-black tracking-tight ${valueColor} ${nowrap ? 'whitespace-nowrap' : ''}`}>{value}</div>
       </div>
   )
 }
