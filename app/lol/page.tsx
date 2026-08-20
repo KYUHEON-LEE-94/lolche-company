@@ -13,6 +13,7 @@ import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
+import SafeAvatarImage from '@/app/components/SafeAvatarImage'
 
 export const revalidate = 60
 
@@ -158,20 +159,7 @@ export default async function LolPage() {
                       </div>
                     )}
                     <div className="relative z-10 h-full w-full overflow-hidden rounded-full border border-line bg-surface-2">
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt=""
-                          fill
-                          sizes="40px"
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
-                          {m.member_name.slice(0, 1)}
-                        </span>
-                      )}
+                      <SafeAvatarImage src={imageUrl} name={m.member_name} size={40} />
                     </div>
                   </div>
 
