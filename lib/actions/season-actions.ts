@@ -200,6 +200,12 @@ export async function rolloverSeasonAction(input: {
         }
         if (!data) throw new Error('시즌 전환 결과를 받지 못했습니다.')
 
+        // ★ 세트 전환 = 랭크 사다리 초기화. 동기화 가드(빈 응답 시 기존값 보존) 때문에
+        //   동기화로는 랭크가 지워지지 않으므로, 아카이브가 끝난 지금 명시적으로 TFT 랭크를 비운다.
+        //   멤버 캐시와 계정 원본을 함께 비운다 — 계정만 남으면 다음 동기화가 mirrorPrimaryToMember 로
+        //   옛 값을 members 에 되살린다. LoL 은 별도 시즌이라 건드리지 않는다.
+        await clearTftRanksForNewSeason()
+
         revalidatePath('/')
         revalidatePath('/tft')
         revalidatePath('/hall-of-fame')
@@ -213,6 +219,31 @@ export async function rolloverSeasonAction(input: {
             message: error instanceof Error ? error.message : '시즌 전환 중 오류가 발생했습니다.',
         }
     }
+}
+
+/**
+ * 세트 전환 직후 전 멤버의 TFT 랭크 캐시를 비운다(신규 세트는 전원 unrank 로 시작).
+ * members(대표 캐시) + riot_accounts(계정 원본) 둘 다 비워야 다음 동기화가 옛 값을 되살리지 않는다.
+ * LoL 컬럼은 손대지 않는다(별도 시즌). 실패해도 전환 자체는 이미 성공했으므로 로그만 남긴다.
+ */
+async function clearTftRanksForNewSeason() {
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin')
+    const clearedMemberTft = {
+        tft_tier: null, tft_rank: null, tft_league_points: null, tft_wins: null, tft_losses: null,
+        tft_doubleup_tier: null, tft_doubleup_rank: null, tft_doubleup_league_points: null, tft_doubleup_wins: null, tft_doubleup_losses: null,
+        tft_tier_prev: null, tft_rank_prev: null, tft_lp_prev: null,
+    }
+    const clearedAccountTft = {
+        tft_tier: null, tft_rank: null, tft_league_points: null, tft_wins: null, tft_losses: null,
+        tft_doubleup_tier: null, tft_doubleup_rank: null, tft_doubleup_league_points: null, tft_doubleup_wins: null, tft_doubleup_losses: null,
+    }
+    const [members, accounts] = await Promise.all([
+        supabaseAdmin.from('members').update(clearedMemberTft).not('id', 'is', null),
+        supabaseAdmin.from('riot_accounts').update(clearedAccountTft).gte('account_no', 1),
+    ])
+    if (members.error) console.error('시즌 전환 후 members TFT 랭크 초기화 실패:', members.error.message)
+    // riot_accounts 미적용(레거시 단일 계정) 환경은 이 테이블이 없어도 정상 — 조용히 무시한다.
+    if (accounts.error) console.warn('시즌 전환 후 riot_accounts 랭크 초기화 skip:', accounts.error.message)
 }
 
 /**

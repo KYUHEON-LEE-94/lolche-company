@@ -246,6 +246,19 @@ LoL 단계 전체를 건너뛰고 `null`을 반환해 기존 저장값을 덮어
 
 ## 동기화 흐름
 
+### ★ 세트 전환 랭크 보존 불변식 (절대 되돌리지 말 것)
+
+`lib/sync/doSyncMember.ts`의 `tftColumnsFrom()`은 **리그 응답이 비면 해당 TFT 컬럼을 update에서
+제외**한다(값을 `null`로 덮어쓰지 않는다). TFT 세트가 바뀌면 Riot 랭크 사다리가 초기화돼
+조회는 성공하지만 리그 항목이 빈 채로 오는데, 예전처럼 `tft_tier: solo?.tier ?? null`로 쓰면
+**명예의 전당 아카이브 전에 자동 동기화(30분 주기)가 전원 최종 랭크를 지워** 데이터가 유실됐다.
+- 이 가드로 리셋 후에도 랭크가 보존되어 관리자가 아무 때나 시즌 전환(아카이브)을 돌릴 수 있다.
+- **랭크 초기화는 오직 시즌 전환 시 명시적으로** 한다:
+  `lib/actions/season-actions.ts`의 `clearTftRanksForNewSeason()`가 아카이브 직후
+  `members` + `riot_accounts`의 TFT 컬럼을 함께 비운다(계정만 남기면 `mirrorPrimaryToMember`가
+  옛 값을 members에 되살린다). **LoL 컬럼은 별도 시즌이라 건드리지 않는다.**
+- API 실패(403/네트워크)는 상위에서 throw되어 이미 기존값을 보존한다 — 이 가드는 "성공+빈 응답" 대비다.
+
 ```
 [프론트 동기화 버튼]
   → POST /api/members/[id]/sync

@@ -113,20 +113,33 @@ async function fetchLolSnapshot(
   return { entries, puuid }
 }
 
-function tftColumnsFrom(snapshot: AccountSnapshot) {
+/**
+ * ★ 세트 리셋/일시적 빈 응답으로 기존 랭크를 null 로 덮어쓰지 않는다(데이터 유실 방지).
+ *
+ * TFT 세트가 바뀌면 Riot 랭크 사다리가 초기화돼 조회는 성공하지만 리그 항목이 비어서 온다.
+ * 예전에는 그 순간 `tft_tier: null` 로 전원 unrank 가 되어 **명예의 전당 아카이브 전에**
+ * 자동 동기화가 최종 랭크를 지워버릴 수 있었다. 이제 비어 있는 큐는 update 페이로드에서
+ * 아예 제외해 DB 기존값을 그대로 둔다. **랭크 초기화는 시즌 전환(rolloverSeasonAction)에서만
+ * 명시적으로 수행**한다. (API 실패는 상위에서 throw 되어 이미 보존됨 — 이건 성공+빈응답 대비.)
+ */
+function tftColumnsFrom(snapshot: AccountSnapshot): Record<string, string | number> {
   const { solo, doubleUp } = snapshot
-  return {
-    tft_tier: solo?.tier ?? null,
-    tft_rank: solo?.rank ?? null,
-    tft_league_points: solo?.leaguePoints ?? null,
-    tft_wins: solo?.wins ?? null,
-    tft_losses: solo?.losses ?? null,
-    tft_doubleup_tier: doubleUp?.tier ?? null,
-    tft_doubleup_rank: doubleUp?.rank ?? null,
-    tft_doubleup_league_points: doubleUp?.leaguePoints ?? null,
-    tft_doubleup_wins: doubleUp?.wins ?? null,
-    tft_doubleup_losses: doubleUp?.losses ?? null,
+  const cols: Record<string, string | number> = {}
+  if (solo) {
+    cols.tft_tier = solo.tier
+    cols.tft_rank = solo.rank
+    cols.tft_league_points = solo.leaguePoints
+    cols.tft_wins = solo.wins
+    cols.tft_losses = solo.losses
   }
+  if (doubleUp) {
+    cols.tft_doubleup_tier = doubleUp.tier
+    cols.tft_doubleup_rank = doubleUp.rank
+    cols.tft_doubleup_league_points = doubleUp.leaguePoints
+    cols.tft_doubleup_wins = doubleUp.wins
+    cols.tft_doubleup_losses = doubleUp.losses
+  }
+  return cols
 }
 
 export async function doSyncMember(memberId: string) {
