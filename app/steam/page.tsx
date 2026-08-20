@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SteamLinkForm from '@/app/steam/SteamLinkForm'
 import SteamThumb from '@/app/steam/SteamThumb'
+import RecentPlayedList from '@/app/steam/RecentPlayedList'
 import SharedWithMe from '@/app/steam/SharedWithMe'
 import SteamPresence from '@/app/steam/SteamPresence'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
@@ -287,29 +287,20 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
       </section>
 
       <section>
-        <SectionHeader title="최근 2주 플레이" hint="스팀 기준 최근 2주간 플레이 시간입니다." />
+        <SectionHeader title="최근 2주 플레이" hint="내 기록은 위 '내 스팀 계정'에 표시됩니다. 여기는 다른 멤버들의 기록이에요." />
         {recentPlayers.length === 0 ? (
           <EmptyState>최근 2주간 플레이 기록이 없습니다.</EmptyState>
         ) : (
-          <ul className="space-y-2">
-            {recentPlayers.map((stat) => (
-              <li
-                key={stat.member.id}
-                className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3"
-              >
-                <MemberAvatar member={stat.member} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-fg">{stat.member.member_name}</p>
-                  <p className="truncate text-[11px] text-subtle">
-                    {stat.recentGames.map((g) => `${g.name} ${formatHours(g.minutes)}`).join(' · ')}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm font-black text-ok-ink">
-                  {formatHours(stat.recentMinutes)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          // 데이터는 전원 동일(ISR)하고, '나 숨기기'는 클라이언트에서만 수행한다.
+          <RecentPlayedList
+            players={recentPlayers.map((stat) => ({
+              memberId: stat.member.id,
+              memberName: stat.member.member_name,
+              avatarUrl: stat.member.steam_avatar_url ?? resolveAvatarUrl(stat.member),
+              totalText: formatHours(stat.recentMinutes),
+              gamesText: stat.recentGames.map((g) => `${g.name} ${formatHours(g.minutes)}`).join(' · '),
+            }))}
+          />
         )}
       </section>
 
@@ -323,22 +314,6 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
       <p className="text-[11px] text-subtle">
         마지막 동기화 {formatSyncedAt(lastSyncedAt ?? null) ?? '기록 없음'}
       </p>
-    </div>
-  )
-}
-
-function MemberAvatar({ member }: { member: SteamMemberRow }) {
-  // 스팀 화면이므로 스팀 아바타를 먼저 쓰고, 없으면 공용 우선순위로 내려간다.
-  const imageUrl = member.steam_avatar_url ?? resolveAvatarUrl(member)
-  return (
-    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2">
-      {imageUrl ? (
-        <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
-      ) : (
-        <span className="flex h-full w-full items-center justify-center text-sm text-subtle">
-          {member.member_name.slice(0, 1)}
-        </span>
-      )}
     </div>
   )
 }

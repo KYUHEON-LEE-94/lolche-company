@@ -14,6 +14,14 @@ type SteamPayload = {
   is_private: boolean
 }
 
+type RecentGame = { appid: number; name: string; minutes: number }
+
+function formatHours(minutes: number) {
+  if (minutes < 60) return `${minutes}분`
+  const hours = minutes / 60
+  return `${hours % 1 === 0 ? hours : hours.toFixed(1)}시간`
+}
+
 const inputCls =
   'w-full px-4 py-3 rounded-xl text-sm font-medium text-fg bg-surface-2 border border-line placeholder:text-faint focus:outline-none focus:border-emerald-500/50 focus:bg-emerald-500/5 transition-all'
 
@@ -27,6 +35,8 @@ export default function SteamLinkForm() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [recentGames, setRecentGames] = useState<RecentGame[]>([])
+  const [recentMinutes, setRecentMinutes] = useState(0)
 
   const load = useCallback(async () => {
     try {
@@ -35,6 +45,8 @@ export default function SteamLinkForm() {
       if (!res.ok || !body.ok) throw new Error(body.message ?? '정보를 불러오지 못했습니다.')
       setHasMember(Boolean(body.hasMember))
       setSteam((body.steam as SteamPayload | null) ?? null)
+      setRecentGames((body.recentGames as RecentGame[] | undefined) ?? [])
+      setRecentMinutes(typeof body.recentMinutes === 'number' ? body.recentMinutes : 0)
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류가 발생했습니다.')
     } finally {
@@ -146,6 +158,29 @@ export default function SteamLinkForm() {
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-bold text-warn-ink/90">
               프로필 비공개 — 게임 데이터가 표시되지 않습니다. 스팀 프로필 설정에서 &ldquo;내 프로필&rdquo;과
               &ldquo;게임 상세 정보&rdquo;를 공개로 바꿔주세요.
+            </div>
+          )}
+
+          {!steam.is_private && (
+            <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-black uppercase tracking-wider text-subtle">최근 2주 플레이</p>
+                {recentGames.length > 0 && (
+                  <span className="shrink-0 text-sm font-black text-ok-ink">{formatHours(recentMinutes)}</span>
+                )}
+              </div>
+              {recentGames.length === 0 ? (
+                <p className="mt-1.5 text-xs text-muted">최근 2주간 플레이한 게임이 없어요.</p>
+              ) : (
+                <ul className="mt-2 space-y-1">
+                  {recentGames.map((game) => (
+                    <li key={game.appid} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="min-w-0 truncate font-bold text-fg">{game.name}</span>
+                      <span className="shrink-0 font-bold text-muted">{formatHours(game.minutes)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

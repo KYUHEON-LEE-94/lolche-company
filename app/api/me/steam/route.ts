@@ -90,10 +90,29 @@ export async function GET() {
     return NextResponse.json({ ok: false, message: lookup.message }, { status: lookup.status })
   }
 
+  // 내 최근 2주 플레이 게임(상단 '내 스팀 계정' 카드에 통합 표시). 스팀 미연동이면 빈 배열.
+  let recentGames: { appid: number; name: string; minutes: number }[] = []
+  let recentMinutes = 0
+  if (lookup.member?.steam_id64) {
+    const { data: rows } = await supabaseService
+      .schema('public')
+      .from('steam_owned_games')
+      .select('appid, playtime_2weeks, steam_apps!inner(name)')
+      .eq('member_id', lookup.member.id)
+      .gt('playtime_2weeks', 0)
+      .order('playtime_2weeks', { ascending: false })
+    const owned = (rows ?? []) as unknown as { appid: number; playtime_2weeks: number; steam_apps: { name: string | null } | null }[]
+    recentMinutes = owned.reduce((sum, r) => sum + r.playtime_2weeks, 0) // 전체 합계(총 시간 정확)
+    recentGames = owned.slice(0, 5).map((r) => ({ appid: r.appid, name: r.steam_apps?.name ?? `앱 ${r.appid}`, minutes: r.playtime_2weeks }))
+  }
+
   return NextResponse.json({
     ok: true,
     hasMember: Boolean(lookup.member),
+    memberId: lookup.member?.id ?? null,
     steam: toPayload(lookup.member),
+    recentGames,
+    recentMinutes,
   })
 }
 
