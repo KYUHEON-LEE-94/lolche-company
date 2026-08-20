@@ -23,7 +23,9 @@ const UNKNOWN: AppDetailsResult = { isMultiplayer: null, categoryIds: null, head
 
 export async function fetchAppMultiplayer(appid: number): Promise<AppDetailsResult> {
   try {
-    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=categories,header_image`
+    // ⚠ header_image 는 독립 필터가 아니라 basic 에 포함된다. categories,header_image 로 요청하면
+    //   header_image 가 응답에서 빠진다. basic,categories 로 둘 다 받는다.
+    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=basic,categories`
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return UNKNOWN
 
