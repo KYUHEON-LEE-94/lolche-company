@@ -137,6 +137,7 @@ export type SeasonRolloverResult = {
     next_season_name: string
     solo_count: number
     doubleup_count: number
+    awarded_count?: number
 }
 
 export async function rolloverSeasonAction(input: {

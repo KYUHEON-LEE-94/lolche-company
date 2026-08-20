@@ -3,6 +3,8 @@ import HallOfFameClientPage from './_components/HallOfFameClientPage';
 import { unstable_noStore as noStore } from 'next/cache';
 import { TIER_ORDER, RANK_ORDER } from '@/lib/constants/tierOrder';
 import { withAvatarColumn } from '@/lib/members/avatar';
+import { isMissingColumnError } from '@/lib/db/pgErrors';
+import EmptyState from '@/app/components/ui/EmptyState';
 
 type RawRanker = {
     id: string
@@ -11,6 +13,7 @@ type RawRanker = {
     lp: number | null
     member_name_snapshot: string | null
     profile_image_snapshot: string | null
+    discord_avatar_snapshot?: string | null
     members:
         | { member_name: string; profile_image_path: string | null; discord_avatar_url?: string | null }
         | { member_name: string; profile_image_path: string | null; discord_avatar_url?: string | null }[]
@@ -28,11 +31,24 @@ export default async function HallOfFamePage({
     const seasonParam = params.season;
     const currentQueue = params.queue || 'solo';
 
-    // 2. 시즌 목록 가져오기
+    // 실제 명예의 전당 기록이 있는 시즌만 탭으로 노출한다.
+    const { data: hallSeasons, error: hallSeasonError } = await supabaseService
+        .schema("public")
+        .from('hall_of_fame')
+        .select('season_id')
+        .not('season_id', 'is', null)
+
+    if (hallSeasonError) return <div className="text-fg p-10">명예의 전당 기록을 불러오지 못했습니다.</div>;
+    const seasonIds = [...new Set((hallSeasons ?? []).map((row) => row.season_id).filter((id): id is number => typeof id === 'number'))]
+    if (seasonIds.length === 0) {
+        return <main className="min-h-[calc(100vh-3.5rem)] p-8"><EmptyState>아직 확정된 명예의 전당이 없습니다.</EmptyState></main>
+    }
+
     const { data: seasons } = await supabaseService
         .schema("public")
         .from('seasons')
-        .select('*')
+        .select('id,season_name,set_number')
+        .in('id', seasonIds)
         .order('set_number', { ascending: false });
 
     if (!seasons || seasons.length === 0) return <div className="text-fg p-10">시즌 정보가 없습니다.</div>;
@@ -42,18 +58,20 @@ export default async function HallOfFamePage({
 
     // 3. 해당 시즌 데이터 가져오기
     // 마이그레이션(20260729) 미적용이면 임베디드 컬럼 부재(42703)를 흡수해 컬럼 없이 재조회한다.
-    const { data: rawRankersData } = await withAvatarColumn((cols) =>
+    const rankerQuery = (includeDiscordSnapshot: boolean) => withAvatarColumn((cols) =>
         supabaseService
             .schema("public")
             .from('hall_of_fame')
             .select(
-                `id, tier, rank, lp, member_name_snapshot, profile_image_snapshot, members(member_name, profile_image_path${cols})`,
+                `id, tier, rank, lp, member_name_snapshot, profile_image_snapshot${includeDiscordSnapshot ? ', discord_avatar_snapshot' : ''}, members(member_name, profile_image_path${cols})`,
             )
             .eq('season_id', currentSeasonId)
             .eq('queue_type', currentQueue),
-    );
+    )
+    let rankerResult = await rankerQuery(true)
+    if (rankerResult.error && isMissingColumnError(rankerResult.error)) rankerResult = await rankerQuery(false)
 
-    const rawRankers = (rawRankersData ?? []) as RawRanker[];
+    const rawRankers = (rankerResult.data ?? []) as RawRanker[];
 
     // 임베디드 조인은 타입상 배열로 추론되므로 단일 객체로 정규화한다.
     // (멤버가 추방된 기록은 members가 비어 있고 스냅샷만 남는다)
@@ -67,6 +85,7 @@ export default async function HallOfFamePage({
             lp: r.lp,
             member_name_snapshot: r.member_name_snapshot,
             profile_image_snapshot: r.profile_image_snapshot,
+            discord_avatar_snapshot: r.discord_avatar_snapshot ?? null,
             members: member
                 ? {
                       member_name: member.member_name,

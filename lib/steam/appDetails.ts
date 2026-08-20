@@ -15,19 +15,21 @@ export type AppDetailsResult = {
   /** true=멀티, false=싱글, null=판정 실패(미확인) */
   isMultiplayer: boolean | null
   categoryIds: number[] | null
+  /** Steam Store가 실제 제공한 헤더 이미지. 없으면 null이다. */
+  headerImageUrl: string | null
 }
 
-const UNKNOWN: AppDetailsResult = { isMultiplayer: null, categoryIds: null }
+const UNKNOWN: AppDetailsResult = { isMultiplayer: null, categoryIds: null, headerImageUrl: null }
 
 export async function fetchAppMultiplayer(appid: number): Promise<AppDetailsResult> {
   try {
-    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=categories`
+    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=categories,header_image`
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return UNKNOWN
 
     const json = (await res.json()) as Record<
       string,
-      { success?: unknown; data?: { categories?: Array<{ id?: unknown }> } } | undefined
+      { success?: unknown; data?: { categories?: Array<{ id?: unknown }>; header_image?: unknown } } | undefined
     >
     const entry = json[String(appid)]
     if (!entry || entry.success !== true) return UNKNOWN
@@ -41,8 +43,23 @@ export async function fetchAppMultiplayer(appid: number): Promise<AppDetailsResu
     return {
       isMultiplayer: categoryIds.some((id) => MULTIPLAYER_CATEGORY_IDS.has(id)),
       categoryIds,
+      headerImageUrl: isSafeSteamImageUrl(entry.data?.header_image) ? entry.data.header_image : null,
     }
   } catch {
     return UNKNOWN
+  }
+}
+
+/** Store 응답을 DB/화면에 넘기기 전 https Steam CDN만 허용한다. */
+function isSafeSteamImageUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && (
+      url.hostname === 'cdn.cloudflare.steamstatic.com' ||
+      url.hostname.endsWith('.steamstatic.com')
+    )
+  } catch {
+    return false
   }
 }

@@ -43,7 +43,7 @@ type OwnedRow = {
   appid: number
   playtime_forever: number
   playtime_2weeks: number
-  steam_apps: { appid: number; name: string | null; is_multiplayer: boolean | null } | null
+  steam_apps: { appid: number; name: string | null; is_multiplayer: boolean | null; header_image_url: string | null } | null
 }
 
 type LoadResult =
@@ -103,7 +103,7 @@ async function loadSteamData(): Promise<LoadResult> {
     const { data, error } = await supabase
       .from('steam_owned_games')
       .select(
-        'member_id,appid,playtime_forever,playtime_2weeks,steam_apps!inner(appid,name,is_multiplayer)',
+        'member_id,appid,playtime_forever,playtime_2weeks,steam_apps!inner(appid,name,is_multiplayer,header_image_url)',
       )
       .in('member_id', memberIds)
       .order('appid', { ascending: true })
@@ -126,6 +126,7 @@ type SharedGame = {
   appid: number
   name: string
   isMultiplayer: boolean | null
+  headerImageUrl: string | null
   ownerNames: string[]
 }
 
@@ -149,6 +150,7 @@ function buildSharedGames(members: SteamMemberRow[], owned: OwnedRow[]): SharedG
       appid: row.appid,
       name: row.steam_apps?.name ?? `앱 ${row.appid}`,
       isMultiplayer: row.steam_apps?.is_multiplayer ?? null,
+      headerImageUrl: row.steam_apps?.header_image_url ?? null,
       ownerNames: [memberName],
     })
   }
@@ -265,7 +267,7 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
                 className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-line-strong"
               >
                 <div className="relative h-[42px] w-[110px] shrink-0 overflow-hidden rounded-lg border border-line bg-surface-2">
-                  <SteamThumb appid={game.appid} name={game.name} />
+                  <SteamThumb appid={game.appid} name={game.name} headerImageUrl={game.headerImageUrl} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -317,4 +319,3 @@ function SteamSections({ members, owned }: { members: SteamMemberRow[]; owned: O
     </div>
   )
 }
-

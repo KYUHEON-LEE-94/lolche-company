@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
-import { steamCapsuleUrl } from '@/lib/customGames/display'
+import SteamThumb from '@/app/steam/SteamThumb'
 import { INPUT } from '@/lib/ui/styles'
 
 /**
@@ -204,14 +203,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
         <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.07] p-2">
           {value.appId !== null && (
             <div className="relative h-[32px] w-[84px] shrink-0 overflow-hidden rounded-md border border-line bg-surface-2">
-              <Image
-                src={steamCapsuleUrl(value.appId)}
-                alt=""
-                fill
-                sizes="84px"
-                className="object-cover"
-                unoptimized
-              />
+              <SteamThumb appid={value.appId} name={value.label} />
             </div>
           )}
           <p className="min-w-0 flex-1 truncate text-sm font-bold text-fg">{value.label}</p>
@@ -328,14 +320,7 @@ export default function SteamGamePicker({ value, onChange, disabled }: Props) {
                       className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:opacity-50"
                     >
                       <div className="relative h-[28px] w-[74px] shrink-0 overflow-hidden rounded border border-line bg-surface-2">
-                        <Image
-                          src={steamCapsuleUrl(opt.appid)}
-                          alt=""
-                          fill
-                          sizes="74px"
-                          className="object-cover"
-                          unoptimized
-                        />
+                        <SteamThumb appid={opt.appid} name={opt.name} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">

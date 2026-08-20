@@ -200,7 +200,7 @@ export type ProfileFrame = {
 
 export type RankingCardEffect = { id:string; key:string; label:string; description:string|null; effect_key:string|null; image_path:string|null; price_points:number; is_active:boolean; is_purchasable:boolean; sort_order:number; created_at:string; created_by:string|null }
 export type PointAccount = { member_id:string; balance:number; updated_at:string }
-export type PointLedger = { id:number; member_id:string; amount:number; reason:'daily_login'|'custom_game_participation'|'cosmetic_purchase'|'admin_adjustment'; reference_key:string; description:string|null; balance_after:number; created_by:string|null; created_at:string }
+export type PointLedger = { id:number; member_id:string; amount:number; reason:'daily_login'|'custom_game_participation'|'cosmetic_purchase'|'admin_adjustment'|'hall_of_fame'; reference_key:string; description:string|null; balance_after:number; created_by:string|null; created_at:string }
 export type MemberFrameInventory = { member_id:string; frame_id:string; purchased_at:string; price_paid:number }
 export type MemberRankEffectInventory = { member_id:string; effect_id:string; purchased_at:string; price_paid:number }
 
@@ -212,6 +212,8 @@ export type SteamApp = {
   is_multiplayer: boolean | null
   category_ids: number[] | null
   details_checked_at: string | null
+  header_image_url: string | null
+  header_image_checked_at: string | null
   created_at: string
 }
 
@@ -252,6 +254,7 @@ export type HallOfFame = {
   // 멤버 추방 후에도 기록이 남도록 아카이브 시점의 이름/이미지를 보존한다.
   member_name_snapshot: string | null
   profile_image_snapshot: string | null
+  discord_avatar_snapshot: string | null
 }
 
 export type MemberRankHistory = {
@@ -565,6 +568,7 @@ export interface Database {
           next_season_name: string
           solo_count: number
           doubleup_count: number
+          awarded_count?: number
         }
       }
       end_custom_game_and_award_points: {

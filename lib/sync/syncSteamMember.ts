@@ -204,7 +204,9 @@ export async function backfillAppDetails(limit = APP_DETAIL_BATCH): Promise<numb
   const { data, error } = await supabaseAdmin
     .from('steam_apps')
     .select('appid')
-    .is('details_checked_at', null)
+    // 헤더가 실제로 없는 앱도 있다. URL null만으로 재조회하면 모든 동기화에서
+    // 같은 앱을 반복 호출하므로, 헤더 확인 시각이 없는 기존 행만 한 번 보강한다.
+    .or('details_checked_at.is.null,header_image_checked_at.is.null')
     .limit(limit)
 
   if (error) {
@@ -225,6 +227,8 @@ export async function backfillAppDetails(limit = APP_DETAIL_BATCH): Promise<numb
       .update({
         is_multiplayer: result.isMultiplayer,
         category_ids: result.categoryIds,
+        header_image_url: result.headerImageUrl,
+        header_image_checked_at: new Date().toISOString(),
         details_checked_at: new Date().toISOString(),
       })
       .eq('appid', appid)

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import SteamThumb from '@/app/steam/SteamThumb'
 import { Spinner } from '@/app/components/Spinner'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import { LOL_CAPACITY, LOL_MODES, TFT_TEAM_CAPACITY, type GameKind, type LolMode } from '@/lib/customGames/constants'
@@ -17,7 +18,6 @@ import {
   effectiveStatusBadgeClass,
   effectiveStatusLabel,
   isRecruitClosed,
-  steamCapsuleUrl,
   todayKstDate,
 } from '@/lib/customGames/display'
 import { ALERT, BTN_GHOST, CARD_HOVER, CONTAINER, SHELL } from '@/lib/ui/styles'
@@ -270,14 +270,7 @@ export default function CustomGamesPage() {
 
                     {g.game_kind === 'steam' && g.steam_app_id != null && (
                       <div className="relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
-                        <Image
-                          src={steamCapsuleUrl(g.steam_app_id)}
-                          alt=""
-                          fill
-                          sizes="110px"
-                          className="object-cover"
-                          unoptimized
-                        />
+                        <SteamThumb appid={g.steam_app_id} name={gameKindLabel(g.game_kind, g.game_kind_label)} />
                       </div>
                     )}
                     {(g.game_kind === 'tft' || g.game_kind === 'lol') && (

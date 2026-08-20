@@ -13,6 +13,7 @@ export type HallOfFameRanker = {
     display_rank: number
     member_name_snapshot: string | null
     profile_image_snapshot: string | null
+    discord_avatar_snapshot?: string | null
     members: {
         member_name: string
         profile_image_path: string | null
@@ -30,9 +31,9 @@ export function rankerName(r: Pick<HallOfFameRanker, 'members' | 'member_name_sn
  * 추방돼 members 조인이 null 이면 아카이브 시점 스냅샷(스토리지 경로)으로 대체한다.
  */
 export function rankerImageUrl(
-    r: Pick<HallOfFameRanker, 'members' | 'profile_image_snapshot'>,
+    r: Pick<HallOfFameRanker, 'members' | 'profile_image_snapshot' | 'discord_avatar_snapshot'>,
 ) {
-    return resolveAvatarUrl(r.members) ?? profileImageUrl(r.profile_image_snapshot)
+    return resolveAvatarUrl(r.members) ?? r.discord_avatar_snapshot ?? profileImageUrl(r.profile_image_snapshot)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

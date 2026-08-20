@@ -9,9 +9,9 @@ import { useState } from 'react'
  * ⚠ 서버 컴포넌트(/steam ISR)에서 쓰는 클라이언트 아일랜드.
  *   외부 도메인 + 실패 감지가 필요해 next/image 대신 <img> 를 쓴다.
  */
-export default function SteamThumb({ appid, name }: { appid: number; name: string }) {
+export default function SteamThumb({ appid, name, headerImageUrl }: { appid: number; name: string; headerImageUrl?: string | null }) {
   const [broken, setBroken] = useState(false)
-  const src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`
+  const src = headerImageUrl || `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`
 
   if (broken) {
     return (

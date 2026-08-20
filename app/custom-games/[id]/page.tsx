@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
-import Image from 'next/image'
+import SteamThumb from '@/app/steam/SteamThumb'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import LolTeamAssignPanel, {
   EMPTY_LOL_DRAFT,
@@ -27,7 +28,6 @@ import {
   effectiveStatusBadgeClass,
   effectiveStatusLabel,
   isRecruitClosed,
-  steamCapsuleUrl,
   toKstDateInput,
   toKstTimeInput,
 } from '@/lib/customGames/display'
@@ -1045,14 +1045,7 @@ export default function CustomGameDetailPage() {
               <div className="mb-8">
                 {game.game_kind === 'steam' && game.steam_app_id != null && (
                   <div className="relative mb-3 h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
-                    <Image
-                      src={steamCapsuleUrl(game.steam_app_id)}
-                      alt=""
-                      fill
-                      sizes="110px"
-                      className="object-cover"
-                      unoptimized
-                    />
+                    <SteamThumb appid={game.steam_app_id} name={gameKindLabel(game.game_kind, game.game_kind_label)} />
                   </div>
                 )}
                 {(game.game_kind === 'tft' || game.game_kind === 'lol') && (

@@ -169,7 +169,7 @@ export default function SeasonRolloverPanel({ currentSeason, onCompleted }: Prop
             {message && (
               <div role={message.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`mt-4 rounded-xl border p-3 text-sm font-bold ${message.type === 'success' ? 'border-ok/25 bg-ok/10 text-ok-ink' : 'border-danger/25 bg-danger/10 text-danger-ink'}`}>
                 {message.text}
-                {result && <p className="mt-1 font-medium">솔로 {result.solo_count}명 · 더블업 {result.doubleup_count}명 · {result.next_season_name}</p>}
+                {result && <p className="mt-1 font-medium">솔로 {result.solo_count}명 · 더블업 {result.doubleup_count}명 · 포인트 {result.awarded_count ?? 0}건 지급 · {result.next_season_name}</p>}
               </div>
             )}
 
