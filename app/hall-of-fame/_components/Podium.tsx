@@ -114,6 +114,11 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
 
             {/* ── 이름 + 정보 ── */}
             <div className="flex flex-col items-center gap-1 text-center px-4 mb-6 z-30">
+                {cfg.isFirst && (
+                    <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ring-1 ring-amber-400/40">
+                        👑 Champion
+                    </span>
+                )}
                 <h3 className="text-xl font-black text-fg line-clamp-2 break-keep min-h-[3rem] flex items-center justify-center drop-shadow-lg">
                     {displayName}
                 </h3>

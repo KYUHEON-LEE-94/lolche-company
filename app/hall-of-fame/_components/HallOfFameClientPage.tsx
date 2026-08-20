@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Podium, { rankerName, type HallOfFameRanker } from './Podium';
+import Image from 'next/image';
+import Podium, { rankerName, rankerImageUrl, type HallOfFameRanker } from './Podium';
 import SeasonTab from './SeasonTab';
 import { CARD, CONTAINER, TABBAR_SAFE_PB } from '@/lib/ui/styles';
 import EmptyState from '@/app/components/ui/EmptyState';
@@ -72,26 +73,35 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-line-strong" />
                         </div>
 
-                        <div className="space-y-3">
-                            {otherRankers.map((ranker, idx) => (
-                                <div
-                                    key={ranker.id}
-                                    className={`${CARD} flex items-center justify-between p-5 hover:bg-surface-2 transition-colors group`}
-                                >
-                                    <div className="flex items-center gap-6">
-                      <span className="text-xl font-black italic text-faint group-hover:text-muted transition-colors w-8 text-center">
-                        {idx + 4}
-                      </span>
-                                        <div>
-                                            <p className="text-lg font-bold text-fg">{rankerName(ranker)}</p>
-                                            <p className="text-xs text-faint font-bold uppercase tracking-wider">{ranker.tier} {ranker.rank}</p>
+                        <div className="space-y-2.5">
+                            {otherRankers.map((ranker, idx) => {
+                                const name = rankerName(ranker);
+                                const img = rankerImageUrl(ranker);
+                                return (
+                                    <div
+                                        key={ranker.id}
+                                        className={`${CARD} flex items-center justify-between gap-4 p-4 hover:bg-surface-2 transition-colors group`}
+                                    >
+                                        <div className="flex min-w-0 items-center gap-4">
+                                            <span className="w-7 shrink-0 text-center text-lg font-black italic text-faint group-hover:text-muted transition-colors">
+                                                {idx + 4}
+                                            </span>
+                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-line bg-surface-2">
+                                                {img ? (
+                                                    <Image src={img} alt="" fill sizes="44px" unoptimized className="object-cover" />
+                                                ) : (
+                                                    <span className="flex h-full w-full items-center justify-center text-sm font-black text-muted">{name.slice(0, 1)}</span>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-base font-bold text-fg">{name}</p>
+                                                <p className="text-[11px] font-bold uppercase tracking-wider text-faint">{ranker.tier} {ranker.rank}</p>
+                                            </div>
                                         </div>
+                                        <p className="shrink-0 font-black tracking-tighter text-warn-ink/80">{(ranker.lp ?? 0).toLocaleString()} LP</p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-warn-ink/80 font-black tracking-tighter">{(ranker.lp ?? 0).toLocaleString()} LP</p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </motion.section>
                 )}
