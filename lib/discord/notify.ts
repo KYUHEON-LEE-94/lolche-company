@@ -143,3 +143,20 @@ export async function notifySeasonEndingSoon(
     },
   ])
 }
+
+/** 매달 전월 음성 활동 1위 발표 + 포인트 지급 알림. */
+export async function notifyMonthlyVoiceTop(
+  monthLabel: string,
+  memberName: string,
+  voiceText: string,
+  points: number,
+): Promise<void> {
+  await sendDiscordWebhook([
+    {
+      title: '🎙️ 이달의 음성왕',
+      description: `**${monthLabel}** 디스코드 음성 활동 1위는 **${memberName}** 님!\n총 음성 시간 **${voiceText}** · 보상 **+${points}P** 지급 완료 🎉`,
+      color: DISCORD_COLOR.etc,
+      timestamp: new Date().toISOString(),
+    },
+  ])
+}

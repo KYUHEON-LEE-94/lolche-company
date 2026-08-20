@@ -1,0 +1,26 @@
+name: 이달의 음성왕 포인트 지급
+
+# 매달 1일, 전월 디스코드 음성 활동 1위에게 포인트를 지급한다.
+# 멱등(reference_key=voice_top:YYYY-MM)이라 1~3일 여러 번 시도해도 1회만 지급된다.
+on:
+  schedule:
+    # 매달 1·2·3일 00:10 UTC(=09:10 KST). 정각 드롭·일시 장애 대비로 3일 재시도.
+    - cron: '10 0 1,2,3 * *'
+  workflow_dispatch: {} # 수동 실행용
+
+concurrency:
+  group: monthly-voice-award
+  cancel-in-progress: false
+
+jobs:
+  award:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 음성왕 지급 엔드포인트 호출
+        run: |
+          curl -fsS --max-time 90 -X GET \
+            "${SITE_URL%/}/api/cron/monthly-voice-award" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
