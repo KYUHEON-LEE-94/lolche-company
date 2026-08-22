@@ -11,7 +11,9 @@ type EventType = 'birthday' | 'anniversary' | 'event'
 type Recurrence = 'none' | 'yearly'
 type CalendarEventView = { source: 'calendar'; id: string; title: string; description: string | null; event_type: EventType; recurrence: Recurrence; event_date: string | null; event_month: number; event_day: number; is_all_day: boolean; event_time: string | null; member_id: string; member_name: string; can_manage: boolean }
 type CustomGameView = { source: 'custom_game'; id: string; title: string; event_day: number; event_time: string; scheduled_at: string; status: string; game_label: string; href: string; can_manage: false }
-type CalendarItem = CalendarEventView | CustomGameView
+type SystemEventView = { source: 'system'; system_type: 'tft_patch_note' | 'steam_deal'; id: string; title: string; description: string | null; event_day: number; event_time: string | null; href: string; can_manage: false }
+type SeasonEndView = { source: 'season_end'; id: string; title: string; event_day: number; event_time: string | null; href: string; can_manage: false }
+type CalendarItem = CalendarEventView | CustomGameView | SystemEventView | SeasonEndView
 type MemberOption = { id: string; member_name: string }
 type Permissions = { isAdmin: boolean; canCreate: boolean; canCreateGame: boolean; viewerMemberId: string | null }
 type CalendarPayload = { events: CalendarItem[]; memberOptions: MemberOption[]; permissions: Permissions; migration_required: boolean }
@@ -35,6 +37,8 @@ function isCalendarItem(value: unknown): value is CalendarItem {
   if (!value || typeof value !== 'object') return false
   const row = value as Record<string, unknown>
   if (row.source === 'custom_game') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string'
+  if (row.source === 'system') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string' && (row.system_type === 'tft_patch_note' || row.system_type === 'steam_deal')
+  if (row.source === 'season_end') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string'
   return row.source === 'calendar' && typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.event_type === 'string' && typeof row.member_id === 'string'
 }
 function isPayload(value: unknown): value is CalendarPayload {
@@ -150,7 +154,7 @@ export default function HomeCalendar() {
     catch (e) { setFormError(e instanceof Error ? e.message : '오류 발생') } finally { setSaving(false) }
   }
 
-  return <section id="calendar" className={`${CARD} mb-8 scroll-mt-20 overflow-hidden`} aria-labelledby="calendar-title">
+  return <section id="calendar" className={`${CARD} scroll-mt-20 overflow-hidden`} aria-labelledby="calendar-title">
     <div className="border-b border-line px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-5">
       <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-ink">Community calendar</p><div className="mt-1 flex items-baseline gap-3"><h2 id="calendar-title" className="text-xl font-black text-fg">멤버 일정</h2><strong className="text-sm font-black text-muted">{view.year}년 {view.month}월</strong></div></div>
       <div className="mt-3 flex items-center gap-1.5 sm:mt-0 sm:gap-2">
@@ -166,7 +170,7 @@ export default function HomeCalendar() {
         className="border-b border-line bg-surface-2/70"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
       >
-        {WEEKDAYS.map((day, i) => <div key={day} className={`border-r border-line py-1.5 text-center text-[10px] font-black last:border-r-0 ${i === 0 ? 'text-danger-ink' : i === 6 ? 'text-brand-ink' : 'text-muted'}`}>{day}</div>)}
+        {WEEKDAYS.map((day, i) => <div key={day} className={`border-r border-line py-1 text-center text-[10px] font-black last:border-r-0 ${i === 0 ? 'text-danger-ink' : i === 6 ? 'text-brand-ink' : 'text-muted'}`}>{day}</div>)}
       </div>
       <div
         className="border-l border-line"
@@ -180,7 +184,7 @@ export default function HomeCalendar() {
           const canCreate = payload?.permissions.canCreate === true
           return <div
             key={`${cell.year}-${cell.month}-${cell.day}`}
-            className={`relative min-h-[68px] min-w-0 overflow-hidden border-b border-r border-line p-1 sm:min-h-[92px] sm:p-1.5 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
+            className={`relative min-h-[54px] min-w-0 overflow-hidden border-b border-r border-line p-1 sm:min-h-[64px] sm:p-1.5 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
             onClick={() => canCreate && openCellCreate(cell)}
             role={canCreate ? 'button' : undefined}
             tabIndex={canCreate ? 0 : undefined}
@@ -190,6 +194,11 @@ export default function HomeCalendar() {
             <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${isToday ? 'bg-brand text-white shadow-sm' : !cell.isCurrentMonth ? 'text-faint' : weekday === 0 ? 'text-danger-ink' : weekday === 6 ? 'text-brand-ink' : 'text-muted'}`}>{cell.day}</span>
             {cell.isCurrentMonth && <div className="mt-1 space-y-1">{events.slice(0, 2).map((event) => {
               if (event.source === 'custom_game') return <Link key={`game-${event.id}`} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time.slice(0, 5)} · ${event.game_label} · ${event.title}`} className="block w-full truncate rounded border border-amber-400/30 bg-amber-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-warn-ink sm:px-1.5 sm:text-[11px]">⚔ {event.event_time.slice(0, 5)} {event.title}</Link>
+              if (event.source === 'season_end') return <Link key={event.id} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time?.slice(0, 5) ?? ''} · ${event.title}`} className="block w-full truncate rounded border border-rose-400/30 bg-rose-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-rose-700 dark:text-rose-300 sm:px-1.5 sm:text-[11px]">⌛ {event.event_time?.slice(0, 5)} {event.title}</Link>
+              if (event.source === 'system') {
+                const isPatchNote = event.system_type === 'tft_patch_note'
+                return <Link key={event.id} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.title}${event.description ? ` · ${event.description}` : ''}`} className={`block w-full truncate rounded border px-1 py-1 text-left text-[9px] font-bold leading-tight sm:px-1.5 sm:text-[11px] ${isPatchNote ? 'border-brand/30 bg-brand/10 text-brand-ink' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300'}`}>{isPatchNote ? '✦' : '♨'} {event.title}</Link>
+              }
               const editable = event.can_manage
               return <button key={`event-${event.id}`} type="button" disabled={!editable} onClick={(clickEvent) => { clickEvent.stopPropagation(); if (editable) openEdit(event) }} title={`${LABEL[event.event_type]} · ${event.member_name} · ${event.title}`} className={`block w-full truncate rounded border px-1 py-1 text-left text-[9px] font-bold leading-tight sm:px-1.5 sm:text-[11px] ${CHIP[event.event_type]} disabled:cursor-default`}>{event.event_type === 'event' && !event.is_all_day ? `${event.event_time?.slice(0, 5)} ` : ''}{event.title}</button>
             })}{events.length > 2 && <p className="truncate px-1 text-[9px] font-bold text-subtle">+{events.length - 2}개</p>}</div>}

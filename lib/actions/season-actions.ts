@@ -263,6 +263,7 @@ export async function setSeasonScheduledEndAction(id: number, scheduledEndAtIso:
             .update({ scheduled_end_at: scheduledEndAtIso, end_reminder_sent_at: null })
             .eq('id', id)
         if (error) throw error
+        revalidatePath('/')
         revalidatePath('/admin/seasons')
         return { ok: true }
     } catch (error) {

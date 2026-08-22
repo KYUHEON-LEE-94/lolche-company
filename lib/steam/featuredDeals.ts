@@ -1,6 +1,8 @@
 import 'server-only'
 
-export type SteamFeaturedDeal = { appid: number; name: string; discountPercent: number; originalPrice: number; finalPrice: number; imageUrl: string | null; expiresAt: number | null }
+import type { SteamFeaturedDeal } from '@/lib/steam/featuredDealsShared'
+
+export type { SteamFeaturedDeal } from '@/lib/steam/featuredDealsShared'
 
 const ENDPOINT = 'https://store.steampowered.com/api/featuredcategories?cc=kr&l=koreana'
 const KRW = 'KRW'

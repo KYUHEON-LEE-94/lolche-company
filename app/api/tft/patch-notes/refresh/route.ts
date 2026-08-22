@@ -11,6 +11,7 @@ export async function POST() {
     if (result.status === 'migration_required') return NextResponse.json({ error: '패치 노트 마이그레이션이 필요합니다.' }, { status: 503 })
     if (result.status === 'cooldown') return NextResponse.json({ error: '최근에 갱신되었습니다.', retryAfterSeconds: result.retryAfterSeconds }, { status: 429 })
     if (result.status === 'locked') return NextResponse.json({ error: '다른 갱신 요청이 진행 중입니다.', retryAfterSeconds: result.retryAfterSeconds }, { status: 409 })
+    revalidatePath('/')
     revalidatePath('/tft')
     return NextResponse.json({ ok: true, syncedAt: result.syncedAt, count: result.count })
   } catch (e) {

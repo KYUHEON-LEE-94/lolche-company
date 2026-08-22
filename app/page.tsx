@@ -8,6 +8,7 @@ import ProfileChecklist from '@/app/components/ProfileChecklist'
 import TodayMyRecord from '@/app/TodayMyRecord'
 import AdminPendingNotice from '@/app/components/AdminPendingNotice'
 import HomeCalendar from '@/app/components/calendar/HomeCalendar'
+import HomeNews from '@/app/components/home/HomeNews'
 import DashboardRankSections, {
   type DashMover,
   type DashRankMember,
@@ -18,6 +19,8 @@ import { formatKstShort, gameKindLabel } from '@/lib/customGames/display'
 import { isMissingColumnError } from '@/lib/db/pgErrors'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 import { getEquippedTitlesByMemberIds } from '@/lib/achievements/publicTitles'
+import { getCurrentSeasonPatchNotes } from '@/lib/tft/patchNotes'
+import { getSteamFeaturedDealSnapshot } from '@/lib/steam/featuredDealSnapshot'
 
 export const revalidate = 60
 
@@ -97,9 +100,11 @@ async function fetchRecruiting(): Promise<{ rows: RecruitingGame[]; count: numbe
 }
 
 export default async function DashboardPage() {
-  const [membersResult, recruiting] = await Promise.all([
+  const [membersResult, recruiting, activeSeason, deals] = await Promise.all([
     fetchDashboardMembers(),
     fetchRecruiting(),
+    supabaseService.from('seasons').select('id').eq('is_active', true).maybeSingle(),
+    getSteamFeaturedDealSnapshot(),
   ])
 
   if (membersResult.error) console.error('Supabase error:', membersResult.error)
@@ -107,7 +112,10 @@ export default async function DashboardPage() {
   // 이 프로젝트의 Database 제네릭은 select 결과를 추론하지 못한다(전역적으로 never).
   // app/tft/page.tsx 와 동일하게 명시 캐스팅으로 처리한다.
   const members = (membersResult.data ?? []) as unknown as DashMember[]
-  const titlesByMember = await getEquippedTitlesByMemberIds(members.map((member) => member.id))
+  const [titlesByMember, patchNotes] = await Promise.all([
+    getEquippedTitlesByMemberIds(members.map((member) => member.id)),
+    getCurrentSeasonPatchNotes(activeSeason.data?.id ?? null),
+  ])
 
   const leaderboard = members
     .filter((m) => !!m.tft_tier)
@@ -170,7 +178,10 @@ export default async function DashboardPage() {
         <ProfileChecklist />
 
         {/* 세션·일정 데이터는 ISR HTML과 분리된 dynamic/no-store Client Island에서만 조회한다. */}
-        <HomeCalendar />
+        <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start">
+          <HomeCalendar />
+          <HomeNews patchNotes={patchNotes.map((note) => ({ id: note.id, title: note.title, summary: note.summary, publishedAt: note.sourcePublishedAt ?? note.publishedAt, sourceUrl: note.sourceUrl }))} deals={deals} />
+        </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* TOP5 + 랭크 변동 통합 카드. 상세 패널 상태는 클라이언트 아일랜드가 소유한다. */}

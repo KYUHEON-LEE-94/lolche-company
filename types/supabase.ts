@@ -227,6 +227,27 @@ export type SteamOwnedGame = {
   updated_at: string
 }
 
+export type SteamFeaturedDealSnapshot = {
+  id: boolean
+  deals: Json
+  last_success_at: string | null
+  lock_token: string | null
+  lock_expires_at: string | null
+  updated_at: string
+}
+
+export type CalendarSystemEvent = {
+  id: string
+  source: 'tft_patch_note' | 'steam_deal'
+  source_key: string
+  title: string
+  description: string | null
+  href: string
+  event_date: string
+  event_time: string | null
+  created_at: string
+}
+
 // --- 신규 타입 추가: Season ---
 export type Season = {
   id: number
@@ -414,6 +435,12 @@ export interface Database {
         Relationships: []
         Update: Optional<CalendarEvent>
       }
+      calendar_system_events: {
+        Row: CalendarSystemEvent
+        Insert: Optional<Omit<CalendarSystemEvent, 'id' | 'created_at' | 'event_date'>> & { id?: string; created_at?: string; event_date?: string }
+        Update: Optional<CalendarSystemEvent>
+        Relationships: []
+      }
       riot_accounts: {
         Row: RiotAccount
         Insert: Optional<Omit<RiotAccount, 'id' | 'created_at'>> & {
@@ -537,6 +564,12 @@ export interface Database {
         Relationships: []
         Update: Optional<SteamOwnedGame>
       }
+      steam_featured_deal_snapshots: {
+        Row: SteamFeaturedDealSnapshot
+        Insert: Optional<SteamFeaturedDealSnapshot> & { id?: boolean }
+        Relationships: []
+        Update: Optional<SteamFeaturedDealSnapshot>
+      }
       // --- 내전 테이블 ---
       custom_games: {
         Row: CustomGame
@@ -642,6 +675,18 @@ export interface Database {
       finish_tft_patch_note_sync: {
         Args: { p_lock_token: string; p_success: boolean }
         Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
+      }
+      claim_steam_featured_deal_sync: {
+        Args: { p_lock_token: string }
+        Returns: { status: 'claimed' | 'locked'; retry_after_seconds: number }[]
+      }
+      finish_steam_featured_deal_sync: {
+        Args: { p_lock_token: string; p_success: boolean }
+        Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
+      }
+      replace_steam_featured_deal_snapshot: {
+        Args: { p_lock_token: string; p_deals: Json }
+        Returns: { status: 'replaced' | 'not_owner'; last_success_at: string | null }[]
       }
     }
     Enums: Record<string, never>
