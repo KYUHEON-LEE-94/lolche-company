@@ -11,6 +11,7 @@ import PageHeader from '@/app/components/ui/PageHeader'
 import SectionHeader from '@/app/components/ui/SectionHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
 import SteamDeals from '@/app/steam/SteamDeals'
+import SteamContentTabs from '@/app/steam/SteamContentTabs'
 import { fetchSteamFeaturedDeals } from '@/lib/steam/featuredDeals'
 
 // ⚠ 이 페이지는 DB 캐시와 공개 Steam 할인 feed만 읽는다.
@@ -213,22 +214,27 @@ export default async function SteamPage() {
           <SteamLinkForm />
         </div>
 
-        {/* 실시간 섹션. Client → /api/steam-presence(force-dynamic). 이 페이지의 캐시와 무관하다.
-            숨겨질 수 있으므로 여백은 컴포넌트가 직접 갖는다(빈 div 여백 방지). */}
-        <SteamPresence />
+        <SteamContentTabs
+          community={
+            <>
+              {/* 실시간 섹션. Client → /api/steam-presence(force-dynamic). 이 페이지의 캐시와 무관하다.
+                  숨겨질 수 있으므로 여백은 컴포넌트가 직접 갖는다(빈 div 여백 방지). */}
+              <SteamPresence />
 
-        {/* 개인화 섹션. 이 컴포넌트의 실패는 아래 공통 섹션에 영향을 주지 않는다. */}
-        <div className="mb-12">
-          <SharedWithMe />
-        </div>
+              {/* 개인화 섹션. 이 컴포넌트의 실패는 아래 공통 섹션에 영향을 주지 않는다. */}
+              <div className="mb-12">
+                <SharedWithMe />
+              </div>
 
-        <div className="mb-12"><SteamDeals deals={deals} /></div>
-
-        {!result.ok ? (
-          <EmptyState>스팀 데이터를 아직 사용할 수 없습니다. 잠시 후 다시 확인해주세요.</EmptyState>
-        ) : (
-          <SteamSections members={result.members} owned={result.owned} />
-        )}
+              {!result.ok ? (
+                <EmptyState>스팀 데이터를 아직 사용할 수 없습니다. 잠시 후 다시 확인해주세요.</EmptyState>
+              ) : (
+                <SteamSections members={result.members} owned={result.owned} />
+              )}
+            </>
+          }
+          deals={<SteamDeals deals={deals} />}
+        />
       </div>
     </main>
   )

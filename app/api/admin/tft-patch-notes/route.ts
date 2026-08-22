@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/app/lib/isAdmin'
-import { isMissingTableError } from '@/lib/db/pgErrors'
+import { isMissingColumnError, isMissingTableError } from '@/lib/db/pgErrors'
 
 export const dynamic = 'force-dynamic'
 const NO_STORE = { 'Cache-Control': 'private, no-store' }
@@ -21,7 +21,7 @@ function parseInput(value: unknown): NoteInput | null {
   if (parsedSeasonId <= 0 || !cleanTitle || cleanTitle.length > 120 || cleanSummary.length > 300 || !cleanContent || cleanContent.length > 20000) return null
   return { seasonId: parsedSeasonId, title: cleanTitle, summary: cleanSummary, content: cleanContent, isPublished }
 }
-function missing(error: { code?: string | null } | null) { return isMissingTableError(error) ? response({ error: '패치 노트 마이그레이션이 필요합니다.', migration_required: true }, 503) : null }
+function missing(error: { code?: string | null } | null) { return isMissingTableError(error) || isMissingColumnError(error) ? response({ error: '패치 노트 마이그레이션이 필요합니다.', migration_required: true }, 503) : null }
 
 export async function GET(request: NextRequest) {
   const admin = await requireAdmin(); if (!admin.ok) return response({ error: '관리자 권한이 필요합니다.' }, 403)
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (!Number.isInteger(seasonId) || seasonId <= 0) return response({ error: '올바른 시즌이 필요합니다.' }, 400)
   const { data: season } = await admin.supabase.from('seasons').select('id').eq('id', seasonId).eq('is_active', true).maybeSingle()
   if (!season) return response({ error: '현재 활성 시즌만 조회할 수 있습니다.' }, 400)
-  const { data, error } = await admin.supabase.from('tft_patch_notes').select('id,season_id,title,summary,content,is_published,published_at,created_at,updated_at').eq('season_id', seasonId).order('created_at', { ascending: false })
+  const { data, error } = await admin.supabase.from('tft_patch_notes').select('id,season_id,title,summary,content,is_published,published_at,created_at,updated_at,source_key,source_url').eq('season_id', seasonId).order('created_at', { ascending: false })
   if (error) return missing(error) ?? response({ error: '패치 노트를 불러오지 못했습니다.' }, 500)
   return response({ notes: data ?? [] })
 }
@@ -50,9 +50,10 @@ export async function PATCH(request: NextRequest) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return response({ error: '입력값을 확인해주세요.' }, 400)
   const record = body as Record<string, unknown>; const id = record.id; const input = parseInput(Object.fromEntries(Object.entries(record).filter(([key]) => key !== 'id')))
   if (typeof id !== 'string' || !UUID_RE.test(id) || !input) return response({ error: '입력값을 확인해주세요.' }, 400)
-  const { data: existing, error: existingError } = await admin.supabase.from('tft_patch_notes').select('id,season_id,published_at').eq('id', id).maybeSingle()
+  const { data: existing, error: existingError } = await admin.supabase.from('tft_patch_notes').select('id,season_id,published_at,source_key').eq('id', id).maybeSingle()
   if (existingError) return missing(existingError) ?? response({ error: '패치 노트를 찾지 못했습니다.' }, 500)
   if (!existing) return response({ error: '패치 노트를 찾지 못했습니다.' }, 404)
+  if (existing.source_key) return response({ error: '공식 동기화 패치 노트는 수정할 수 없습니다.' }, 409)
   if (existing.season_id !== input.seasonId) return response({ error: '현재 활성 시즌의 패치 노트만 수정할 수 있습니다.' }, 400)
   const { data: season } = await admin.supabase.from('seasons').select('id').eq('id', existing.season_id).eq('is_active', true).maybeSingle()
   if (!season) return response({ error: '현재 활성 시즌의 패치 노트만 수정할 수 있습니다.' }, 400)
@@ -64,9 +65,10 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const admin = await requireAdmin(); if (!admin.ok) return response({ error: '관리자 권한이 필요합니다.' }, 403)
   const id = request.nextUrl.searchParams.get('id'); if (!id || !UUID_RE.test(id)) return response({ error: '올바른 패치 노트 ID가 필요합니다.' }, 400)
-  const { data: existing, error: existingError } = await admin.supabase.from('tft_patch_notes').select('id,season_id').eq('id', id).maybeSingle()
+  const { data: existing, error: existingError } = await admin.supabase.from('tft_patch_notes').select('id,season_id,source_key').eq('id', id).maybeSingle()
   if (existingError) return missing(existingError) ?? response({ error: '패치 노트를 찾지 못했습니다.' }, 500)
   if (!existing) return response({ error: '패치 노트를 찾지 못했습니다.' }, 404)
+  if (existing.source_key) return response({ error: '공식 동기화 패치 노트는 삭제할 수 없습니다.' }, 409)
   const { data: season } = await admin.supabase.from('seasons').select('id').eq('id', existing.season_id).eq('is_active', true).maybeSingle()
   if (!season) return response({ error: '현재 활성 시즌의 패치 노트만 삭제할 수 있습니다.' }, 400)
   const { error } = await admin.supabase.from('tft_patch_notes').delete().eq('id', id)

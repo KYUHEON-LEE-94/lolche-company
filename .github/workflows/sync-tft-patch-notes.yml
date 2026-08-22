@@ -1,0 +1,24 @@
+name: TFT 공식 패치 노트 동기화
+
+on:
+  schedule:
+    # GitHub Actions 정각 혼잡을 피한 매일 03:17 KST.
+    - cron: '17 18 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync-tft-patch-notes
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 공식 패치 노트 동기화 호출
+        run: |
+          curl -fsS --max-time 60 -X GET \
+            "${SITE_URL%/}/api/cron/sync-tft-patch-notes" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

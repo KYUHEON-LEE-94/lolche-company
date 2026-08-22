@@ -4,7 +4,7 @@ import type { Member } from '@/types/supabase'
 import MemberRanking from './MemberRanking'
 import { TABBAR_SAFE_PB } from '@/lib/ui/styles'
 import { getEquippedTitlesByMemberIds } from '@/lib/achievements/publicTitles'
-import { getCurrentSeasonPatchNotes } from '@/lib/tft/patchNotes'
+import { getCurrentSeasonPatchNotes, getTftPatchNotesLastSyncedAt } from '@/lib/tft/patchNotes'
 
 export const revalidate = 60
 
@@ -25,9 +25,10 @@ export default async function TftRankingPage() {
 
   if (error) console.error('Supabase error:', error)
   const members = (data ?? []) as unknown as Member[]
-  const [titlesByMember, patchNotes] = await Promise.all([
+  const [titlesByMember, patchNotes, patchNotesLastSyncedAt] = await Promise.all([
     getEquippedTitlesByMemberIds(members.map((member) => member.id)),
     getCurrentSeasonPatchNotes(activeSeason?.id ?? null),
+    getTftPatchNotesLastSyncedAt(),
   ])
   const membersWithTitles = members.map((member) => ({
     ...withoutDiscordId(member),
@@ -41,6 +42,7 @@ export default async function TftRankingPage() {
         members={membersWithTitles}
         currentSeason={activeSeason}
         patchNotes={patchNotes}
+        patchNotesLastSyncedAt={patchNotesLastSyncedAt}
       />
     </main>
   )

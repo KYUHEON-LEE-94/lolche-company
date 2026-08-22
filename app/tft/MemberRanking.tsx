@@ -427,10 +427,12 @@ export default function MemberRanking({
                                         members = [],
                                         currentSeason,
                                         patchNotes = [],
+                                        patchNotesLastSyncedAt,
                                       }: {
   members?: PublicMember[]
   currentSeason?: Season | null
   patchNotes?: PublicTftPatchNote[]
+  patchNotesLastSyncedAt?: string | null
 }) {
   const [viewType, setViewType] = useState<ViewType>('solo')
   const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null)
@@ -568,7 +570,7 @@ export default function MemberRanking({
 
             {/* ── 랭킹 리스트 ── */}
             {viewType === 'patch-notes' ? (
-                <TftPatchNotes notes={patchNotes} />
+                <TftPatchNotes notes={patchNotes} lastSyncedAt={patchNotesLastSyncedAt ?? null} />
             ) : sorted.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (

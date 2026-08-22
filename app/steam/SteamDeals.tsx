@@ -9,7 +9,16 @@ function formatDeadline(seconds: number | null) {
 }
 
 export default function SteamDeals({ deals }: { deals: SteamFeaturedDeal[] | null }) {
-  if (deals === null) return null
+  if (deals === null) {
+    return (
+      <section>
+        <SectionHeader title="Steam 할인" hint="한국 Steam 상점의 현재 할인 품목입니다." />
+        <p className="rounded-2xl border border-line bg-surface px-5 py-4 text-sm text-subtle">
+          할인 정보를 잠시 불러올 수 없습니다. 잠시 후 다시 확인해주세요.
+        </p>
+      </section>
+    )
+  }
   return <section>
     <SectionHeader title="Steam 할인" hint="한국 Steam 상점의 현재 할인 품목입니다." />
     {deals.length === 0 ? <p className="rounded-2xl border border-line bg-surface px-5 py-4 text-sm text-subtle">현재 표시할 할인 품목이 없습니다.</p> :

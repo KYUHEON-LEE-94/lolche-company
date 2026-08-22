@@ -250,6 +250,17 @@ export type TftPatchNote = {
   published_at: string | null
   created_at: string
   updated_at: string
+  source_key: string | null
+  source_url: string | null
+  source_published_at: string | null
+}
+
+export type TftPatchNoteSyncState = {
+  id: boolean
+  last_success_at: string | null
+  lock_token: string | null
+  lock_expires_at: string | null
+  updated_at: string
 }
 
 // --- 신규 타입 추가: HallOfFame ---
@@ -473,6 +484,12 @@ export interface Database {
         Relationships: []
         Update: Optional<TftPatchNote>
       }
+      tft_patch_note_sync_state: {
+        Row: TftPatchNoteSyncState
+        Insert: Optional<TftPatchNoteSyncState> & { id?: boolean }
+        Update: Optional<TftPatchNoteSyncState>
+        Relationships: []
+      }
       // --- 신규 테이블 추가: hall_of_fame ---
       hall_of_fame: {
         Row: HallOfFame
@@ -617,6 +634,14 @@ export interface Database {
       grant_member_points: {
         Args: { p_member_id:string; p_amount:number; p_request_id:string; p_actor_user_id:string; p_description:string }
         Returns: { status:'granted'|'already_applied'|'request_conflict'|'forbidden'|'invalid_amount'|'invalid_description'|'not_found'; balance:number }[]
+      }
+      claim_tft_patch_note_sync: {
+        Args: { p_lock_token: string; p_min_interval_seconds: number }
+        Returns: { status: 'claimed' | 'locked' | 'cooldown'; retry_after_seconds: number }[]
+      }
+      finish_tft_patch_note_sync: {
+        Args: { p_lock_token: string; p_success: boolean }
+        Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
       }
     }
     Enums: Record<string, never>
