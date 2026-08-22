@@ -3,7 +3,7 @@ import { requireAdmin } from '@/app/lib/isAdmin'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isMissingTableError, pickPrimaryAccount } from '@/lib/members/primaryAccount'
 import { withAvatarColumn } from '@/lib/members/avatar'
-import type { Member } from '@/types/supabase'
+import type { Member, MemberStatus } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +60,7 @@ async function loadAccountsByMember(memberIds: string[]): Promise<Map<string, Ac
   return byMember
 }
 
-const ALLOWED_STATUS = new Set(['pending', 'approved', 'rejected'])
+const ALLOWED_STATUS = new Set<MemberStatus>(['pending', 'approved', 'rejected'])
 
 export async function GET(req: Request) {
   const { ok, supabase } = await requireAdmin()
@@ -68,9 +68,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, message: '관리자만 가능합니다.' }, { status: 403 })
   }
 
-  const status = new URL(req.url).searchParams.get('status')
+  const rawStatus = new URL(req.url).searchParams.get('status')
+  const status: MemberStatus | null = rawStatus && ALLOWED_STATUS.has(rawStatus as MemberStatus) ? rawStatus as MemberStatus : null
 
-  if (status && !ALLOWED_STATUS.has(status)) {
+  if (rawStatus && !status) {
     return NextResponse.json({ ok: false, message: '잘못된 status 값입니다.' }, { status: 400 })
   }
 

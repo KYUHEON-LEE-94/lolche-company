@@ -6,6 +6,7 @@ import { archiveSeason, updateSeasonStatusAction, deleteSeasonHallOfFameAction }
 import {Spinner} from '@/app/components/Spinner'
 import SeasonRolloverPanel from '@/app/admin/seasons/SeasonRolloverPanel'
 import SeasonEndScheduler from '@/app/admin/seasons/SeasonEndScheduler'
+import PatchNotesManager from '@/app/admin/seasons/PatchNotesManager'
 
 
 
@@ -200,6 +201,8 @@ export default function AdminSeasonManagementPage() {
                     </div>
                 )}
             </div>
+
+            <PatchNotesManager season={activeSeason} />
 
             {/* ── 시즌 목록 ── */}
             {loading ? (

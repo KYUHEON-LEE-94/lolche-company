@@ -10,8 +10,10 @@ import { CONTAINER, SHELL } from '@/lib/ui/styles'
 import PageHeader from '@/app/components/ui/PageHeader'
 import SectionHeader from '@/app/components/ui/SectionHeader'
 import EmptyState from '@/app/components/ui/EmptyState'
+import SteamDeals from '@/app/steam/SteamDeals'
+import { fetchSteamFeaturedDeals } from '@/lib/steam/featuredDeals'
 
-// ⚠ 이 페이지는 DB 캐시(steam_owned_games / steam_apps)만 읽는다.
+// ⚠ 이 페이지는 DB 캐시와 공개 Steam 할인 feed만 읽는다.
 //   Steam API 호출은 /api/admin/sync-steam(크론)과 스팀 최초 등록 시점에서만 일어난다.
 //
 // ⚠⚠ 이 파일에서 세션을 읽지 않는다 (cookies() / createRouteClient() / auth.getUser() 금지).
@@ -194,7 +196,7 @@ function buildMemberStats(members: SteamMemberRow[], owned: OwnedRow[]): MemberS
 }
 
 export default async function SteamPage() {
-  const result = await loadSteamData()
+  const [result, deals] = await Promise.all([loadSteamData(), fetchSteamFeaturedDeals()])
 
   return (
     <main className={SHELL}>
@@ -219,6 +221,8 @@ export default async function SteamPage() {
         <div className="mb-12">
           <SharedWithMe />
         </div>
+
+        <div className="mb-12"><SteamDeals deals={deals} /></div>
 
         {!result.ok ? (
           <EmptyState>스팀 데이터를 아직 사용할 수 없습니다. 잠시 후 다시 확인해주세요.</EmptyState>

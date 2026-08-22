@@ -90,9 +90,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     const isActive = (href: string) => pathname.startsWith(href)
 
-    // 라우트가 바뀌면(항목 클릭 포함) 열린 드롭다운을 닫는다.
-    useEffect(() => { setOpenMenu(null) }, [pathname])
-
     // 바깥 클릭 · Esc 로 닫기.
     useEffect(() => {
         if (!openMenu) return
@@ -175,6 +172,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                                         key={item.href}
                                                         href={item.href}
                                                         role="menuitem"
+                                                        onClick={() => setOpenMenu(null)}
                                                         className={[
                                                             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold transition-colors',
                                                             itemActive ? 'bg-brand/15 text-brand-ink' : 'text-muted hover:text-fg hover:bg-surface-2',

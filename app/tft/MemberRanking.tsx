@@ -16,9 +16,11 @@ import { resolveFrameUrl, isSpinningFrame } from '@/lib/cosmetics/frameUrl'
 import { rankEffectClass } from '@/lib/cosmetics/rankEffects'
 import RankCardBackground from '@/app/components/ranking/RankCardBackground'
 import TitleBadges from '@/app/components/TitleBadges'
+import TftPatchNotes from './TftPatchNotes'
+import type { PublicTftPatchNote } from '@/lib/tft/patchNotes'
 
 type QueueType = 'solo' | 'doubleup'
-type ViewType = QueueType
+type ViewType = QueueType | 'patch-notes'
 type PublicMember = Omit<Member, 'discord_id'>
 
 type Season = {
@@ -424,9 +426,11 @@ const MemberRow = memo(function MemberRow({
 export default function MemberRanking({
                                         members = [],
                                         currentSeason,
+                                        patchNotes = [],
                                       }: {
   members?: PublicMember[]
   currentSeason?: Season | null
+  patchNotes?: PublicTftPatchNote[]
 }) {
   const [viewType, setViewType] = useState<ViewType>('solo')
   const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null)
@@ -470,6 +474,7 @@ export default function MemberRanking({
 
   // 정렬
   const sorted = useMemo(() => {
+    if (viewType === 'patch-notes') return []
     if (!members.length) return []
     return [...members]
         .filter((m) => getQueueTierAndLp(m, viewType).tier !== null)
@@ -477,6 +482,11 @@ export default function MemberRanking({
           compareRank(getQueueTierAndLp(a, viewType), getQueueTierAndLp(b, viewType)),
         )
   }, [members, viewType])
+
+  const changeView = (view: ViewType) => {
+    setViewType(view)
+    setSelectedMember(null)
+  }
 
   // ─── 렌더 ────────────────────────────────────────────────────────────────
 
@@ -521,13 +531,14 @@ export default function MemberRanking({
               </div>
 
               {/* 큐 탭 */}
-              <div className="inline-flex w-full max-w-xl gap-1 rounded-xl border border-line bg-surface-2 p-1">
-                {(['solo', 'doubleup'] as const).map((view) => (
+              <div role="tablist" aria-label="롤체 보기" className="inline-flex w-full max-w-xl gap-1 rounded-xl border border-line bg-surface-2 p-1">
+                {(['solo', 'doubleup', 'patch-notes'] as const).map((view) => (
                     <button
                         key={view}
                         type="button"
-                        onClick={() => setViewType(view)}
-                        aria-pressed={viewType === view}
+                        role="tab"
+                        onClick={() => changeView(view)}
+                        aria-selected={viewType === view}
                         className={`
                     flex min-h-11 flex-1 items-center justify-center gap-1.5 px-2 sm:px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors
                     ${viewType === view
@@ -540,19 +551,25 @@ export default function MemberRanking({
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
-                      ) : (
+                      ) : view === 'doubleup' ? (
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                           </svg>
+                      ) : (
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m4-2a8 8 0 11-16 0 8 8 0 0116 0z" />
+                          </svg>
                       )}
-                      {view === 'solo' ? '솔로 랭크' : '더블업 랭크'}
+                      {view === 'solo' ? '솔로 랭크' : view === 'doubleup' ? '더블업 랭크' : '패치 노트'}
                     </button>
                 ))}
               </div>
             </header>
 
             {/* ── 랭킹 리스트 ── */}
-            {sorted.length === 0 ? (
+            {viewType === 'patch-notes' ? (
+                <TftPatchNotes notes={patchNotes} />
+            ) : sorted.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
                 <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_52px_-34px_var(--color-shadow)] divide-y divide-line">
@@ -581,7 +598,7 @@ export default function MemberRanking({
 
       {/* 멤버 디테일 패널 */}
       <AnimatePresence>
-        {selectedMember && (
+        {selectedMember && viewType !== 'patch-notes' && (
           <MemberDetailPanel
             member={selectedMember}
             queue={viewType}

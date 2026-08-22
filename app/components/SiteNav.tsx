@@ -27,7 +27,7 @@ type NavItem = {
 // 상단/하단 네비가 이 배열 하나를 공유한다.
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: '홈', exact: true, icon: 'home', iconOnlyOnTop: true, inTabBar: true },
-  { href: '/tft', label: '롤체 랭킹', tabLabel: '롤체', icon: 'tft', inTabBar: true },
+  { href: '/tft', label: '롤체', tabLabel: '롤체', icon: 'tft', inTabBar: true },
   ...(LOL_ENABLED
     ? [{ href: '/lol', label: '롤', icon: 'lol' as IconKey, inTabBar: false }]
     : []),

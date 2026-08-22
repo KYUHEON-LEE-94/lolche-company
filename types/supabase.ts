@@ -240,6 +240,18 @@ export type Season = {
   created_at: string
 }
 
+export type TftPatchNote = {
+  id: string
+  season_id: number
+  title: string
+  summary: string
+  content: string
+  is_published: boolean
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // --- 신규 타입 추가: HallOfFame ---
 export type HallOfFame = {
   id: string
@@ -372,6 +384,7 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<Member>
       }
       calendar_events: {
@@ -387,6 +400,7 @@ export interface Database {
           event_day: number
           member_id: string
         }
+        Relationships: []
         Update: Optional<CalendarEvent>
       }
       riot_accounts: {
@@ -399,6 +413,7 @@ export interface Database {
           riot_game_name: string
           riot_tagline: string
         }
+        Relationships: []
         Update: Optional<RiotAccount>
       }
       admins: {
@@ -408,6 +423,7 @@ export interface Database {
           user_id?: string | null
           created_at?: string
         }
+        Relationships: []
         Update: Optional<Admin>
       }
       tft_matches: {
@@ -415,6 +431,7 @@ export interface Database {
         Insert: Optional<TftMatch> & {
           match_id?: string
         }
+        Relationships: []
         Update: Optional<TftMatch>
       }
       tft_match_participants: {
@@ -422,6 +439,7 @@ export interface Database {
         Insert: Optional<TftMatchParticipant> & {
           id?: number
         }
+        Relationships: []
         Update: Optional<TftMatchParticipant>
       }
       profile_frames: {
@@ -430,22 +448,30 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<ProfileFrame>
       }
-      point_accounts: { Row: PointAccount; Insert: Optional<PointAccount> & { member_id:string }; Update: Optional<PointAccount> }
-      point_ledger: { Row: PointLedger; Insert: Optional<Omit<PointLedger,'id'|'created_at'>> & { member_id:string; amount:number; reason:PointLedger['reason']; reference_key:string; balance_after:number }; Update: Optional<PointLedger> }
-      ranking_card_effects: { Row: RankingCardEffect; Insert: Optional<Omit<RankingCardEffect,'id'|'created_at'>> & { key:string; label:string; price_points:number }; Update: Optional<RankingCardEffect> }
-      member_frame_inventory: { Row: MemberFrameInventory; Insert: Optional<MemberFrameInventory> & { member_id:string; frame_id:string; price_paid:number }; Update: Optional<MemberFrameInventory> }
-      member_rank_effect_inventory: { Row: MemberRankEffectInventory; Insert: Optional<MemberRankEffectInventory> & { member_id:string; effect_id:string; price_paid:number }; Update: Optional<MemberRankEffectInventory> }
-      profile_card_themes: { Row: ProfileCardTheme; Insert: Optional<Omit<ProfileCardTheme,'id'|'created_at'>> & { id?:string; created_at?:string; key:string; label:string; price_points:number }; Update: Optional<ProfileCardTheme> }
-      member_profile_theme_inventory: { Row: { member_id:string; theme_id:string; price_paid:number; created_at:string }; Insert: { member_id:string; theme_id:string; price_paid:number }; Update: { price_paid?:number } }
+      point_accounts: { Row: PointAccount; Insert: Optional<PointAccount> & { member_id:string }; Update: Optional<PointAccount>; Relationships: [] }
+      point_ledger: { Row: PointLedger; Insert: Optional<Omit<PointLedger,'id'|'created_at'>> & { member_id:string; amount:number; reason:PointLedger['reason']; reference_key:string; balance_after:number }; Update: Optional<PointLedger>; Relationships: [] }
+      ranking_card_effects: { Row: RankingCardEffect; Insert: Optional<Omit<RankingCardEffect,'id'|'created_at'>> & { key:string; label:string; price_points:number }; Update: Optional<RankingCardEffect>; Relationships: [] }
+      member_frame_inventory: { Row: MemberFrameInventory; Insert: Optional<MemberFrameInventory> & { member_id:string; frame_id:string; price_paid:number }; Update: Optional<MemberFrameInventory>; Relationships: [] }
+      member_rank_effect_inventory: { Row: MemberRankEffectInventory; Insert: Optional<MemberRankEffectInventory> & { member_id:string; effect_id:string; price_paid:number }; Update: Optional<MemberRankEffectInventory>; Relationships: [] }
+      profile_card_themes: { Row: ProfileCardTheme; Insert: Optional<Omit<ProfileCardTheme,'id'|'created_at'>> & { id?:string; created_at?:string; key:string; label:string; price_points:number }; Update: Optional<ProfileCardTheme>; Relationships: [] }
+      member_profile_theme_inventory: { Row: { member_id:string; theme_id:string; price_paid:number; created_at:string }; Insert: { member_id:string; theme_id:string; price_paid:number }; Update: { price_paid?:number }; Relationships: [] }
       seasons: {
         Row: Season
         Insert: Optional<Omit<Season, 'id' | 'created_at'>> & {
           id?: number
           created_at?: string
         }
+        Relationships: []
         Update: Optional<Season>
+      }
+      tft_patch_notes: {
+        Row: TftPatchNote
+        Insert: Optional<Omit<TftPatchNote, 'id' | 'created_at' | 'updated_at'>> & { id?: string; created_at?: string; updated_at?: string; season_id: number; title: string; content: string }
+        Relationships: []
+        Update: Optional<TftPatchNote>
       }
       // --- 신규 테이블 추가: hall_of_fame ---
       hall_of_fame: {
@@ -454,6 +480,7 @@ export interface Database {
           id?: string
           recorded_at?: string
         }
+        Relationships: []
         Update: Optional<HallOfFame>
       }
       member_rank_history: {
@@ -462,6 +489,7 @@ export interface Database {
           id?: string
           recorded_at?: string
         }
+        Relationships: []
         Update: Optional<MemberRankHistory>
       }
       sync_logs: {
@@ -470,6 +498,7 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<SyncLog>
       }
       steam_apps: {
@@ -478,6 +507,7 @@ export interface Database {
           appid: number
           created_at?: string
         }
+        Relationships: []
         Update: Optional<SteamApp>
       }
       steam_owned_games: {
@@ -487,6 +517,7 @@ export interface Database {
           appid: number
           updated_at?: string
         }
+        Relationships: []
         Update: Optional<SteamOwnedGame>
       }
       // --- 내전 테이블 ---
@@ -496,6 +527,7 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<CustomGame>
       }
       custom_game_participants: {
@@ -504,6 +536,7 @@ export interface Database {
           id?: string
           joined_at?: string
         }
+        Relationships: []
         Update: Optional<CustomGameParticipant>
       }
       custom_game_rounds: {
@@ -512,11 +545,13 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<CustomGameRound>
       }
       custom_game_results: {
         Row: CustomGameResult
         Insert: Optional<Omit<CustomGameResult, 'id'>> & { id?: string }
+        Relationships: []
         Update: Optional<CustomGameResult>
       }
       custom_game_guests: {
@@ -525,11 +560,13 @@ export interface Database {
           id?: string
           joined_at?: string
         }
+        Relationships: []
         Update: Optional<CustomGameGuest>
       }
       custom_game_guest_results: {
         Row: CustomGameGuestResult
         Insert: Optional<Omit<CustomGameGuestResult, 'id'>> & { id?: string }
+        Relationships: []
         Update: Optional<CustomGameGuestResult>
       }
       custom_game_teams: {
@@ -538,12 +575,14 @@ export interface Database {
           id?: string
           created_at?: string
         }
+        Relationships: []
         Update: Optional<CustomGameTeam>
       }
     }
     Views: {
       /** distinct on (member_id) — is_primary desc, account_no asc */
       member_primary_account: {
+         Relationships: []
         Row: RiotAccount
       }
     }
