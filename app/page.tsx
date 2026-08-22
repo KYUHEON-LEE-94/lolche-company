@@ -178,7 +178,7 @@ export default async function DashboardPage() {
         <ProfileChecklist />
 
         {/* 세션·일정 데이터는 ISR HTML과 분리된 dynamic/no-store Client Island에서만 조회한다. */}
-        <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start">
+        <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-stretch">
           <HomeCalendar />
           <HomeNews patchNotes={patchNotes.map((note) => ({ id: note.id, title: note.title, summary: note.summary, publishedAt: note.sourcePublishedAt ?? note.publishedAt, sourceUrl: note.sourceUrl }))} deals={deals} />
         </div>

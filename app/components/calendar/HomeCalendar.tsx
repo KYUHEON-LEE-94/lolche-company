@@ -154,7 +154,7 @@ export default function HomeCalendar() {
     catch (e) { setFormError(e instanceof Error ? e.message : '오류 발생') } finally { setSaving(false) }
   }
 
-  return <section id="calendar" className={`${CARD} scroll-mt-20 overflow-hidden`} aria-labelledby="calendar-title">
+  return <section id="calendar" className={`${CARD} scroll-mt-20 overflow-hidden xl:h-full`} aria-labelledby="calendar-title">
     <div className="border-b border-line px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-5">
       <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-ink">Community calendar</p><div className="mt-1 flex items-baseline gap-3"><h2 id="calendar-title" className="text-xl font-black text-fg">멤버 일정</h2><strong className="text-sm font-black text-muted">{view.year}년 {view.month}월</strong></div></div>
       <div className="mt-3 flex items-center gap-1.5 sm:mt-0 sm:gap-2">
