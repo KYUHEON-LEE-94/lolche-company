@@ -12,6 +12,7 @@ export type PatchNoteSyncResult =
   | { status: 'locked'; retryAfterSeconds: number }
   | { status: 'cooldown'; retryAfterSeconds: number }
   | { status: 'migration_required' }
+  | { status: 'source_unavailable'; reason: string }
 
 function firstResult<T>(data: T[] | null): T | null {
   return Array.isArray(data) ? data[0] ?? null : null
@@ -32,12 +33,24 @@ export async function syncOfficialTftPatchNotes(minIntervalSeconds: number): Pro
   if (claim.status === 'cooldown') return { status: 'cooldown', retryAfterSeconds: Math.max(1, claim.retry_after_seconds) }
   if (claim.status !== 'claimed') throw new Error('패치 노트 동기화 상태를 확인하지 못했습니다.')
 
+  // ★ 외부 공식 페이지 조회는 Riot CDN 차단/장애로 실패할 수 있다. 이건 "우리 버그"가 아니라
+  //   외부 의존성 degrade 다 — 502 로 크론(GitHub Action)을 실패시키지 말고, lock 만 풀고
+  //   source_unavailable 로 소프트 반환한다. 기존 저장된 패치 노트는 그대로 유지된다(다음 실행 재시도).
+  let notes: Awaited<ReturnType<typeof fetchOfficialTftPatchNotes>>
+  try {
+    notes = await fetchOfficialTftPatchNotes()
+  } catch (fetchError) {
+    const reason = fetchError instanceof Error ? fetchError.message : '외부 소스 조회 실패'
+    const { error: finishError } = await supabaseService.rpc('finish_tft_patch_note_sync', { p_lock_token: lockToken, p_success: false })
+    if (finishError) console.error('[tft] 패치 노트 lock 해제 실패', finishError.message)
+    console.warn('[tft] 공식 패치 노트 소스 조회 실패(degrade)', reason)
+    return { status: 'source_unavailable', reason }
+  }
+
   let syncedCount = 0
   try {
-    const [{ data: activeSeason, error: seasonError }, notes] = await Promise.all([
-      supabaseService.from('seasons').select('id').eq('is_active', true).maybeSingle(),
-      fetchOfficialTftPatchNotes(),
-    ])
+    const { data: activeSeason, error: seasonError } = await supabaseService
+      .from('seasons').select('id').eq('is_active', true).maybeSingle()
     if (seasonError) throw new Error(`현재 시즌 조회 실패: ${seasonError.message}`)
     if (!activeSeason) throw new Error('활성 시즌이 없어 패치 노트를 저장할 수 없습니다.')
     if (notes.length > 0) {

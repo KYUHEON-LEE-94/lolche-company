@@ -2,7 +2,18 @@ import 'server-only'
 
 const OFFICIAL_ORIGIN = 'https://teamfighttactics.leagueoflegends.com'
 const PATCH_TAG_URL = `${OFFICIAL_ORIGIN}/ko-kr/news/tags/patch-notes/`
-const REQUEST_TIMEOUT_MS = 8_000
+const REQUEST_TIMEOUT_MS = 12_000
+
+// ⚠ Riot 공식 페이지는 데이터센터 IP + 봇 UA 요청을 차단(403/챌린지)하는 경향이 있다.
+//   Vercel(데이터센터)에서 502 로 실패하던 원인. 실제 브라우저처럼 보이는 헤더로 통과율을 높인다.
+const BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Cache-Control': 'no-cache',
+  Referer: `${OFFICIAL_ORIGIN}/ko-kr/`,
+}
 
 export type OfficialTftPatchNote = {
   sourceKey: string
@@ -90,7 +101,7 @@ export async function fetchOfficialTftPatchNotes(): Promise<OfficialTftPatchNote
     const response = await fetch(PATCH_TAG_URL, {
       cache: 'no-store',
       signal: controller.signal,
-      headers: { 'User-Agent': 'lolche-company patch-note sync/1.0' },
+      headers: BROWSER_HEADERS,
     })
     if (!response.ok) throw new Error(`공식 패치 노트 요청 실패 (${response.status})`)
     const grids = findArticleCardGrids(extractNextData(await response.text()))
