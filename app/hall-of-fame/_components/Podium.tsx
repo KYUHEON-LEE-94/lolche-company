@@ -84,8 +84,10 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
     const pedestalH = position === 1 ? 'h-24' : position === 2 ? 'h-16' : 'h-12';
     // 중앙 배치 여부에 따른 Y축 오프셋
     const translateCls = position === 1 ? 'z-20 md:-translate-y-12' : 'z-10';
-    // Flex order 설정 (2nd - 1st - 3rd 순서 유지)
-    const orderCls = position === 1 ? 'md:order-2' : position === 2 ? 'md:order-1' : 'md:order-3';
+    // Flex order 설정.
+    //  모바일(flex-col): 순위 그대로 1위 → 2위 → 3위 (기존엔 DOM 순서상 2위가 먼저 나왔다).
+    //  데스크톱(md+, flex-row): 포디움 배치 2위 - 1위 - 3위.
+    const orderCls = position === 1 ? 'order-1 md:order-2' : position === 2 ? 'order-2 md:order-1' : 'order-3 md:order-3';
 
     return (
         <motion.div
