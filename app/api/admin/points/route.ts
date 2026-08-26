@@ -14,14 +14,21 @@ export async function GET(request: Request) {
   if (!admin.ok) return NextResponse.json({ error: '관리자만 가능합니다.' }, { status: 403, headers: NO_STORE })
   const url = new URL(request.url)
   const q = (url.searchParams.get('q') ?? '').trim().slice(0, 50)
-  const parsedLimit = Number(url.searchParams.get('ledgerLimit') ?? '30')
-  const ledgerLimit = Number.isInteger(parsedLimit) && parsedLimit >= 1 && parsedLimit <= 100 ? parsedLimit : 30
+  const parsedLimit = Number(url.searchParams.get('ledgerLimit') ?? '50')
+  const ledgerLimit = Number.isInteger(parsedLimit) && parsedLimit >= 1 && parsedLimit <= 200 ? parsedLimit : 50
+  // 유형 필터(선택). 없으면 전체(출석·내전·구매·명예의전당·관리자 등)를 다 보여준다.
+  const KNOWN_REASONS = ['daily_login', 'custom_game_participation', 'cosmetic_purchase', 'shop_purchase', 'admin_adjustment', 'hall_of_fame']
+  const reasonFilter = url.searchParams.get('reason')
+  const reason = reasonFilter && KNOWN_REASONS.includes(reasonFilter) ? reasonFilter : null
+
+  let ledgerQuery = supabaseAdmin.from('point_ledger').select('id,member_id,amount,reason,description,balance_after,created_at,created_by').order('created_at', { ascending: false }).limit(ledgerLimit)
+  if (reason) ledgerQuery = ledgerQuery.eq('reason', reason)
 
   const membersQuery = supabaseAdmin.from('members').select('id,member_name,status').eq('status', 'approved').order('member_name')
   const [{ data: members, error: memberError }, { data: accounts, error: accountError }, { data: ledger, error: ledgerError }, { data: actors }] = await Promise.all([
     membersQuery,
     supabaseAdmin.from('point_accounts').select('member_id,balance'),
-    supabaseAdmin.from('point_ledger').select('id,member_id,amount,description,balance_after,created_at,created_by').eq('reason', 'admin_adjustment').order('created_at', { ascending: false }).limit(ledgerLimit),
+    ledgerQuery,
     supabaseAdmin.from('admins').select('user_id,display_name'),
   ])
   const error = memberError ?? accountError ?? ledgerError
@@ -39,10 +46,12 @@ export async function GET(request: Request) {
       id: row.id,
       member_name: names.get(row.member_id) ?? '알 수 없는 멤버',
       amount: row.amount,
+      reason: row.reason,
       description: row.description,
       balance_after: row.balance_after,
       created_at: row.created_at,
-      actor_name: row.created_by ? actorNames.get(row.created_by) ?? '관리자' : '관리자',
+      // 관리자 수동 지급만 관리자명을 붙이고, 나머지(출석·내전·구매·명예의전당 등)는 시스템 자동이다.
+      actor_name: row.created_by ? actorNames.get(row.created_by) ?? '관리자' : '시스템',
     })),
   }, { headers: NO_STORE })
 }
