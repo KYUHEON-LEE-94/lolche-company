@@ -284,6 +284,25 @@ export type TftPatchNoteSyncState = {
   updated_at: string
 }
 
+export type LolPatchNote = {
+  id: string
+  title: string
+  summary: string
+  source_key: string
+  source_url: string
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type LolPatchNoteSyncState = {
+  id: boolean
+  last_success_at: string | null
+  lock_token: string | null
+  lock_expires_at: string | null
+  updated_at: string
+}
+
 // --- 신규 타입 추가: HallOfFame ---
 export type HallOfFame = {
   id: string
@@ -517,6 +536,18 @@ export interface Database {
         Update: Optional<TftPatchNoteSyncState>
         Relationships: []
       }
+      lol_patch_notes: {
+        Row: LolPatchNote
+        Insert: Optional<Omit<LolPatchNote, 'id' | 'created_at' | 'updated_at'>> & { id?: string; created_at?: string; updated_at?: string; title: string; source_key: string; source_url: string }
+        Relationships: []
+        Update: Optional<LolPatchNote>
+      }
+      lol_patch_note_sync_state: {
+        Row: LolPatchNoteSyncState
+        Insert: Optional<LolPatchNoteSyncState> & { id?: boolean }
+        Update: Optional<LolPatchNoteSyncState>
+        Relationships: []
+      }
       // --- 신규 테이블 추가: hall_of_fame ---
       hall_of_fame: {
         Row: HallOfFame
@@ -673,6 +704,14 @@ export interface Database {
         Returns: { status: 'claimed' | 'locked' | 'cooldown'; retry_after_seconds: number }[]
       }
       finish_tft_patch_note_sync: {
+        Args: { p_lock_token: string; p_success: boolean }
+        Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
+      }
+      claim_lol_patch_note_sync: {
+        Args: { p_lock_token: string; p_min_interval_seconds: number }
+        Returns: { status: 'claimed' | 'locked' | 'cooldown'; retry_after_seconds: number }[]
+      }
+      finish_lol_patch_note_sync: {
         Args: { p_lock_token: string; p_success: boolean }
         Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
       }

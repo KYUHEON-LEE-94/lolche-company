@@ -20,7 +20,9 @@ import { isMissingColumnError } from '@/lib/db/pgErrors'
 import { resolveAvatarUrl, withAvatarColumn } from '@/lib/members/avatar'
 import { getEquippedTitlesByMemberIds } from '@/lib/achievements/publicTitles'
 import { getCurrentSeasonPatchNotes } from '@/lib/tft/patchNotes'
+import { getLolPatchNotes } from '@/lib/lol/patchNotes'
 import { getSteamFeaturedDealSnapshot } from '@/lib/steam/featuredDealSnapshot'
+import { LOL_ENABLED } from '@/lib/constants/features'
 
 export const revalidate = 60
 
@@ -112,9 +114,10 @@ export default async function DashboardPage() {
   // 이 프로젝트의 Database 제네릭은 select 결과를 추론하지 못한다(전역적으로 never).
   // app/tft/page.tsx 와 동일하게 명시 캐스팅으로 처리한다.
   const members = (membersResult.data ?? []) as unknown as DashMember[]
-  const [titlesByMember, patchNotes] = await Promise.all([
+  const [titlesByMember, patchNotes, lolPatchNotes] = await Promise.all([
     getEquippedTitlesByMemberIds(members.map((member) => member.id)),
     getCurrentSeasonPatchNotes(activeSeason.data?.id ?? null),
+    LOL_ENABLED ? getLolPatchNotes() : Promise.resolve([]),
   ])
 
   const leaderboard = members
@@ -180,7 +183,7 @@ export default async function DashboardPage() {
         {/* 세션·일정 데이터는 ISR HTML과 분리된 dynamic/no-store Client Island에서만 조회한다. */}
         <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-stretch">
           <HomeCalendar />
-          <HomeNews patchNotes={patchNotes.map((note) => ({ id: note.id, title: note.title, summary: note.summary, publishedAt: note.sourcePublishedAt ?? note.publishedAt, sourceUrl: note.sourceUrl }))} deals={deals} />
+          <HomeNews patchNotes={patchNotes.map((note) => ({ id: note.id, title: note.title, summary: note.summary, publishedAt: note.sourcePublishedAt ?? note.publishedAt, sourceUrl: note.sourceUrl }))} lolPatchNotes={lolPatchNotes.map((note) => ({ id: note.id, title: note.title, summary: note.summary, publishedAt: note.publishedAt, sourceUrl: note.sourceUrl }))} deals={deals} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

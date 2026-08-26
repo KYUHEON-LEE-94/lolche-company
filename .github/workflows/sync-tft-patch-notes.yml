@@ -1,4 +1,4 @@
-name: TFT 패치 노트 & 스팀 할인 동기화
+name: 패치 노트(롤체·롤) & 스팀 할인 동기화
 
 on:
   schedule:
@@ -33,6 +33,18 @@ jobs:
         run: |
           curl -fsS --max-time 60 -X GET \
             "${SITE_URL%/}/api/cron/sync-steam-featured-deals" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  lol-patch-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 롤 공식 패치 노트 동기화 호출
+        run: |
+          curl -fsS --max-time 60 -X GET \
+            "${SITE_URL%/}/api/cron/sync-lol-patch-notes" \
             -H "Authorization: Bearer ${CRON_SECRET}"
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
