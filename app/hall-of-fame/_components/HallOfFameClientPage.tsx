@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
 import Podium, { rankerName, rankerImageUrl, type HallOfFameRanker } from './Podium';
+import SafeAvatarImage from '@/app/components/SafeAvatarImage';
 import SeasonTab from './SeasonTab';
 import { CARD, CONTAINER, TABBAR_SAFE_PB } from '@/lib/ui/styles';
 import EmptyState from '@/app/components/ui/EmptyState';
@@ -87,11 +87,7 @@ export default function HallOfFameClientPage({ seasons, currentSeason, currentQu
                                                 {idx + 4}
                                             </span>
                                             <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-line bg-surface-2">
-                                                {img ? (
-                                                    <Image src={img} alt="" fill sizes="44px" unoptimized className="object-cover" />
-                                                ) : (
-                                                    <span className="flex h-full w-full items-center justify-center text-sm font-black text-muted">{name.slice(0, 1)}</span>
-                                                )}
+                                                <SafeAvatarImage src={img} name={name} size={44} />
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="truncate text-base font-bold text-fg">{name}</p>

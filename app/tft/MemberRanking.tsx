@@ -6,6 +6,7 @@ import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
 import Image from 'next/image'
 import MemberDetailPanel, { prefetchMemberOverview } from '@/app/components/ranking/MemberDetailPanel'
+import SafeAvatarImage from '@/app/components/SafeAvatarImage'
 import { tierScore } from '@/lib/tft/tierScore'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
@@ -353,13 +354,8 @@ const MemberRow = memo(function MemberRow({
             bg-surface-2 border border-line
             flex items-center justify-center
           ">
-            {profileUrl ? (
-                <Image src={profileUrl} alt={`${member.member_name} 프로필`} fill sizes="36px" className="object-cover" />
-            ) : (
-                <svg className="w-5 h-5 text-subtle" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-            )}
+            {/* 디스코드 아바타 교체로 URL 이 죽어도(404) 깨진 이미지 대신 컬러 이니셜로 폴백한다. */}
+            <SafeAvatarImage src={profileUrl} name={member.member_name} size={36} />
           </div>
         </div>
 

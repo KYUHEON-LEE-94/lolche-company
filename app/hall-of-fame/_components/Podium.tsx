@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { profileImageUrl, resolveAvatarUrl } from '@/lib/members/avatar';
+import SafeAvatarImage from '@/app/components/SafeAvatarImage';
 
 export type HallOfFameRanker = {
     id: string
@@ -78,7 +79,7 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
     const cfg = RANK_CONFIG[configRank];
 
     const displayName = rankerName(data);
-    const profileImg = rankerImageUrl(data) ?? '/images/logo.png';
+    const profileImg = rankerImageUrl(data);
 
     // 단상 높이 조절 (실제 순위가 아닌 포디움의 시각적 위치에 따름)
     const pedestalH = position === 1 ? 'h-24' : position === 2 ? 'h-16' : 'h-12';
@@ -99,14 +100,12 @@ function PodiumCard({ data, delay, position }: { data: HallOfFameRanker; delay: 
             {/* ── 프레임 & 프로필 레이어 ── */}
             <div className="relative group mb-2" style={{ width: cfg.frameW, height: cfg.frameW }}>
                 <div className={`absolute ${cfg.profilePos} rounded-full overflow-hidden z-0`}>
-                    {/* 호스트가 Supabase 외로 바뀔 수 있어 remotePatterns 의존을 피한다 */}
-                    <Image
+                    {/* 아바타 교체로 URL 이 죽어도 컬러 이니셜로 폴백(깨진 이미지 방지). */}
+                    <SafeAvatarImage
                         src={profileImg}
-                        alt={displayName}
-                        fill
-                        sizes="280px"
-                        unoptimized
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        name={displayName}
+                        size={Math.round(cfg.frameW * 0.62)}
+                        className="group-hover:scale-110 transition-transform duration-700"
                     />
                 </div>
                 <div className="absolute inset-0 z-10 pointer-events-none">
