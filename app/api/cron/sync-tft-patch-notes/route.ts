@@ -20,6 +20,7 @@ export async function GET(request: Request) {
   } catch (e) {
     const message = e instanceof Error ? e.message : '오류 발생'
     console.error('[tft] cron patch note sync 실패', message)
-    return NextResponse.json({ error: '패치 노트를 동기화하지 못했습니다.' }, { status: 502 })
+    // detail 은 진단용(원인 특정). CRON_SECRET 인증을 통과한 호출에만 노출된다.
+    return NextResponse.json({ error: '패치 노트를 동기화하지 못했습니다.', detail: message }, { status: 502 })
   }
 }
