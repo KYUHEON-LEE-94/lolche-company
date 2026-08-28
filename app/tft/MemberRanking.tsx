@@ -22,7 +22,15 @@ import type { PublicTftPatchNote } from '@/lib/tft/patchNotes'
 
 type QueueType = 'solo' | 'doubleup'
 type ViewType = QueueType | 'patch-notes'
-type PublicMember = Omit<Member, 'discord_id'>
+type PublicMember = Omit<Member, 'discord_id'> & {
+  // 현재 세트 배치 진행도(랭크 매치 수). 5판 완료 전(티어 없음)엔 "배치중 N/5"로 표시한다.
+  placement_solo?: number
+  placement_doubleup?: number
+}
+/** 현재 큐의 배치 진행도(0~5). 티어가 없고 1~4면 배치중이다. */
+function placementCountOf(m: PublicMember, queue: QueueType): number {
+  return (queue === 'solo' ? m.placement_solo : m.placement_doubleup) ?? 0
+}
 
 type Season = {
   id: number
@@ -185,6 +193,13 @@ function rankRingClass(idx: number): string {
 }
 
 function RankBadge({ idx }: { idx: number }) {
+  // idx < 0 = 순위 밖(배치중). 번호 대신 점선 뱃지.
+  if (idx < 0)
+    return (
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg border border-dashed border-line text-xs font-bold text-faint">
+          –
+        </div>
+    )
   if (idx === 0)
     return (
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 text-xs font-black text-white shadow-md shadow-amber-500/40 ring-1 ring-yellow-300/60">
@@ -263,6 +278,7 @@ const MemberRow = memo(function MemberRow({
                       member,
                       idx,
                       queue,
+                      placementCount,
                       isSyncing,
                       syncMsg,
                       effectiveLastSyncedAt,
@@ -272,6 +288,7 @@ const MemberRow = memo(function MemberRow({
   member: PublicMember
   idx: number
   queue: QueueType
+  placementCount?: number
   isSyncing: boolean
   syncMsg: string
   effectiveLastSyncedAt: string | null | undefined
@@ -386,13 +403,21 @@ const MemberRow = memo(function MemberRow({
           {lpDelta && <LpDeltaBadge delta={lpDelta} />}
         </div>
 
-        {/* 티어 · LP */}
+        {/* 티어 · LP (배치중이면 진행도 배지) */}
         <div className="flex items-center gap-1 shrink-0 w-[74px] sm:w-[92px] justify-end text-right">
-          <span className={`text-base leading-none ${style.text}`}>{style.icon}</span>
-          <div className="leading-tight">
-            <p className={`text-xs font-black ${style.text}`}>{shortTierLabel(tier, rank)}</p>
-            <p className="text-[11px] font-bold text-muted tabular-nums">{lp} LP</p>
-          </div>
+          {placementCount != null ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-1 text-[11px] font-black text-brand-ink ring-1 ring-brand/25">
+              배치 중 <span className="tabular-nums">{placementCount}/5</span>
+            </span>
+          ) : (
+            <>
+              <span className={`text-base leading-none ${style.text}`}>{style.icon}</span>
+              <div className="leading-tight">
+                <p className={`text-xs font-black ${style.text}`}>{shortTierLabel(tier, rank)}</p>
+                <p className="text-[11px] font-bold text-muted tabular-nums">{lp} LP</p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* 동기화 (행 클릭과 분리) */}
@@ -481,6 +506,14 @@ export default function MemberRanking({
         )
   }, [members, viewType])
 
+  // 배치중: 티어가 아직 없고(언랭) 현재 세트 랭크 매치를 1~4판 한 멤버. 랭킹 아래에 별도로 노출한다.
+  const placing = useMemo(() => {
+    if (viewType === 'patch-notes' || !members.length) return []
+    return members
+        .filter((m) => getQueueTierAndLp(m, viewType).tier === null && placementCountOf(m, viewType) >= 1 && placementCountOf(m, viewType) < 5)
+        .sort((a, b) => placementCountOf(b, viewType) - placementCountOf(a, viewType) || a.member_name.localeCompare(b.member_name, 'ko'))
+  }, [members, viewType])
+
   const changeView = (view: ViewType) => {
     setViewType(view)
     setSelectedMember(null)
@@ -567,9 +600,10 @@ export default function MemberRanking({
             {/* ── 랭킹 리스트 ── */}
             {viewType === 'patch-notes' ? (
                 <TftPatchNotes notes={patchNotes} lastSyncedAt={patchNotesLastSyncedAt ?? null} />
-            ) : sorted.length === 0 ? (
+            ) : sorted.length === 0 && placing.length === 0 ? (
                 <EmptyState>랭킹 데이터가 없습니다.</EmptyState>
             ) : (
+                <>
                 <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_52px_-34px_var(--color-shadow)] divide-y divide-line">
                   {sorted.map((m, idx) => {
                     const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
@@ -588,6 +622,37 @@ export default function MemberRanking({
                     )
                   })}
                 </div>
+
+                {/* ── 배치중 (언랭 · 배치 진행 중) ── */}
+                {placing.length > 0 && (
+                  <div className="mt-6">
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-line" />
+                      <span className="text-[11px] font-black tracking-widest text-subtle uppercase">배치 중</span>
+                      <div className="h-px flex-1 bg-line" />
+                    </div>
+                    <div className="overflow-hidden rounded-2xl border border-line bg-surface divide-y divide-line">
+                      {placing.map((m) => {
+                        const effectiveLastSyncedAt = localLastSynced[m.id] ?? m.last_synced_at
+                        return (
+                            <MemberRow
+                                key={m.id}
+                                member={m}
+                                idx={-1}
+                                queue={viewType}
+                                placementCount={placementCountOf(m, viewType)}
+                                isSyncing={syncingId === m.id}
+                                syncMsg={syncMsgById[m.id] ?? ''}
+                                effectiveLastSyncedAt={effectiveLastSyncedAt}
+                                onSync={handleSyncOne}
+                                onDetailOpen={setSelectedMember}
+                            />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                </>
             )}
 
           </div>

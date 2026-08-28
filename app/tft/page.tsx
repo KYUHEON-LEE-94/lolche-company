@@ -25,14 +25,18 @@ export default async function TftRankingPage() {
 
   if (error) console.error('Supabase error:', error)
   const members = (data ?? []) as unknown as Member[]
-  const [titlesByMember, patchNotes, patchNotesLastSyncedAt] = await Promise.all([
+  const [titlesByMember, patchNotes, patchNotesLastSyncedAt, placement] = await Promise.all([
     getEquippedTitlesByMemberIds(members.map((member) => member.id)),
     getCurrentSeasonPatchNotes(activeSeason?.id ?? null),
     getTftPatchNotesLastSyncedAt(),
+    getPlacementCounts(activeSeason?.set_number ?? null),
   ])
   const membersWithTitles = members.map((member) => ({
     ...withoutDiscordId(member),
     equipped_titles: titlesByMember.get(member.id) ?? [],
+    // 새 세트 배치 진행도(현재 세트의 랭크 매치 수). 5판 완료 전까지는 티어가 없어 언랭이다.
+    placement_solo: placement.get(member.id)?.solo ?? 0,
+    placement_doubleup: placement.get(member.id)?.doubleup ?? 0,
   }))
 
   return (
@@ -46,6 +50,27 @@ export default async function TftRankingPage() {
       />
     </main>
   )
+}
+
+/**
+ * 현재 세트의 랭크 매치 수를 멤버별로 센다(솔로=큐 1100, 더블업=1160).
+ * 티어가 아직 없는(배치 미완료) 멤버의 "배치중 N/5" 표시에 쓴다.
+ */
+async function getPlacementCounts(setNumber: number | null): Promise<Map<string, { solo: number; doubleup: number }>> {
+  const map = new Map<string, { solo: number; doubleup: number }>()
+  if (!setNumber) return map
+  const { data } = await supabaseService
+    .from('tft_match_participants')
+    .select('member_id, tft_matches!inner(tft_set_number, queue_id)')
+    .eq('tft_matches.tft_set_number', setNumber)
+    .in('tft_matches.queue_id', [1100, 1160])
+  for (const row of (data ?? []) as unknown as { member_id: string; tft_matches: { queue_id: number } }[]) {
+    const entry = map.get(row.member_id) ?? { solo: 0, doubleup: 0 }
+    if (row.tft_matches.queue_id === 1100) entry.solo += 1
+    else if (row.tft_matches.queue_id === 1160) entry.doubleup += 1
+    map.set(row.member_id, entry)
+  }
+  return map
 }
 
 function withoutDiscordId(member: Member): Omit<Member, 'discord_id'> {
