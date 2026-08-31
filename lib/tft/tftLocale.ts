@@ -27,10 +27,11 @@ export function getUnitImageUrl(characterId: string, maps: KrMaps): string {
   if (officialUrl) return officialUrl
 
   const lower = characterId.toLowerCase()
-  const setMatch = characterId.match(/^TFT(\d+)_/i)
-  const setNum = setMatch?.[1] ?? '17'
   const filename = IMAGE_FILENAME_OVERRIDES[lower] ?? `${lower}_square`
-  return `https://raw.communitydragon.org/latest/game/assets/characters/${lower}/hud/${filename}.tft_set${setNum}.png`
+  // CommunityDragon의 HUD 기물 아이콘은 `.tft_setN` 접미사가 없는 PNG로 제공된다.
+  // 예: TFT17_Gnar → tft17_gnar_square.png. 이전 URL은 존재하지 않아 최신 세트 기물이
+  // 전부 깨진 이미지로 표시됐다.
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${lower}/hud/${filename}.png`
 }
 
 /** rarity(0-4) → 비용 등급 Tailwind border 클래스 */
