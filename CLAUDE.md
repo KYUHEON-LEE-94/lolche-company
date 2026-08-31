@@ -76,13 +76,13 @@ app/
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
       history/route.ts          # 랭크 히스토리 조회
     cron/
-      notify-reminders/route.ts # 내전 시작 임박 디스코드 알림 (GET, Bearer 인증). Vercel Hobby 크론 빈도 제한 때문에
-                                # GitHub Actions(.github/workflows/notify-reminders.yml)가 10분마다 호출한다.
+      notify-reminders/route.ts # 내전 시작 임박 디스코드 알림 (GET, Bearer 인증). ★ 외부 크론(cron-job.org)이 5~10분마다 호출한다.
+                                # (GitHub Actions 예약은 분 단위 주기를 대량 드롭해서 cron-job.org 로 이전 — README '자동화' 참조)
                                 # reminder_sent_at 으로 내전당 1회만 발송(20260734). BYPASS_PATHS 등록 필수
     admin/
       sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동). GET은 커서 배치 1개만 처리한다.
-                                # Vercel Hobby 크론(하루 1회)로는 배치 1개뿐이라, GitHub Actions
-                                # (.github/workflows/sync-ranks.yml)가 매시간 커서를 따라 반복 호출해 전원 갱신한다.
+                                # ★ 외부 크론(cron-job.org)이 30분~1시간마다 호출한다(호출당 2명씩, stale 1시간+만 갱신).
+                                # (GitHub Actions 예약은 신뢰성이 낮아 이전 — README '자동화' 참조)
       sync-steam/route.ts       # 스팀 캐시 동기화 (GET=크론, POST=관리자)
       members/                  # 멤버 CRUD API (route=목록, create/update/[id])
         [id]/approve/route.ts   # 승인 + 즉시 동기화

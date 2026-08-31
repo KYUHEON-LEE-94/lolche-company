@@ -80,18 +80,35 @@
 
 ## ⏱ 자동화 (스케줄)
 
-Vercel Hobby 는 크론 빈도(하루 1회)·함수 시간에 제약이 있어, 잦은 주기 작업은
-**GitHub Actions 가 서버 엔드포인트를 주기적으로 호출**하는 방식으로 처리한다
-(`.github/workflows/`, `Authorization: Bearer CRON_SECRET` 인증).
+모든 스케줄 작업은 **서버 엔드포인트를 외부에서 주기적으로 호출**하는 방식이다
+(전부 `Authorization: Bearer <CRON_SECRET>` 헤더 · **GET** 인증).
 
-| 작업 | 주기 | 방식 |
-|---|---|---|
-| **전체 랭크 동기화** | 매시간 | GitHub Actions 가 `sync-all` 을 커서 따라 반복 호출해 승인 멤버 전원 갱신(stale 1시간+만) |
-| **내전 시작 임박 알림** | 10분마다 | GitHub Actions → `notify-reminders` (30분 전 1회 발송) |
-| 스팀 캐시 동기화 | 매일 11:00 | Vercel Cron |
+| 작업 | 주기 | 트리거 | 엔드포인트 |
+|---|---|---|---|
+| **전체 랭크 동기화**(롤체·롤 티어/전적) | 30분~1시간 | **cron-job.org** | `/api/admin/sync-all` |
+| **내전 시작 임박 알림** | 5~10분 | **cron-job.org** | `/api/cron/notify-reminders` |
+| 패치 노트(롤체·롤)·스팀 할인 | 매일 | GitHub Actions | `/api/cron/sync-tft-patch-notes` 등 |
+| 이달의 음성왕 포인트 | 매달 1~3일 | GitHub Actions | `/api/cron/monthly-voice-award` |
 
-> GitHub 저장소 Secrets 에 `SITE_URL`·`CRON_SECRET`, Vercel 환경변수에
-> `CRON_SECRET`·`DISCORD_WEBHOOK_URL` 등록 필요.
+### ⚠ 고빈도 크론은 cron-job.org 를 쓴다 (GitHub Actions 아님)
+
+GitHub Actions 의 예약 실행(`schedule:`)은 **best-effort 라 분 단위 주기를 대량 드롭한다.**
+실측상 30분 예정이 하루 6회, 10분 예정이 하루 6회만 실행돼(≈87~96% 누락) 랭크가 2~6시간
+밀리고 내전 임박 알림이 놓쳤다. 그래서 **잦은 주기(랭크 동기화·내전 알림)는
+[cron-job.org](https://cron-job.org) 로 옮겼고, 해당 GitHub 워크플로는 삭제**했다.
+저빈도(일간 패치노트·월간 음성왕)는 GitHub 이 안정적이라 그대로 둔다.
+
+**cron-job.org 설정 (401 이 나면 헤더 누락이다):**
+1. 각 job 편집 → **Headers** 에 커스텀 헤더 추가
+   - Key: `Authorization` / Value: `Bearer <CRON_SECRET 값>` (Vercel 환경변수 `CRON_SECRET` 과 동일, **`Bearer ` 접두사 + 공백 1개 필수**)
+2. Method: **GET**
+3. URL: `https://<배포도메인>/api/admin/sync-all`, `https://<배포도메인>/api/cron/notify-reminders`
+
+> `sync-all` 은 커서 배치(호출당 2명)라 한 번에 전원이 안 돌 수 있으나, 30분마다 호출하면
+> 서버가 "stale 1시간+"만 골라 갱신하므로 자주 때려도 Riot 호출은 과하지 않다(중복도 서버가 막음).
+
+> Vercel 환경변수에 `CRON_SECRET`·`DISCORD_WEBHOOK_URL` 등록 필요.
+> GitHub 저장소 Secrets(`SITE_URL`·`CRON_SECRET`)는 남은 일간/월간 워크플로가 계속 쓴다.
 
 Discord 활동 보기를 사용하려면 Vercel에 아래 서버 환경변수를 추가한 뒤 재배포합니다. API 키 실제 값은 저장소에 기록하지 않습니다.
 
