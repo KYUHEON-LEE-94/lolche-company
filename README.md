@@ -104,8 +104,11 @@ GitHub Actions 의 예약 실행(`schedule:`)은 **best-effort 라 분 단위 �
 2. Method: **GET**
 3. URL: `https://<배포도메인>/api/admin/sync-all`, `https://<배포도메인>/api/cron/notify-reminders`
 
-> `sync-all` 은 커서 배치(호출당 2명)라 한 번에 전원이 안 돌 수 있으나, 30분마다 호출하면
-> 서버가 "stale 1시간+"만 골라 갱신하므로 자주 때려도 Riot 호출은 과하지 않다(중복도 서버가 막음).
+> `sync-all` 은 한 배치가 멤버당 ~8초(매치 상세 대기)라 응답이 30초를 넘긴다.
+> cron-job.org 타임아웃(무료 30초)에 걸려 실제로는 성공해도 "Failed (timeout)"으로 기록되므로,
+> **GET 크론은 작업을 백그라운드로 예약하고 즉시 202 를 반환**한다(`after()`, 실제 동기화는 Vercel
+> `maxDuration=300s` 안에서 계속 돈다). 크론은 202 를 성공으로 보고, 결과는 Vercel 로그·`sync_logs`에서 확인.
+> 서버가 매 호출마다 "stale 1시간+"만 골라 처리하므로 30분마다 자주 때려도 Riot 호출은 과하지 않다.
 
 > Vercel 환경변수에 `CRON_SECRET`·`DISCORD_WEBHOOK_URL` 등록 필요.
 > GitHub 저장소 Secrets(`SITE_URL`·`CRON_SECRET`)는 남은 일간/월간 워크플로가 계속 쓴다.

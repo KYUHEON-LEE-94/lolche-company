@@ -1,5 +1,5 @@
 // app/api/admin/sync-all/route.ts
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { syncOneMember } from '@/lib/sync/syncMember'
@@ -242,7 +242,15 @@ export async function POST(req: Request) {
 }
 
 /**
- * ✅ GET: Vercel Cron 실행
+ * ✅ GET: 외부 크론(cron-job.org) 실행
+ *
+ * ⚠ 배치 동기화는 멤버당 ~8초(매치 상세 1200ms 대기)라 응답까지 30초를 넘기기 쉽다.
+ * cron-job.org 의 요청 타임아웃은 30초(무료)라 동기적으로 처리하면 실제로는 성공(200)해도
+ * 크론 쪽은 "Failed (timeout)" 으로 기록하고, 반복되면 job 을 자동 비활성화한다.
+ * → 여기서는 **작업을 after() 로 예약하고 즉시 202 를 반환**한다. 실제 동기화는 응답 이후
+ *   백그라운드(Vercel waitUntil, maxDuration=300s 내)에서 끝난다. 크론은 곧바로 응답을 받는다.
+ * 커서 체이닝은 쓰지 않는다 — cron-job.org 는 같은 URL 을 주기적으로 부르고, 매 호출마다
+ * 서버가 "stale 1시간+"만 골라 처리하므로 반복 호출이 안전하다(중복은 stale/running 가드가 막음).
  */
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -254,11 +262,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const raw = searchParams.get('limit')
   const parsedLimit = raw && Number.isFinite(Number(raw)) ? Number(raw) : undefined
-  return runSyncAll({
-    limit: parsedLimit,
-    cursorId: searchParams.get('cursorId'),
-    trigger: 'cron',
-    doCleanup: true,
-    req,
+  const cursorId = searchParams.get('cursorId')
+
+  after(async () => {
+    try {
+      await runSyncAll({ limit: parsedLimit, cursorId, trigger: 'cron', doCleanup: true, req })
+    } catch (e) {
+      console.error('[sync-all] background run failed', e instanceof Error ? e.message : e)
+    }
   })
+
+  // 크론은 이 응답만 보고 성공으로 기록한다. 실제 결과는 Vercel 로그·sync_logs 에서 확인.
+  return NextResponse.json({ scheduled: true, trigger: 'cron' }, { status: 202 })
 }
