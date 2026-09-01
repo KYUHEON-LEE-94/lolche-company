@@ -87,8 +87,12 @@
 |---|---|---|---|
 | **전체 랭크 동기화**(롤체·롤 티어/전적) | 30분~1시간 | **cron-job.org** | `/api/admin/sync-all` |
 | **내전 시작 임박 알림** | 5~10분 | **cron-job.org** | `/api/cron/notify-reminders` |
+| **스팀 캐시**(보유 게임·persona·온라인) | 매일 | **cron-job.org** | `/api/admin/sync-steam` |
 | 패치 노트(롤체·롤)·스팀 할인 | 매일 | GitHub Actions | `/api/cron/sync-tft-patch-notes` 등 |
 | 이달의 음성왕 포인트 | 매달 1~3일 | GitHub Actions | `/api/cron/monthly-voice-award` |
+
+> 스케줄 트리거는 **cron-job.org(고빈도·스팀) + GitHub Actions(일간 패치노트·월간 음성왕)** 두 곳뿐이다.
+> Vercel Cron(`vercel.json`)은 cron-job.org 와 중복이라 제거했다 — 트리거를 한 곳에 모아 중복 호출을 없앤다.
 
 ### ⚠ 고빈도 크론은 cron-job.org 를 쓴다 (GitHub Actions 아님)
 

@@ -10,7 +10,7 @@ Riot Games API로 TFT 솔로/더블업 랭크를 동기화하고 실시간 리�
 - **외부 API:** Riot Games TFT API
 - **스타일:** Tailwind CSS v4 + Framer Motion
 - **인증:** Supabase Auth — Discord OAuth 전용 (이메일/패스워드 로그인 미지원). `NEXT_PUBLIC_DISCORD_GUILD_ID` 설정 시 해당 Discord 서버 멤버만 로그인 허용(콜백에서 강제)
-- **배포:** Vercel (크론 매일 09:30 자동 동기화)
+- **배포:** Vercel. 스케줄 트리거는 외부 크론(cron-job.org)이 담당 — 고빈도 랭크/스팀/알림 동기화(README '자동화' 참조)
 
 ## 빌드/실행 명령어
 
@@ -276,8 +276,9 @@ LoL 단계 전체를 건너뛰고 `null`을 반환해 기존 저장값을 덮어
           → tft_matches, tft_match_participants 업데이트
       → writeSyncLog() — sync_logs 테이블 기록
 
-[Vercel Cron 09:30 KST]
+[외부 크론(cron-job.org) 30분~1시간 주기]
   → GET /api/admin/sync-all (Authorization: Bearer CRON_SECRET 또는 ADMIN_SYNC_TOKEN)
+      → ★ after()로 배치를 백그라운드 예약하고 즉시 202 반환 (cron-job.org 30초 타임아웃 회피)
       → (stale AND not-running) OR stuck-running 멤버 배치 동기화
       → doCleanup=true: sync_logs TTL 정리 (success 7일, 나머지 30일)
 
@@ -285,7 +286,7 @@ LoL 단계 전체를 건너뛰고 `null`을 반환해 기존 저장값을 덮어
   → POST /api/admin/sync-all (requireAdmin() 세션 체크)
       → 위와 동일한 배치 동기화, doCleanup=false
 
-[스팀 — Vercel Cron 11:00 KST] (sync-all 09:30과 겹치지 않게 배치)
+[스팀 — 외부 크론(cron-job.org) 매일]
   → GET /api/admin/sync-steam (Authorization: Bearer CRON_SECRET 또는 ADMIN_SYNC_TOKEN)
       → listSteamMembers()  status='approved' + steam_id64 not null
       → GetPlayerSummaries 1회(≤100명 배치)로 persona/avatar/visibility 갱신

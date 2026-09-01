@@ -1,13 +1,3 @@
 {
-  "regions": ["bom1"],
-  "crons": [
-    {
-      "path": "/api/admin/sync-all",
-      "schedule": "30 9 * * *"
-    },
-    {
-      "path": "/api/admin/sync-steam",
-      "schedule": "0 11 * * *"
-    }
-  ]
+  "regions": ["bom1"]
 }
