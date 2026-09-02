@@ -28,6 +28,8 @@ export function prefetchMemberOverview(memberId: string, queue: 'solo' | 'double
   void cachedJson(`/api/members/${memberId}/history`).catch(() => {})
   void cachedJson(`/api/members/${memberId}/stats?queue=${queue}`).catch(() => {})
   void cachedJson(`/api/members/${memberId}/accounts`).catch(() => {})
+  // 전적 탭 매치도 예열한다. URL·persist 는 아래 matches load() 와 정확히 일치해야 캐시가 공유된다.
+  void cachedJson(`/api/members/${memberId}/matches?queue=${queue}&limit=10`, { persist: true }).catch(() => {})
 }
 
 type TopUnit = {
@@ -474,13 +476,14 @@ export default function MemberDetailPanel({
       url: string,
       apply: (d: unknown) => void,
       onFail: () => void,
+      persist = false,
     ) => {
       const store = requestedRef.current
       if (store.key !== key) requestedRef.current = { key, set: new Set() }
       const set = requestedRef.current.set
       if (set.has(resource)) return
       set.add(resource)
-      cachedJson<unknown>(url)
+      cachedJson<unknown>(url, { persist })
         .then((data) => {
           if (activeKeyRef.current === key) apply(data)
         })
@@ -518,6 +521,7 @@ export default function MemberDetailPanel({
         `/api/members/${member.id}/matches?queue=${queue}&limit=10`,
         (d) => setMatches((d as { matches?: MatchRow[] }).matches ?? []),
         () => setMatches([]),
+        true,
       )
     }
     // 계정 탭은 "2개 이상일 때만" 노출하므로 개수를 알기 위해 탭과 무관하게 부른다.
