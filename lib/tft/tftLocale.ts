@@ -5,6 +5,8 @@ export type KrMaps = {
   augments: KrMap
   champions: KrMap
   championImages: KrMap
+  cdUnitNames: KrMap
+  cdUnitImages: KrMap
 }
 
 function cleanName(raw: string): string {
@@ -21,10 +23,20 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
   tft17_rhaast: 'tft17_kayn_slay_square',
 }
 
+// CommunityDragon tileIcon(assets/... , .tex/.dds) → 실제 이미지 URL.
+// 세트별 `/hud/` 유무가 tileIcon 경로에 이미 인코딩되어 있어 규칙만으로는 못 맞추는 세트18을 해결한다.
+function cdIconUrl(assetPath: string): string {
+  const p = assetPath.toLowerCase().replace(/\.(tex|dds)$/, '.png')
+  return `https://raw.communitydragon.org/latest/game/${p}`
+}
+
 /** character_id → Data Dragon 이미지 URL, 메타데이터 누락 시 Community Dragon fallback */
 export function getUnitImageUrl(characterId: string, maps: KrMaps): string {
   const officialUrl = maps.championImages[characterId]
   if (officialUrl) return officialUrl
+
+  const cdUrl = maps.cdUnitImages[characterId]
+  if (cdUrl) return cdUrl
 
   const lower = characterId.toLowerCase()
   const filename = IMAGE_FILENAME_OVERRIDES[lower] ?? `${lower}_square`
@@ -53,6 +65,8 @@ async function fetchKrMaps(): Promise<KrMaps> {
   const augments: KrMap = {}
   const champions: KrMap = {}
   const championImages: KrMap = {}
+  const cdUnitNames: KrMap = {}
+  const cdUnitImages: KrMap = {}
 
   try {
     const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json', {
@@ -101,7 +115,33 @@ async function fetchKrMaps(): Promise<KrMaps> {
     console.error('tftLocale fetch error', e instanceof Error ? e.message : e)
   }
 
-  return { traits, augments, champions, championImages }
+  // ddragon tft-champion.json에 없는 세트18 유닛(DA_Sentinel18, DA_18_Ahri 등)의
+  // 한글 이름·이미지 폴백. ddragon try와 분리해 한쪽 실패가 다른 맵을 지우지 않게 한다.
+  try {
+    const cdRes = await fetch(
+      'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json',
+      { next: { revalidate: 86400 } },
+    )
+    if (cdRes.ok) {
+      const cd = (await cdRes.json()) as {
+        setData?: Array<{
+          champions?: Array<{ apiName?: string; characterName?: string; name?: string; tileIcon?: string }>
+        }>
+      }
+      for (const set of cd.setData ?? []) {
+        for (const c of set.champions ?? []) {
+          const key = c.apiName ?? c.characterName
+          if (!key) continue
+          if (c.name && !cdUnitNames[key]) cdUnitNames[key] = c.name
+          if (c.tileIcon && !cdUnitImages[key]) cdUnitImages[key] = cdIconUrl(c.tileIcon)
+        }
+      }
+    }
+  } catch (e) {
+    console.error('tftLocale CD fetch error', e instanceof Error ? e.message : e)
+  }
+
+  return { traits, augments, champions, championImages, cdUnitNames, cdUnitImages }
 }
 
 export async function getKrMaps(): Promise<KrMaps> {
@@ -120,5 +160,5 @@ export function toKrAugmentName(id: string, maps: KrMaps): string {
 }
 
 export function toKrChampionName(characterId: string, maps: KrMaps): string {
-  return maps.champions[characterId] ?? cleanName(characterId)
+  return maps.champions[characterId] ?? maps.cdUnitNames[characterId] ?? cleanName(characterId)
 }
