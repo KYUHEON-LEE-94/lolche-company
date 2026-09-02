@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { formatSteamMoney, type SteamFeaturedDeal } from '@/lib/steam/featuredDealsShared'
 import { LOL_ENABLED } from '@/lib/constants/features'
 import { CARD } from '@/lib/ui/styles'
@@ -14,16 +14,34 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'steam', label: 'Steam 할인' },
 ]
 
+const NEW_WINDOW_MS = 24 * 60 * 60 * 1000
+
 function formatDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }).format(date)
 }
 
+const NewBadge = () => <span className="shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-black uppercase leading-none tracking-wide text-white">New</span>
+
 export default function HomeNews({ patchNotes, lolPatchNotes = [], deals }: { patchNotes: HomePatchNote[]; lolPatchNotes?: HomePatchNote[]; deals: SteamFeaturedDeal[] | null }) {
   const [activeTab, setActiveTab] = useState<TabId>('tft')
+  const [now, setNow] = useState<number | null>(null)
   const idPrefix = useId()
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  // ISR(revalidate 60) 캐시 HTML 에 New 판정을 박제하지 않도록 마운트 후 클라이언트 시각으로만 비교한다.
+  // 마운트 전에는 null → 배지 미렌더(SSR/CSR 동일)로 하이드레이션 불일치를 피하고, 60초 간격으로 경계를 자동 소멸시킨다.
+  useEffect(() => {
+    const update = () => setNow(Date.now())
+    const initial = setTimeout(update, 0)
+    const timer = setInterval(update, 60_000)
+    return () => { clearTimeout(initial); clearInterval(timer) }
+  }, [])
+  const isNew = (value?: string | null) => {
+    if (now === null || !value) return false
+    const published = Date.parse(value)
+    return Number.isFinite(published) && now - published >= 0 && now - published < NEW_WINDOW_MS
+  }
   const selectTab = (index: number) => { const tab = TABS[index]; if (!tab) return; setActiveTab(tab.id); tabRefs.current[index]?.focus() }
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key === 'ArrowRight') { event.preventDefault(); selectTab((index + 1) % TABS.length) }
@@ -38,12 +56,12 @@ export default function HomeNews({ patchNotes, lolPatchNotes = [], deals }: { pa
         {TABS.map((tab, index) => { const active = activeTab === tab.id; const tabId = `${idPrefix}-${tab.id}-tab`; const panelId = `${idPrefix}-${tab.id}-panel`; return <button key={tab.id} ref={(element) => { tabRefs.current[index] = element }} id={tabId} type="button" role="tab" aria-selected={active} aria-controls={panelId} tabIndex={active ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={(event) => onKeyDown(event, index)} className={`min-h-10 shrink-0 rounded-lg px-3 text-xs font-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 ${active ? 'bg-brand text-white shadow-sm' : 'text-muted hover:bg-surface hover:text-fg'}`}>{tab.label}</button> })}
       </div>
       <div id={`${idPrefix}-tft-panel`} role="tabpanel" aria-labelledby={`${idPrefix}-tft-tab`} hidden={activeTab !== 'tft'} className="flex flex-1 flex-col">
-        {patchNotes.length === 0 ? <p className="rounded-xl border border-line bg-surface-2 px-4 py-5 text-sm text-subtle">현재 시즌의 공개 패치 노트를 준비 중입니다.</p> : <ul className="space-y-2">{patchNotes.map((note) => <li key={note.id} className="rounded-xl border border-line bg-surface px-3 py-3"><div className="flex items-start justify-between gap-3"><p className="min-w-0 truncate text-sm font-black text-fg">{note.title}</p><span className="shrink-0 text-[11px] text-subtle">{formatDate(note.publishedAt)}</span></div>{note.summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{note.summary}</p>}{note.sourceUrl && <a href={note.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-brand-ink hover:underline">공식 노트 보기 →</a>}</li>)}</ul>}
+        {patchNotes.length === 0 ? <p className="rounded-xl border border-line bg-surface-2 px-4 py-5 text-sm text-subtle">현재 시즌의 공개 패치 노트를 준비 중입니다.</p> : <ul className="space-y-2">{patchNotes.map((note) => <li key={note.id} className="rounded-xl border border-line bg-surface px-3 py-3"><div className="flex items-start justify-between gap-3"><p className="min-w-0 truncate text-sm font-black text-fg">{note.title}</p><span className="flex shrink-0 items-center gap-1.5">{isNew(note.publishedAt) && <NewBadge />}<span className="text-[11px] text-subtle">{formatDate(note.publishedAt)}</span></span></div>{note.summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{note.summary}</p>}{note.sourceUrl && <a href={note.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-brand-ink hover:underline">공식 노트 보기 →</a>}</li>)}</ul>}
         <Link href="/tft" className="mt-4 inline-flex min-h-10 items-center text-xs font-black text-brand-ink hover:underline xl:mt-auto">롤체 패치 노트 전체 보기 →</Link>
       </div>
       {LOL_ENABLED && (
       <div id={`${idPrefix}-lol-panel`} role="tabpanel" aria-labelledby={`${idPrefix}-lol-tab`} hidden={activeTab !== 'lol'} className="flex flex-1 flex-col">
-        {lolPatchNotes.length === 0 ? <p className="rounded-xl border border-line bg-surface-2 px-4 py-5 text-sm text-subtle">최근 롤 패치 소식을 준비 중입니다. 다음 자동 갱신 후 표시됩니다.</p> : <ul className="space-y-2">{lolPatchNotes.map((note) => <li key={note.id} className="rounded-xl border border-line bg-surface px-3 py-3"><div className="flex items-start justify-between gap-3"><p className="min-w-0 truncate text-sm font-black text-fg">{note.title}</p><span className="shrink-0 text-[11px] text-subtle">{formatDate(note.publishedAt)}</span></div>{note.summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{note.summary}</p>}{note.sourceUrl && <a href={note.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-brand-ink hover:underline">공식 노트 보기 →</a>}</li>)}</ul>}
+        {lolPatchNotes.length === 0 ? <p className="rounded-xl border border-line bg-surface-2 px-4 py-5 text-sm text-subtle">최근 롤 패치 소식을 준비 중입니다. 다음 자동 갱신 후 표시됩니다.</p> : <ul className="space-y-2">{lolPatchNotes.map((note) => <li key={note.id} className="rounded-xl border border-line bg-surface px-3 py-3"><div className="flex items-start justify-between gap-3"><p className="min-w-0 truncate text-sm font-black text-fg">{note.title}</p><span className="flex shrink-0 items-center gap-1.5">{isNew(note.publishedAt) && <NewBadge />}<span className="text-[11px] text-subtle">{formatDate(note.publishedAt)}</span></span></div>{note.summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{note.summary}</p>}{note.sourceUrl && <a href={note.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-brand-ink hover:underline">공식 노트 보기 →</a>}</li>)}</ul>}
         <Link href="/lol" className="mt-4 inline-flex min-h-10 items-center text-xs font-black text-brand-ink hover:underline xl:mt-auto">롤 랭킹 보기 →</Link>
       </div>
       )}

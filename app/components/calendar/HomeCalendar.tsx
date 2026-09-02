@@ -11,9 +11,8 @@ type EventType = 'birthday' | 'anniversary' | 'event'
 type Recurrence = 'none' | 'yearly'
 type CalendarEventView = { source: 'calendar'; id: string; title: string; description: string | null; event_type: EventType; recurrence: Recurrence; event_date: string | null; event_month: number; event_day: number; is_all_day: boolean; event_time: string | null; member_id: string; member_name: string; can_manage: boolean }
 type CustomGameView = { source: 'custom_game'; id: string; title: string; event_day: number; event_time: string; scheduled_at: string; status: string; game_label: string; href: string; can_manage: false }
-type SystemEventView = { source: 'system'; system_type: 'tft_patch_note' | 'steam_deal'; id: string; title: string; description: string | null; event_day: number; event_time: string | null; href: string; can_manage: false }
 type SeasonEndView = { source: 'season_end'; id: string; title: string; event_day: number; event_time: string | null; href: string; can_manage: false }
-type CalendarItem = CalendarEventView | CustomGameView | SystemEventView | SeasonEndView
+type CalendarItem = CalendarEventView | CustomGameView | SeasonEndView
 type MemberOption = { id: string; member_name: string }
 type Permissions = { isAdmin: boolean; canCreate: boolean; canCreateGame: boolean; viewerMemberId: string | null }
 type CalendarPayload = { events: CalendarItem[]; memberOptions: MemberOption[]; permissions: Permissions; migration_required: boolean }
@@ -37,7 +36,6 @@ function isCalendarItem(value: unknown): value is CalendarItem {
   if (!value || typeof value !== 'object') return false
   const row = value as Record<string, unknown>
   if (row.source === 'custom_game') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string'
-  if (row.source === 'system') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string' && (row.system_type === 'tft_patch_note' || row.system_type === 'steam_deal')
   if (row.source === 'season_end') return typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.href === 'string'
   return row.source === 'calendar' && typeof row.id === 'string' && typeof row.title === 'string' && typeof row.event_day === 'number' && typeof row.event_type === 'string' && typeof row.member_id === 'string'
 }
@@ -64,7 +62,19 @@ export default function HomeCalendar() {
   const [createMode, setCreateMode] = useState<'event' | 'game'>('event')
   const [gameForm, setGameForm] = useState(() => emptyGameForm(today.year, today.month, today.day))
   const [createdGame, setCreatedGame] = useState<{ id: string; title: string } | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const requestId = useRef(0)
+  const expandButtonRef = useRef<HTMLButtonElement>(null)
+  const expandCloseRef = useRef<HTMLButtonElement>(null)
+
+  const closeExpanded = useCallback(() => { setExpanded(false); expandButtonRef.current?.focus() }, [])
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape') closeExpanded() }
+    document.addEventListener('keydown', onKey)
+    expandCloseRef.current?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [expanded, closeExpanded])
 
   const load = useCallback(async (signal?: AbortSignal) => {
     const id = ++requestId.current
@@ -154,6 +164,30 @@ export default function HomeCalendar() {
     catch (e) { setFormError(e instanceof Error ? e.message : '오류 발생') } finally { setSaving(false) }
   }
 
+  function renderCell(cell: CalendarCell, index: number, maxPerCell: number, minHeight: string) {
+    const events = cell.isCurrentMonth ? byDay.get(cell.day) ?? [] : []
+    const isToday = cell.day === today.day && cell.year === today.year && cell.month === today.month
+    const weekday = index % 7
+    const canCreate = payload?.permissions.canCreate === true
+    return <div
+      key={`${cell.year}-${cell.month}-${cell.day}`}
+      className={`relative ${minHeight} min-w-0 overflow-hidden border-b border-r border-line p-1 sm:p-1.5 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
+      onClick={() => canCreate && openCellCreate(cell)}
+      role={canCreate ? 'button' : undefined}
+      tabIndex={canCreate ? 0 : undefined}
+      onKeyDown={(event) => { if (canCreate && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openCellCreate(cell) } }}
+      aria-label={`${cell.year}년 ${cell.month}월 ${cell.day}일${canCreate ? ' 일정 추가' : ''}`}
+    >
+      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${isToday ? 'bg-brand text-white shadow-sm' : !cell.isCurrentMonth ? 'text-faint' : weekday === 0 ? 'text-danger-ink' : weekday === 6 ? 'text-brand-ink' : 'text-muted'}`}>{cell.day}</span>
+      {cell.isCurrentMonth && <div className="mt-1 space-y-1">{events.slice(0, maxPerCell).map((event) => {
+        if (event.source === 'custom_game') return <Link key={`game-${event.id}`} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time.slice(0, 5)} · ${event.game_label} · ${event.title}`} className="block w-full truncate rounded border border-amber-400/30 bg-amber-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-warn-ink sm:px-1.5 sm:text-[11px]">⚔ {event.event_time.slice(0, 5)} {event.title}</Link>
+        if (event.source === 'season_end') return <Link key={event.id} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time?.slice(0, 5) ?? ''} · ${event.title}`} className="block w-full truncate rounded border border-rose-400/30 bg-rose-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-rose-700 dark:text-rose-300 sm:px-1.5 sm:text-[11px]">⌛ {event.event_time?.slice(0, 5)} {event.title}</Link>
+        const editable = event.can_manage
+        return <button key={`event-${event.id}`} type="button" disabled={!editable} onClick={(clickEvent) => { clickEvent.stopPropagation(); if (editable) openEdit(event) }} title={`${LABEL[event.event_type]} · ${event.member_name} · ${event.title}`} className={`block w-full truncate rounded border px-1 py-1 text-left text-[9px] font-bold leading-tight sm:px-1.5 sm:text-[11px] ${CHIP[event.event_type]} disabled:cursor-default`}>{event.event_type === 'event' && !event.is_all_day ? `${event.event_time?.slice(0, 5)} ` : ''}{event.title}</button>
+      })}{events.length > maxPerCell && <p className="truncate px-1 text-[9px] font-bold text-subtle">+{events.length - maxPerCell}개</p>}</div>}
+    </div>
+  }
+
   return <section id="calendar" className={`${CARD} scroll-mt-20 overflow-hidden xl:h-full`} aria-labelledby="calendar-title">
     <div className="border-b border-line px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-5">
       <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-ink">Community calendar</p><div className="mt-1 flex items-baseline gap-3"><h2 id="calendar-title" className="text-xl font-black text-fg">멤버 일정</h2><strong className="text-sm font-black text-muted">{view.year}년 {view.month}월</strong></div></div>
@@ -161,6 +195,7 @@ export default function HomeCalendar() {
         <button className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => move(-1)} aria-label="이전 달">‹</button>
         <button className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => move(1)} aria-label="다음 달">›</button>
         <button className={`${BTN_GHOST} min-h-11 px-3`} onClick={() => setView({ year: today.year, month: today.month })}>오늘</button>
+        <button ref={expandButtonRef} className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => setExpanded(true)} aria-label="캘린더 크게 보기" aria-haspopup="dialog">⤢</button>
         {payload?.permissions.canCreate && <button className={`${BTN_PRIMARY} min-h-11 min-w-0 flex-1 px-3 sm:flex-none`} onClick={() => openCreate()}>일정 추가</button>}
       </div>
     </div>
@@ -177,36 +212,31 @@ export default function HomeCalendar() {
         style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
         data-calendar-grid="month"
       >
-        {cells.map((cell, index) => {
-          const events = cell.isCurrentMonth ? byDay.get(cell.day) ?? [] : []
-          const isToday = cell.day === today.day && cell.year === today.year && cell.month === today.month
-          const weekday = index % 7
-          const canCreate = payload?.permissions.canCreate === true
-          return <div
-            key={`${cell.year}-${cell.month}-${cell.day}`}
-            className={`relative min-h-[54px] min-w-0 overflow-hidden border-b border-r border-line p-1 sm:min-h-[64px] sm:p-1.5 ${cell.isCurrentMonth ? 'bg-surface' : 'bg-surface-2/55'}`}
-            onClick={() => canCreate && openCellCreate(cell)}
-            role={canCreate ? 'button' : undefined}
-            tabIndex={canCreate ? 0 : undefined}
-            onKeyDown={(event) => { if (canCreate && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openCellCreate(cell) } }}
-            aria-label={`${cell.year}년 ${cell.month}월 ${cell.day}일${canCreate ? ' 일정 추가' : ''}`}
-          >
-            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${isToday ? 'bg-brand text-white shadow-sm' : !cell.isCurrentMonth ? 'text-faint' : weekday === 0 ? 'text-danger-ink' : weekday === 6 ? 'text-brand-ink' : 'text-muted'}`}>{cell.day}</span>
-            {cell.isCurrentMonth && <div className="mt-1 space-y-1">{events.slice(0, 2).map((event) => {
-              if (event.source === 'custom_game') return <Link key={`game-${event.id}`} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time.slice(0, 5)} · ${event.game_label} · ${event.title}`} className="block w-full truncate rounded border border-amber-400/30 bg-amber-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-warn-ink sm:px-1.5 sm:text-[11px]">⚔ {event.event_time.slice(0, 5)} {event.title}</Link>
-              if (event.source === 'season_end') return <Link key={event.id} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.event_time?.slice(0, 5) ?? ''} · ${event.title}`} className="block w-full truncate rounded border border-rose-400/30 bg-rose-400/10 px-1 py-1 text-left text-[9px] font-bold leading-tight text-rose-700 dark:text-rose-300 sm:px-1.5 sm:text-[11px]">⌛ {event.event_time?.slice(0, 5)} {event.title}</Link>
-              if (event.source === 'system') {
-                const isPatchNote = event.system_type === 'tft_patch_note'
-                return <Link key={event.id} href={event.href} onClick={(clickEvent) => clickEvent.stopPropagation()} title={`${event.title}${event.description ? ` · ${event.description}` : ''}`} className={`block w-full truncate rounded border px-1 py-1 text-left text-[9px] font-bold leading-tight sm:px-1.5 sm:text-[11px] ${isPatchNote ? 'border-brand/30 bg-brand/10 text-brand-ink' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300'}`}>{isPatchNote ? '✦' : '♨'} {event.title}</Link>
-              }
-              const editable = event.can_manage
-              return <button key={`event-${event.id}`} type="button" disabled={!editable} onClick={(clickEvent) => { clickEvent.stopPropagation(); if (editable) openEdit(event) }} title={`${LABEL[event.event_type]} · ${event.member_name} · ${event.title}`} className={`block w-full truncate rounded border px-1 py-1 text-left text-[9px] font-bold leading-tight sm:px-1.5 sm:text-[11px] ${CHIP[event.event_type]} disabled:cursor-default`}>{event.event_type === 'event' && !event.is_all_day ? `${event.event_time?.slice(0, 5)} ` : ''}{event.title}</button>
-            })}{events.length > 2 && <p className="truncate px-1 text-[9px] font-bold text-subtle">+{events.length - 2}개</p>}</div>}
-          </div>
-        })}
+        {cells.map((cell, index) => renderCell(cell, index, 2, 'min-h-[54px] sm:min-h-[64px]'))}
       </div>
       {loading && <p className="border-t border-line px-5 py-3 text-xs text-subtle">일정을 불러오는 중…</p>}
     </>}
+    {expanded && <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="calendar-expanded-title" onMouseDown={(e) => { if (e.target === e.currentTarget) closeExpanded() }}>
+      <div className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
+          <h3 id="calendar-expanded-title" className="min-w-0 truncate text-lg font-black text-fg">멤버 일정 · {view.year}년 {view.month}월</h3>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => move(-1)} aria-label="이전 달">‹</button>
+            <button className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={() => move(1)} aria-label="다음 달">›</button>
+            <button className={`${BTN_GHOST} min-h-11 px-3`} onClick={() => setView({ year: today.year, month: today.month })}>오늘</button>
+            <button ref={expandCloseRef} className={`${BTN_NEUTRAL} min-h-11 px-3`} onClick={closeExpanded} aria-label="닫기">×</button>
+          </div>
+        </div>
+        <div className="overflow-y-auto">
+          <div className="border-b border-line bg-surface-2/70" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+            {WEEKDAYS.map((day, i) => <div key={day} className={`border-r border-line py-1.5 text-center text-xs font-black last:border-r-0 ${i === 0 ? 'text-danger-ink' : i === 6 ? 'text-brand-ink' : 'text-muted'}`}>{day}</div>)}
+          </div>
+          <div className="border-l border-line" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }} data-calendar-grid="expanded">
+            {cells.map((cell, index) => renderCell(cell, index, 8, 'min-h-[104px] sm:min-h-[132px]'))}
+          </div>
+        </div>
+      </div>
+    </div>}
     {editing !== undefined && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="event-form-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !saving) setEditing(undefined) }}>
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-panel p-5 shadow-2xl sm:rounded-2xl sm:p-6">
         <div className="flex items-center justify-between"><h3 id="event-form-title" className="text-lg font-black text-fg">{editing ? '일정 수정' : createMode === 'game' ? '내전 모집' : '일정 추가'}</h3><button className={`${BTN_NEUTRAL} min-h-11`} disabled={saving} onClick={() => setEditing(undefined)} aria-label="닫기">×</button></div>
