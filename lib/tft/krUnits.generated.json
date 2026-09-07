@@ -1,0 +1,2955 @@
+{
+  "DA_18_Ahri": {
+    "name": "아리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_ahri/tft18_ahri_square.png"
+  },
+  "DA_18_Akali_AD": {
+    "name": "아칼리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_akali/tft18_akali_square.png"
+  },
+  "DA_18_Alistar": {
+    "name": "알리스타",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_alistar/tft18_alistar_square.png"
+  },
+  "DA_18_Alune": {
+    "name": "알룬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_alune/hud/tft18_alune_square.png"
+  },
+  "DA_18_Aphelios": {
+    "name": "아펠리오스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_aphelios/tft18_aphelios_square.png"
+  },
+  "DA_18_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_ashe/tft18_ashe_square.png"
+  },
+  "DA_18_Azir": {
+    "name": "아지르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_azir/tft18_azir_square.png"
+  },
+  "DA_18_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_caitlyn/tft18_caitlyn_square.png"
+  },
+  "DA_18_Camille": {
+    "name": "카밀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_camille/tft18_camille_square.png"
+  },
+  "DA_18_Cassiopeia": {
+    "name": "카시오페아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_cassiopeia/tft18_cassiopeia_square.png"
+  },
+  "DA_18_Diana": {
+    "name": "다이애나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_diana/tft18_diana_square.png"
+  },
+  "DA_18_ElderDragon": {
+    "name": "장로 드래곤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_elderdragon/hud/tft18_elderdragon_square.png"
+  },
+  "DA_18_Elise": {
+    "name": "엘리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_elise/tft18_elise_square.png"
+  },
+  "DA_18_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_ezreal/tft18_ezreal_square.png"
+  },
+  "DA_18_GnarSmall": {
+    "name": "나르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_gnar/tft18_gnar_square.png"
+  },
+  "DA_18_Hecarim": {
+    "name": "헤카림",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_hecarim/tft18_hecarim_square.png"
+  },
+  "DA_18_Ivern": {
+    "name": "아이번",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_ivern/hud/tft18_ivern_square.png"
+  },
+  "DA_18_Kayle": {
+    "name": "케일",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_kayle/tft18_kayle_square.png"
+  },
+  "DA_18_Kennen": {
+    "name": "케넨",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_kennen/tft18_kennen_square.png"
+  },
+  "DA_18_KhaZix": {
+    "name": "카직스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_khazix/tft18_khazix_square.png"
+  },
+  "DA_18_Kobuko": {
+    "name": "코부코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_kobuko/tft18_kobuko_square.png"
+  },
+  "DA_18_LeBlanc": {
+    "name": "르블랑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_leblanc/tft18_leblanc_square.png"
+  },
+  "DA_18_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_leona/tft18_leona_square.png"
+  },
+  "DA_18_Lillia": {
+    "name": "릴리아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lillia/tft18_lillia_square.png"
+  },
+  "DA_18_Lux_Coven": {
+    "name": "럭스 (악의 여단)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_coven_square.png"
+  },
+  "DA_18_Lux_Elderwood": {
+    "name": "럭스 (나무정령)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_elderwood_square.png"
+  },
+  "DA_18_Lux_Fae": {
+    "name": "럭스 (요정)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_fae_square.png"
+  },
+  "DA_18_Lux_Inferno": {
+    "name": "럭스 (지옥불)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_inferno_square.png"
+  },
+  "DA_18_Lux_Moonbeam": {
+    "name": "럭스 (달빛)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_moonbeam_square.png"
+  },
+  "DA_18_Lux_Primal": {
+    "name": "럭스 (원시)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_primal_square.png"
+  },
+  "DA_18_Lux_Sunbeam": {
+    "name": "럭스 (햇빛)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_sunbeam_square.png"
+  },
+  "DA_18_Malphite": {
+    "name": "말파이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_malphite/tft18_malphite_square.png"
+  },
+  "DA_18_Maokai": {
+    "name": "마오카이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_maokai/tft18_maokai_square.png"
+  },
+  "DA_18_MasterYi_AD": {
+    "name": "마스터 이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_masteryi/tft18_masteryi_square.png"
+  },
+  "DA_18_Morgana": {
+    "name": "모르가나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_morgana/tft18_morgana_square.png"
+  },
+  "DA_18_Ornn": {
+    "name": "오른",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_ornn/tft18_ornn_square.png"
+  },
+  "DA_18_Rakan": {
+    "name": "라칸",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_rakan/tft18_rakan_square.png"
+  },
+  "DA_18_Rammus": {
+    "name": "람머스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_rammus/tft18_rammus_square.png"
+  },
+  "DA_18_RekSai": {
+    "name": "렉사이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_reksai/tft18_reksai_square.png"
+  },
+  "DA_18_Rengar": {
+    "name": "렝가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_rengar/tft18_rengar_square.png"
+  },
+  "DA_18_Sejuani": {
+    "name": "세주아니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_sejuani/tft18_sejuani_square.png"
+  },
+  "DA_18_Sentry": {
+    "name": "조약돌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_sentry/tft18_sentry_square.png"
+  },
+  "DA_18_Sett": {
+    "name": "세트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_sett/tft18_sett_square.png"
+  },
+  "DA_18_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_shen/tft18_shen_square.png"
+  },
+  "DA_18_Sivir": {
+    "name": "시비르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_sivir/tft18_sivir_square.png"
+  },
+  "DA_18_Soraka": {
+    "name": "소라카",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_soraka/tft18_soraka_square.png"
+  },
+  "DA_18_Teemo": {
+    "name": "티모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_teemo/tft18_teemo_square.png"
+  },
+  "DA_18_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_tristana/tft18_tristana_square.png"
+  },
+  "DA_18_Varus": {
+    "name": "바루스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_varus/tft18_varus_square.png"
+  },
+  "DA_18_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_veigar/tft18_veigar_square.png"
+  },
+  "DA_18_Warwick": {
+    "name": "워윅",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_warwick/tft18_warwick_square.png"
+  },
+  "DA_18_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_xayah/tft18_xayah_square.png"
+  },
+  "DA_18_Yorick": {
+    "name": "요릭",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_yorick/tft18_yorick_square.png"
+  },
+  "DA_18_Yunara": {
+    "name": "유나라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_yunara/tft18_yunara_square.png"
+  },
+  "DA_18_Zyra": {
+    "name": "자이라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_zyra/tft18_zyra_square.png"
+  },
+  "DA_Amumu18": {
+    "name": "아무무",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_amumu/tft18_amumu_square.png"
+  },
+  "DA_Brambleback18": {
+    "name": "덩굴정령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_brambleback/tft18_brambleback_square.png"
+  },
+  "DA_Cinderling18": {
+    "name": "불타는 묘목",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_cinderling/tft18_cinderling_square.png"
+  },
+  "DA_CrimsonRaptor18": {
+    "name": "어미 부리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_raptor/tft18_crimsonraptor_teamplanner_splash.png"
+  },
+  "DA_Draven18": {
+    "name": "드레이븐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_draven/tft18_draven_square.png"
+  },
+  "DA_Fiddlesticks18": {
+    "name": "피들스틱",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_fiddlesticks/tft18_fiddlesticks_square.png"
+  },
+  "DA_Gromp18_AP": {
+    "name": "심술두꺼비",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_gromp/tft18_gromp_square.png"
+  },
+  "DA_Karma18": {
+    "name": "카르마",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_karma/tft18_karma_square.png"
+  },
+  "DA_KogMaw18_AD": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_kogmaw/tft18_kogmaw_square.png"
+  },
+  "DA_Krug18": {
+    "name": "돌거북",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_krug/tft18_krug_square.png"
+  },
+  "DA_Lux18_Base": {
+    "name": "럭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_square.png"
+  },
+  "DA_Lux18_Blackthorn": {
+    "name": "럭스 (검은 가시)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_blackthorn_square.png"
+  },
+  "DA_Lux18_Blossom": {
+    "name": "럭스 (개화)",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_lux/tft18_lux_blossom_square.png"
+  },
+  "DA_Murkwolf18": {
+    "name": "어스름늑대",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_murkwolf/tft18_murkwolf_square.png"
+  },
+  "DA_Nidalee18_AP": {
+    "name": "니달리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_nidalee/tft18_nidalee_square.png"
+  },
+  "DA_Scuttlecrab18": {
+    "name": "바위 게",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_scuttlecrab/tft18_scuttlecrab_square.png"
+  },
+  "DA_Sentinel18": {
+    "name": "파수꾼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_sentinel/tft18_sentinel_square.png"
+  },
+  "DA_Taric18": {
+    "name": "타릭",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_taric/tft18_taric_square.png"
+  },
+  "DA_Vi18": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft18_vi/tft18_vi_square.png"
+  },
+  "TFT13_Akali": {
+    "name": "아칼리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_akali/hud/tft13_akali_square.png"
+  },
+  "TFT13_Ambessa": {
+    "name": "암베사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_ambessa/hud/tft13_ambessa_square.png"
+  },
+  "TFT13_Amumu": {
+    "name": "아무무",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_amumu/hud/tft13_amumu_square.png"
+  },
+  "TFT13_Beardy": {
+    "name": "로리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_beardy/hud/tft13_beardy_square.png"
+  },
+  "TFT13_Blitzcrank": {
+    "name": "블리츠크랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_blitzcrank/hud/tft13_blitzcrank_square.png"
+  },
+  "TFT13_Blue": {
+    "name": "파우더",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_blue/hud/tft13_blue_square.png"
+  },
+  "TFT13_Blue_Monkey": {
+    "name": "파란_원숭이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_blue_monkey/hud/tft13_blue_monkey_circle.png"
+  },
+  "TFT13_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_caitlyn/hud/tft13_caitlyn_square.png"
+  },
+  "TFT13_Camille": {
+    "name": "카밀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_camille/hud/tft13_camille_square.png"
+  },
+  "TFT13_Cassiopeia": {
+    "name": "카시오페아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_cassiopeia/hud/tft13_cassiopeia_square.png"
+  },
+  "TFT13_Chainsaw": {
+    "name": "레니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_chainsaw/hud/tft13_chainsaw_square.png"
+  },
+  "TFT13_Corki": {
+    "name": "코르키",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_corki/hud/tft13_corki_square.png"
+  },
+  "TFT13_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_darius/hud/tft13_darius_square.png"
+  },
+  "TFT13_DrMundo": {
+    "name": "문도 박사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_drmundo/hud/tft13_drmundo_square.png"
+  },
+  "TFT13_Draven": {
+    "name": "드레이븐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_draven/hud/tft13_draven_square.png"
+  },
+  "TFT13_Ekko": {
+    "name": "에코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_ekko/hud/tft13_ekko_square.png"
+  },
+  "TFT13_Elise": {
+    "name": "엘리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_elise/hud/tft13_elise_square.png"
+  },
+  "TFT13_EliseSpider": {
+    "name": "엘리스 거미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT13_EliseSpiderling": {
+    "name": "엘리스 새끼 거미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_elisespiderling/hud/tft13_elisespiderling_circle.png"
+  },
+  "TFT13_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_ezreal/hud/tft13_ezreal_square.png"
+  },
+  "TFT13_Fish": {
+    "name": "스텝",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_fish/hud/tft13_fish_square.png"
+  },
+  "TFT13_FlyGuy": {
+    "name": "스카",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_flyguy/hud/tft13_flyguy_square.png"
+  },
+  "TFT13_Gangplank": {
+    "name": "갱플랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_gangplank/hud/tft13_gangplank_square.png"
+  },
+  "TFT13_Garen": {
+    "name": "가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_garen/hud/tft13_garen_square.png"
+  },
+  "TFT13_Gremlin": {
+    "name": "스미치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_gremlin/hud/tft13_gremlin_square.png"
+  },
+  "TFT13_Heimerdinger": {
+    "name": "하이머딩거",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_heimerdinger/hud/tft13_heimerdinger_square.png"
+  },
+  "TFT13_HoverboardProp": {
+    "name": "아펠리오스 포탑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT13_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_illaoi/hud/tft13_illaoi_square.png"
+  },
+  "TFT13_Irelia": {
+    "name": "이렐리아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_irelia/hud/tft13_irelia_square.png"
+  },
+  "TFT13_Jayce": {
+    "name": "제이스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_jayce/hud/tft13_jayce_square.png"
+  },
+  "TFT13_JayceSummon": {
+    "name": "마법공학 대장간",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_jaycesummon/hud/tft13_jaycesummon_square.png"
+  },
+  "TFT13_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_jinx/hud/tft13_jinx_square.png"
+  },
+  "TFT13_KogMaw": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_kogmaw/hud/tft13_kogmaw_square.png"
+  },
+  "TFT13_LeBlanc": {
+    "name": "르블랑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_leblanc/hud/tft13_leblanc_square.png"
+  },
+  "TFT13_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_leona/hud/tft13_leona_square.png"
+  },
+  "TFT13_Lieutenant": {
+    "name": "세비카",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_lieutenant/hud/tft13_lieutenant_square.png"
+  },
+  "TFT13_Lux": {
+    "name": "럭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_lux/hud/tft13_lux_square.png"
+  },
+  "TFT13_Malzahar": {
+    "name": "말자하",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_malzahar/hud/tft13_malzahar_square.png"
+  },
+  "TFT13_MissMage": {
+    "name": "멜",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_missmage/hud/tft13_missmage_square.png"
+  },
+  "TFT13_Mordekaiser": {
+    "name": "모데카이저",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_mordekaiser/hud/tft13_mordekaiser_square.png"
+  },
+  "TFT13_Morgana": {
+    "name": "모르가나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_morgana/hud/tft13_morgana_square.png"
+  },
+  "TFT13_Nami": {
+    "name": "나미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_nami/hud/tft13_nami_square.png"
+  },
+  "TFT13_Nocturne": {
+    "name": "녹턴",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_nocturne/hud/tft13_nocturne_square.png"
+  },
+  "TFT13_NunuWillump": {
+    "name": "누누와 윌럼프",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_nunuwillump/hud/tft13_nunuwillump_square.png"
+  },
+  "TFT13_Prime": {
+    "name": "밴더",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_prime/hud/tft13_prime_square.png"
+  },
+  "TFT13_Rammus": {
+    "name": "람머스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_rammus/hud/tft13_rammus_square.png"
+  },
+  "TFT13_Red": {
+    "name": "바이올렛",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_red/hud/tft13_red_square.png"
+  },
+  "TFT13_Rell": {
+    "name": "렐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_rell/hud/tft13_rell_square.png"
+  },
+  "TFT13_RenataGlasc": {
+    "name": "레나타 글라스크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_renataglasc/hud/tft13_renataglasc_square.png"
+  },
+  "TFT13_Rumble": {
+    "name": "럼블",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_rumble/hud/tft13_rumble_square.png"
+  },
+  "TFT13_Sett": {
+    "name": "세트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_sett/hud/tft13_sett_square.png"
+  },
+  "TFT13_Shooter": {
+    "name": "매디",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_shooter/hud/tft13_shooter_square.png"
+  },
+  "TFT13_Silco": {
+    "name": "실코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_silco/hud/tft13_silco_square.png"
+  },
+  "TFT13_Silco_Monstrosity": {
+    "name": "신규 소환사의 협곡_무리_미니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_silco_monstrosity/hud/tft13_silco_monstrosity_square.png"
+  },
+  "TFT13_Singed": {
+    "name": "신지드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_singed/hud/tft13_singed_square.png"
+  },
+  "TFT13_Sion": {
+    "name": "사이온",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_sion/hud/tft13_sion_square_new.png"
+  },
+  "TFT13_Swain": {
+    "name": "스웨인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_swain/hud/tft13_swain_square.png"
+  },
+  "TFT13_SwainDemonForm": {
+    "name": "스웨인 악마 형상",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_swaindemonform/hud/tft13_swaindemonform_square.png"
+  },
+  "TFT13_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_tristana/hud/tft13_tristana_square.png"
+  },
+  "TFT13_Trundle": {
+    "name": "트런들",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_trundle/hud/tft13_trundle_square.png"
+  },
+  "TFT13_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_twistedfate/hud/tft13_twistedfate_square.png"
+  },
+  "TFT13_Twitch": {
+    "name": "트위치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_twitch/hud/tft13_twitch_square.png"
+  },
+  "TFT13_Urgot": {
+    "name": "우르곳",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_urgot/hud/tft13_urgot_square.png"
+  },
+  "TFT13_Vex": {
+    "name": "벡스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_vex/hud/tft13_vex_square.png"
+  },
+  "TFT13_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_vi/hud/tft13_vi_square.png"
+  },
+  "TFT13_Viktor": {
+    "name": "빅토르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_viktor/hud/tft13_viktor_square.png"
+  },
+  "TFT13_Vladimir": {
+    "name": "블라디미르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_vladimir/hud/tft13_vladimir_square.png"
+  },
+  "TFT13_Warwick": {
+    "name": "워윅",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_warwick/hud/tft13_warwick_square.png"
+  },
+  "TFT13_Zeri": {
+    "name": "제리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_zeri/hud/tft13_zeri_square.png"
+  },
+  "TFT13_Ziggs": {
+    "name": "직스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_ziggs/hud/tft13_ziggs_square.png"
+  },
+  "TFT13_Zoe": {
+    "name": "조이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_zoe/hud/tft13_zoe_square.png"
+  },
+  "TFT13_Zyra": {
+    "name": "자이라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft13_zyra/hud/tft13_zyra_square.png"
+  },
+  "TFT14_Alistar": {
+    "name": "알리스타",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_alistar/hud/tft14_alistar_square.png"
+  },
+  "TFT14_AnimaSquadMeep": {
+    "name": "시야 와드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT14_AnimaSquadTracker": {
+    "name": "동물특공대 무기",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_animasquadtracker/hud/tft14_animasquadtracker_square.png"
+  },
+  "TFT14_Annie": {
+    "name": "애니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_annie/hud/tft14_annie_square.png"
+  },
+  "TFT14_AnnieTibbers": {
+    "name": "티버",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_annietibbers/hud/tft14_annietibbers_square.png"
+  },
+  "TFT14_Aphelios": {
+    "name": "아펠리오스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_aphelios/hud/tft14_aphelios_square.png"
+  },
+  "TFT14_Aurora": {
+    "name": "오로라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_aurora/hud/tft14_aurora_square.png"
+  },
+  "TFT14_Brand": {
+    "name": "브랜드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_brand/hud/tft14_brand_square.png"
+  },
+  "TFT14_Braum": {
+    "name": "브라움",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_braum/hud/tft14_braum_square.png"
+  },
+  "TFT14_Chogath": {
+    "name": "초가스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_chogath/hud/tft14_chogath_square.png"
+  },
+  "TFT14_CypherProp": {
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT14_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_darius/hud/tft14_darius_square.png"
+  },
+  "TFT14_DrMundo": {
+    "name": "문도 박사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_drmundo/hud/tft14_drmundo_square.png"
+  },
+  "TFT14_Draven": {
+    "name": "드레이븐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_draven/hud/tft14_draven_square.png"
+  },
+  "TFT14_Ekko": {
+    "name": "에코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_ekko/hud/tft14_ekko_square.png"
+  },
+  "TFT14_Elise": {
+    "name": "엘리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_elise/hud/tft14_elise_square.png"
+  },
+  "TFT14_EmblemArmoryKey": {
+    "name": "특성의 고서",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft8_teamupprop/hud/icons2d/tft5_emblemarmorykey_square.png"
+  },
+  "TFT14_Fiddlesticks": {
+    "name": "피들스틱",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_fiddlesticks/hud/tft14_fiddlesticks_square.png"
+  },
+  "TFT14_Galio": {
+    "name": "갈리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_galio/hud/tft14_galio_square.png"
+  },
+  "TFT14_Garen": {
+    "name": "가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_garen/hud/tft14_garen_square.png"
+  },
+  "TFT14_GoldenOxProp": {
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_goldenoxprop/hud/tft14_goldenoxprop_square.png"
+  },
+  "TFT14_Gragas": {
+    "name": "그라가스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_gragas/hud/tft14_gragas_square.png"
+  },
+  "TFT14_Graves": {
+    "name": "그레이브즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_graves/hud/tft14_graves_square.png"
+  },
+  "TFT14_HackedEgg": {
+    "name": "해킹된 알",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hackedegg/hud/tft14_hackedegg_square.png"
+  },
+  "TFT14_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_illaoi/hud/tft14_illaoi_square.png"
+  },
+  "TFT14_Jarvan": {
+    "name": "자르반 4세",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_jarvan/hud/tft14_jarvan_square.png"
+  },
+  "TFT14_Jax": {
+    "name": "잭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_jax/hud/tft14_jax_square.png"
+  },
+  "TFT14_Jhin": {
+    "name": "진",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_jhin/hud/tft14_jhin_square.png"
+  },
+  "TFT14_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_jinx/hud/tft14_jinx_square.png"
+  },
+  "TFT14_Kindred": {
+    "name": "킨드레드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_kindred/hud/tft14_kindred_square.png"
+  },
+  "TFT14_Kobuko": {
+    "name": "코부코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_kobuko/hud/tft14_kobuko_square.png"
+  },
+  "TFT14_KogMaw": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_kogmaw/hud/tft14_kogmaw_square.png"
+  },
+  "TFT14_LeBlanc": {
+    "name": "르블랑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_leblanc/hud/tft14_leblanc_square.png"
+  },
+  "TFT14_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_leona/hud/tft14_leona_square.png"
+  },
+  "TFT14_MissFortune": {
+    "name": "미스 포츈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_missfortune/hud/tft14_missfortune_square.png"
+  },
+  "TFT14_Mordekaiser": {
+    "name": "모데카이저",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_mordekaiser/hud/tft14_mordekaiser_square.png"
+  },
+  "TFT14_Morgana": {
+    "name": "모르가나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_morgana/hud/tft14_morgana_square.png"
+  },
+  "TFT14_NPC_AurelionSol": {
+    "name": "메카 아우렐리온 솔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_NPC_Azir": {
+    "name": "메카 아지르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_NPC_AzirSoldier": {
+    "name": "메카 병사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_NPC_Cannon": {
+    "name": "메카 대포",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_NPC_Drone": {
+    "name": "메카 드론",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_NPC_Super": {
+    "name": "메카 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_hacked_aurelionsol/hud/tft14_hacked_aurelionsol_square.png"
+  },
+  "TFT14_Naafiri": {
+    "name": "나피리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_naafiri/hud/tft14_naafiri_square.png"
+  },
+  "TFT14_Neeko": {
+    "name": "니코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_neeko/hud/tft14_neeko_square.png"
+  },
+  "TFT14_NidaleeCougar": {
+    "name": "니달리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_nidaleecougar/hud/tft14_nidaleecougar_square.png"
+  },
+  "TFT14_Poppy": {
+    "name": "뽀삐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_poppy/hud/tft14_poppy_square.png"
+  },
+  "TFT14_Renekton": {
+    "name": "레넥톤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_renekton/hud/tft14_renekton_square.png"
+  },
+  "TFT14_Rengar": {
+    "name": "렝가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_rengar/hud/tft14_rengar_square.png"
+  },
+  "TFT14_Rhaast": {
+    "name": "라아스트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_rhaast/hud/tft14_rhaast_square.png"
+  },
+  "TFT14_Samira": {
+    "name": "사미라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_samira/hud/tft14_samira_square.png"
+  },
+  "TFT14_Sejuani": {
+    "name": "세주아니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_sejuani/hud/tft14_sejuani_square.png"
+  },
+  "TFT14_Senna": {
+    "name": "세나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_senna/hud/tft14_senna_square.png"
+  },
+  "TFT14_Seraphine": {
+    "name": "세라핀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_seraphine/hud/tft14_seraphine_square.png"
+  },
+  "TFT14_Shaco": {
+    "name": "샤코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_shaco/hud/tft14_shaco_square.png"
+  },
+  "TFT14_Shyvana": {
+    "name": "쉬바나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_shyvana/hud/tft14_shyvana_square.png"
+  },
+  "TFT14_Skarner": {
+    "name": "스카너",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_skarner/hud/tft14_skarner_square.png"
+  },
+  "TFT14_SummonLevel2": {
+    "name": "R-080T",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft9_heimerdingerturret/hud/icons2d/tft14_mimic_teamplanner_splash.png"
+  },
+  "TFT14_SummonLevel4": {
+    "name": "T-43X",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft9_heimerdingerturret/hud/icons2d/tft14_thex_teamplanner_splash.png"
+  },
+  "TFT14_Summon_Turret": {
+    "name": "T-URR37",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft9_heimerdingerturret/hud/icons2d/tft14_guerillaturret_teamplanner_splash.png"
+  },
+  "TFT14_Sylas": {
+    "name": "사일러스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_sylas/hud/tft14_sylas_square.png"
+  },
+  "TFT14_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_twistedfate/hud/tft14_twistedfate_square.png"
+  },
+  "TFT14_Urgot": {
+    "name": "우르곳",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_urgot/hud/tft14_urgot_square.png"
+  },
+  "TFT14_Varus": {
+    "name": "바루스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_varus/hud/tft14_varus_square.png"
+  },
+  "TFT14_Vayne": {
+    "name": "베인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_vayne/hud/tft14_vayne_square.png"
+  },
+  "TFT14_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_veigar/hud/tft14_veigar_square.png"
+  },
+  "TFT14_Vex": {
+    "name": "벡스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_vex/hud/tft14_vex_square.png"
+  },
+  "TFT14_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_vi/hud/tft14_vi_square.png"
+  },
+  "TFT14_Viego": {
+    "name": "비에고",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_viego/hud/tft14_viego_square.png"
+  },
+  "TFT14_Virus_Bloblet": {
+    "name": "조각",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT14_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_xayah/hud/tft14_xayah_square.png"
+  },
+  "TFT14_Yuumi": {
+    "name": "유미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_yuumi/hud/tft14_yuumi_square.png"
+  },
+  "TFT14_Zac": {
+    "name": "자크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_zac/hud/tft14_zac_square.png"
+  },
+  "TFT14_Zed": {
+    "name": "제드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_zed/hud/tft14_zed_square.png"
+  },
+  "TFT14_Zeri": {
+    "name": "제리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_zeri/hud/tft14_zeri_square.png"
+  },
+  "TFT14_Ziggs": {
+    "name": "직스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_ziggs/hud/tft14_ziggs_square.png"
+  },
+  "TFT14_Zyra": {
+    "name": "자이라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft14_zyra/hud/tft14_zyra_square.png"
+  },
+  "TFT15_Aatrox": {
+    "name": "아트록스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_aatrox/hud/tft15_aatrox_square.png"
+  },
+  "TFT15_Ahri": {
+    "name": "아리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ahri/hud/tft15_ahri_square.png"
+  },
+  "TFT15_Akali": {
+    "name": "아칼리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_akali/hud/tft15_akali_square.png"
+  },
+  "TFT15_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ashe/hud/tft15_ashe_square.png"
+  },
+  "TFT15_Braum": {
+    "name": "브라움",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_braum/hud/tft15_braum_square.png"
+  },
+  "TFT15_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_caitlyn/hud/tft15_caitlyn_square.png"
+  },
+  "TFT15_CrystalGambitDamageTracker": {
+    "name": "수정의 광휘",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_15_gemforce.png"
+  },
+  "TFT15_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_darius/hud/tft15_darius_square.png"
+  },
+  "TFT15_DrMundo": {
+    "name": "문도 박사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_drmundo/hud/tft15_drmundo_square.png"
+  },
+  "TFT15_Ekko": {
+    "name": "에코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ekko/hud/tft15_ekko_square.png"
+  },
+  "TFT15_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ezreal/hud/tft15_ezreal_square.png"
+  },
+  "TFT15_Galio": {
+    "name": "거대 메크 로봇",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_galio/hud/tft15_galio_square.png"
+  },
+  "TFT15_Gangplank": {
+    "name": "갱플랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_gangplank/hud/tft15_gangplank_square.png"
+  },
+  "TFT15_Garen": {
+    "name": "가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_garen/hud/tft15_garen_square.png"
+  },
+  "TFT15_Gnar": {
+    "name": "나르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_gnar/hud/tft15_gnar_square.png"
+  },
+  "TFT15_Gwen": {
+    "name": "그웬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_gwen/hud/tft15_gwen_square.png"
+  },
+  "TFT15_Janna": {
+    "name": "잔나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_janna/hud/tft15_janna_square.png"
+  },
+  "TFT15_JarvanIV": {
+    "name": "자르반 4세",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_jarvaniv/hud/tft15_jarvaniv_square.png"
+  },
+  "TFT15_Jayce": {
+    "name": "제이스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_jayce/hud/tft15_jayce_square.png"
+  },
+  "TFT15_Jhin": {
+    "name": "진",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_jhin/hud/tft15_jhin_square.png"
+  },
+  "TFT15_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_jinx/hud/tft15_jinx_square.png"
+  },
+  "TFT15_KSante": {
+    "name": "크산테",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ksante/hud/tft15_ksante_square.png"
+  },
+  "TFT15_KaiSa": {
+    "name": "카이사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kaisa/hud/tft15_kaisa_square.png"
+  },
+  "TFT15_Kalista": {
+    "name": "칼리스타",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kalista/hud/tft15_kalista_square.png"
+  },
+  "TFT15_Karma": {
+    "name": "카르마",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_karma/hud/tft15_karma_square.png"
+  },
+  "TFT15_Katarina": {
+    "name": "카타리나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_katarina/hud/tft15_katarina_square.png"
+  },
+  "TFT15_Kayle": {
+    "name": "케일",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kayle/hud/tft15_kayle_square.png"
+  },
+  "TFT15_Kennen": {
+    "name": "케넨",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kennen/hud/tft15_kennen_square.png"
+  },
+  "TFT15_Kobuko": {
+    "name": "코부코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kobuko/hud/tft15_kobuko_square.png"
+  },
+  "TFT15_KogMaw": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_kogmaw/hud/tft15_kogmaw_square.png"
+  },
+  "TFT15_LeeSin": {
+    "name": "리 신",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_leesin/hud/tft15_leesin_square.png"
+  },
+  "TFT15_LeeSin_TraitClone": {
+    "name": "리 신",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_leesin/hud/tft15_leesin_square.png"
+  },
+  "TFT15_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_leona/hud/tft15_leona_square.png"
+  },
+  "TFT15_Lucian": {
+    "name": "루시안",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_lucian/hud/tft15_lucian_square.png"
+  },
+  "TFT15_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_lulu/hud/tft15_lulu_square.png"
+  },
+  "TFT15_Lux": {
+    "name": "럭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_lux/hud/tft15_lux_square.png"
+  },
+  "TFT15_Malphite": {
+    "name": "말파이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_malphite/hud/tft15_malphite_square.png"
+  },
+  "TFT15_Malzahar": {
+    "name": "말자하",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_malzahar/hud/tft15_malzahar_square.png"
+  },
+  "TFT15_Naafiri": {
+    "name": "나피리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_naafiri/hud/tft15_naafiri_square.png"
+  },
+  "TFT15_Neeko": {
+    "name": "니코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_neeko/hud/tft15_neeko_square.png"
+  },
+  "TFT15_PetCreepyCat": {
+    "name": "테스트 비용",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_shiro/skins/base/images/shiro_splash.png"
+  },
+  "TFT15_Poppy": {
+    "name": "뽀삐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_poppy/hud/tft15_poppy_square.png"
+  },
+  "TFT15_Rakan": {
+    "name": "라칸",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_rakan/hud/tft15_rakan_square.png"
+  },
+  "TFT15_Rammus": {
+    "name": "람머스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_rammuspb/hud/tft15_rammus_square.png"
+  },
+  "TFT15_RammusPB": {
+    "name": "람머스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_rammuspb/hud/tft15_rammuspb_square.png"
+  },
+  "TFT15_Rell": {
+    "name": "렐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_rell/hud/tft15_rell_square.png"
+  },
+  "TFT15_Ryze": {
+    "name": "라이즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ryze/hud/tft15_ryze_square.png"
+  },
+  "TFT15_Samira": {
+    "name": "사미라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_samira/hud/tft15_samira_square.png"
+  },
+  "TFT15_Senna": {
+    "name": "세나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_senna/hud/tft15_senna_square.png"
+  },
+  "TFT15_Seraphine": {
+    "name": "세라핀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_seraphine/hud/tft15_seraphine_square.png"
+  },
+  "TFT15_Sett": {
+    "name": "세트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_sett/hud/tft15_sett_square.png"
+  },
+  "TFT15_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_shen/hud/tft15_shen_square.png"
+  },
+  "TFT15_Sivir": {
+    "name": "시비르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_sivir/hud/tft15_sivir_square.png"
+  },
+  "TFT15_Smolder": {
+    "name": "스몰더",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_smolder/hud/tft15_smolder_square.png"
+  },
+  "TFT15_StarGuardianDamageTracker": {
+    "name": "별의 힘",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_8_starguardian.png"
+  },
+  "TFT15_Swain": {
+    "name": "스웨인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_swain/hud/tft15_swain_square.png"
+  },
+  "TFT15_Syndra": {
+    "name": "신드라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_syndra/hud/tft15_syndra_square.png"
+  },
+  "TFT15_TheCrewDamageTracker": {
+    "name": "크루 함선",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_15_starcrew.png"
+  },
+  "TFT15_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_twistedfate/hud/tft15_twistedfate_square.png"
+  },
+  "TFT15_Udyr": {
+    "name": "우디르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_udyr/hud/tft15_udyr_square.png"
+  },
+  "TFT15_Varus": {
+    "name": "바루스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_varus/hud/tft15_varus_square.png"
+  },
+  "TFT15_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_vi/hud/tft15_vi_square.png"
+  },
+  "TFT15_Viego": {
+    "name": "비에고",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_viego/hud/tft15_viego_square.png"
+  },
+  "TFT15_Volibear": {
+    "name": "볼리베어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_volibear/hud/tft15_volibear_square.png"
+  },
+  "TFT15_WraithDamageTracker": {
+    "name": "그림자 세계",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_15_empyrean.png"
+  },
+  "TFT15_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_xayah/hud/tft15_xayah_square.png"
+  },
+  "TFT15_XinZhao": {
+    "name": "신 짜오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_xinzhao/hud/tft15_xinzhao_square.png"
+  },
+  "TFT15_Yasuo": {
+    "name": "야스오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_yasuo/hud/tft15_yasuo_square.png"
+  },
+  "TFT15_Yone": {
+    "name": "요네",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_yone/hud/tft15_yone_square.png"
+  },
+  "TFT15_Yuumi": {
+    "name": "유미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_yuumi/hud/tft15_yuumi_square.png"
+  },
+  "TFT15_Zac": {
+    "name": "자크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_zac/hud/tft15_zac_square.png"
+  },
+  "TFT15_Ziggs": {
+    "name": "직스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_ziggs/hud/tft15_ziggs_square.png"
+  },
+  "TFT15_Zyra": {
+    "name": "자이라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_zyra/hud/tft15_zyra_square.png"
+  },
+  "TFT15_ZyraGraspingPlant": {
+    "name": "휘감는 뿌리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_zyra/hud/tft15_zyra_square.png"
+  },
+  "TFT15_ZyraThornPlant": {
+    "name": "치명적인 가시",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft15_zyra/hud/tft15_zyra_square.png"
+  },
+  "TFT16_Aatrox": {
+    "name": "아트록스 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_aatrox/hud/tft16_aatrox_square.png"
+  },
+  "TFT16_Ahri": {
+    "name": "아리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ahri/hud/tft16_ahri_square.png"
+  },
+  "TFT16_Ambessa": {
+    "name": "암베사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ambessa/hud/tft16_ambessa_square.png"
+  },
+  "TFT16_Anivia": {
+    "name": "애니비아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_anivia/hud/tft16_anivia_square.png"
+  },
+  "TFT16_Annie": {
+    "name": "애니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_annie/hud/tft16_annie_square.png"
+  },
+  "TFT16_AnnieTibbers": {
+    "name": "티버",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_annietibbers/hud/tft16_annietibbers_square.png"
+  },
+  "TFT16_Aphelios": {
+    "name": "아펠리오스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_aphelios/hud/tft16_aphelios_square.png"
+  },
+  "TFT16_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ashe/hud/tft16_ashe_square.png"
+  },
+  "TFT16_Atakhan": {
+    "name": "아타칸",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_atakhan/hud/tft16_atakhan_square.png"
+  },
+  "TFT16_AurelionSol": {
+    "name": "아우렐리온 솔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_aurelionsol/hud/tft16_aurelionsol_square.png"
+  },
+  "TFT16_Azir": {
+    "name": "아지르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_azir/hud/tft16_azir_square.png"
+  },
+  "TFT16_AzirSoldier": {
+    "name": "모래 병사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_azirsoldier/hud/tft16_azirsoldier_square.png"
+  },
+  "TFT16_AzirUltSoldier": {
+    "name": "황제의 근위대",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_azirsoldier/hud/tft16_azirsoldier_square.png"
+  },
+  "TFT16_Bard": {
+    "name": "바드 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_bard/hud/tft16_bard_square.png"
+  },
+  "TFT16_BaronNashor": {
+    "name": "내셔 남작",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_baronnashor/hud/tft16_baronnashor_square.png"
+  },
+  "TFT16_BelVeth": {
+    "name": "벨베스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_belveth/hud/tft16_belveth_square.png"
+  },
+  "TFT16_BilgewaterPrismatic": {
+    "name": "빌지워터",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_demacianstandard/hud/tft16_bilgewaterprismatic_square.png"
+  },
+  "TFT16_Blitzcrank": {
+    "name": "블리츠크랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_blitzcrank/hud/tft16_blitzcrank_square.png"
+  },
+  "TFT16_Braum": {
+    "name": "브라움",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_braum/hud/tft16_braum_square.png"
+  },
+  "TFT16_Briar": {
+    "name": "브라이어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_briar/hud/tft16_briar_square.png"
+  },
+  "TFT16_Brock": {
+    "name": "브록",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_brock/skins/base/images/tft16_brock_splash_tile_0.png"
+  },
+  "TFT16_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_caitlyn/hud/tft16_caitlyn_square.png"
+  },
+  "TFT16_ChoGath": {
+    "name": "초가스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_chogath/hud/tft16_chogath_square.png"
+  },
+  "TFT16_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_darius/hud/tft16_darius_square.png"
+  },
+  "TFT16_DemacianStandard": {
+    "name": "데마시아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_demacianstandard/hud/tft16_demacianstandard_square.png"
+  },
+  "TFT16_Diana": {
+    "name": "다이애나 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_diana/hud/tft16_diana_square.png"
+  },
+  "TFT16_DrMundo": {
+    "name": "문도 박사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_drmundo/hud/tft16_drmundo_square.png"
+  },
+  "TFT16_Draven": {
+    "name": "드레이븐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_draven/hud/tft16_draven_square.png"
+  },
+  "TFT16_Ekko": {
+    "name": "에코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ekko/hud/tft16_ekko_square.png"
+  },
+  "TFT16_Fiddlesticks": {
+    "name": "피들스틱",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_fiddlesticks/hud/tft16_fiddlesticks_square.png"
+  },
+  "TFT16_Fizz": {
+    "name": "피즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_fizz/hud/tft16_fizz_square.png"
+  },
+  "TFT16_FreljordProp": {
+    "name": "얼어붙은 포탑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_freljordprop/hud/tft16_freljordprop_square.png"
+  },
+  "TFT16_Galio": {
+    "name": "갈리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_galio/hud/tft16_galio_square.png"
+  },
+  "TFT16_Gangplank": {
+    "name": "갱플랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_gangplank/hud/tft16_gangplank_square.png"
+  },
+  "TFT16_GangplankBarrel": {
+    "name": "갱플랭크 화약통",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_gangplankbarrel/hud/tft16_gangplankbarrel_square.png"
+  },
+  "TFT16_Garen": {
+    "name": "가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_garen/hud/tft16_garen_square.png"
+  },
+  "TFT16_Graves": {
+    "name": "그레이브즈 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_graves/hud/tft16_graves_square.png"
+  },
+  "TFT16_Gwen": {
+    "name": "그웬 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_gwen/hud/tft16_gwen_square.png"
+  },
+  "TFT16_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_illaoi/hud/tft16_illaoi_square.png"
+  },
+  "TFT16_JarvanIV": {
+    "name": "자르반 4세",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_jarvaniv/hud/tft16_jarvaniv_square.png"
+  },
+  "TFT16_Jhin": {
+    "name": "진",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_jhin/hud/tft16_jhin_square.png"
+  },
+  "TFT16_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_jinx/hud/tft16_jinx_square.png"
+  },
+  "TFT16_Kaisa": {
+    "name": "카이사 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kaisa/hud/tft16_kaisa_square.png"
+  },
+  "TFT16_Kalista": {
+    "name": "칼리스타 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kalista/hud/tft16_kalista_square.png"
+  },
+  "TFT16_Kennen": {
+    "name": "케넨 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kennen/hud/tft16_kennen_square.png"
+  },
+  "TFT16_Kindred": {
+    "name": "킨드레드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kindred/hud/tft16_kindred_square.png"
+  },
+  "TFT16_Kobuko": {
+    "name": "코부코와 유미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kobuko/hud/tft16_kobuko_square.png"
+  },
+  "TFT16_KogMaw": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_kogmaw/hud/tft16_kogmaw_square.png"
+  },
+  "TFT16_Leblanc": {
+    "name": "르블랑 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_leblanc/hud/tft16_leblanc_square.png"
+  },
+  "TFT16_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_leona/hud/tft16_leona_square.png"
+  },
+  "TFT16_Lissandra": {
+    "name": "리산드라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_lissandra/hud/tft16_lissandra_square.png"
+  },
+  "TFT16_Loris": {
+    "name": "로리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_loris/hud/tft16_loris_square.png"
+  },
+  "TFT16_Lucian": {
+    "name": "루시안과 세나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_lucian/hud/tft16_lucian_square.png"
+  },
+  "TFT16_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_lulu/hud/tft16_lulu_square.png"
+  },
+  "TFT16_Lux": {
+    "name": "럭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_lux/hud/tft16_lux_square.png"
+  },
+  "TFT16_Malzahar": {
+    "name": "말자하",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_malzahar/hud/tft16_malzahar_square.png"
+  },
+  "TFT16_MalzaharVoidling": {
+    "name": "말자하공허충",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_malzaharvoidling/hud/tft16_malzaharvoidling_square.png"
+  },
+  "TFT16_Mel": {
+    "name": "멜 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_mel/hud/tft16_mel_square.png"
+  },
+  "TFT16_Milio": {
+    "name": "밀리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_milio/hud/tft16_milio_square.png"
+  },
+  "TFT16_MissFortune": {
+    "name": "미스 포츈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_missfortune/hud/tft16_missfortune_square.png"
+  },
+  "TFT16_Nasus": {
+    "name": "나서스 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_nasus/hud/tft16_nasus_square.png"
+  },
+  "TFT16_Nautilus": {
+    "name": "노틸러스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_nautilus/hud/tft16_nautilus_square.png"
+  },
+  "TFT16_Neeko": {
+    "name": "니코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_neeko/hud/tft16_neeko_square.png"
+  },
+  "TFT16_Nidalee": {
+    "name": "니달리 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_nidalee/hud/tft16_nidalee_square.png"
+  },
+  "TFT16_Orianna": {
+    "name": "오리아나 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_orianna/hud/tft16_orianna_square.png"
+  },
+  "TFT16_Ornn": {
+    "name": "오른",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ornn/hud/tft16_ornn_square.png"
+  },
+  "TFT16_PVE_BlueGolem": {
+    "name": "파수꾼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_bluegolem/hud/tft16_pve_bluegolem_square.png"
+  },
+  "TFT16_PVE_BlueGolemMini1": {
+    "name": "아기 파수꾼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_bluegolemmini1/hud/tft16_pve_bluegolemmini1_square.png"
+  },
+  "TFT16_PVE_Dragon": {
+    "name": "드래곤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_dragon/hud/tft16_pve_dragon_square.png"
+  },
+  "TFT16_PVE_Gromp": {
+    "name": "심술두꺼비",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_gromp/hud/tft16_pve_gromp_square.png"
+  },
+  "TFT16_PVE_RedGolem": {
+    "name": "덩굴정령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_redgolem/hud/tft16_pve_redgolem_square.png"
+  },
+  "TFT16_PVE_RedGolemMini": {
+    "name": "아기 덩굴정령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_redgolemmini/hud/tft16_pve_redgolemmini_square.png"
+  },
+  "TFT16_PVE_VoidGrubLarge": {
+    "name": "공허 유충",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_pve_voidgrublarge/hud/tft16_pve_voidgrublarge_square.png"
+  },
+  "TFT16_PiltoverInvention": {
+    "name": "필트오버 발명품",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_piltoverinvention/hud/tft16_piltoverinvention_square.png"
+  },
+  "TFT16_Poppy": {
+    "name": "뽀삐 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_poppy/hud/tft16_poppy_square.png"
+  },
+  "TFT16_Qiyana": {
+    "name": "키아나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_qiyana/hud/tft16_qiyana_square.png"
+  },
+  "TFT16_RekSai": {
+    "name": "렉사이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_reksai/hud/tft16_reksai_square.png"
+  },
+  "TFT16_Renekton": {
+    "name": "레넥톤 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_renekton/hud/tft16_renekton_square.png"
+  },
+  "TFT16_RiftHerald": {
+    "name": "협곡의 전령 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_riftherald/skins/base/images/tft16_riftherald_splash_tile_0.png"
+  },
+  "TFT16_Rumble": {
+    "name": "럼블",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_rumble/hud/tft16_rumble_square.png"
+  },
+  "TFT16_Ryze": {
+    "name": "라이즈 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ryze/hud/tft16_ryze_square.png"
+  },
+  "TFT16_Sejuani": {
+    "name": "세주아니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_sejuani/hud/tft16_sejuani_square.png"
+  },
+  "TFT16_Senna": {
+    "name": "세나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_senna/hud/tft16_senna_square.png"
+  },
+  "TFT16_Seraphine": {
+    "name": "세라핀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_seraphine/hud/tft16_seraphine_square.png"
+  },
+  "TFT16_Sett": {
+    "name": "세트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_sett/hud/tft16_sett_square.png"
+  },
+  "TFT16_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_shen/hud/tft16_shen_square.png"
+  },
+  "TFT16_Shyvana": {
+    "name": "쉬바나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_shyvana/hud/tft16_shyvana_square.png"
+  },
+  "TFT16_ShyvanaDragon": {
+    "name": "쉬바나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_shyvanadragon/hud/tft16_shyvanadragon_square.png"
+  },
+  "TFT16_Singed": {
+    "name": "신지드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_singed/hud/tft16_singed_square.png"
+  },
+  "TFT16_Sion": {
+    "name": "사이온",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_sion/hud/tft16_sion_square.png"
+  },
+  "TFT16_Skarner": {
+    "name": "스카너 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_skarner/hud/tft16_skarner_square.png"
+  },
+  "TFT16_Sona": {
+    "name": "소나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_sona/hud/tft16_sona_square.png"
+  },
+  "TFT16_Swain": {
+    "name": "스웨인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_swain/hud/tft16_swain_square.png"
+  },
+  "TFT16_Sylas": {
+    "name": "사일러스 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_sylas/hud/tft16_sylas_square.png"
+  },
+  "TFT16_THex": {
+    "name": "T-헥스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_thex/hud/tft16_thex_square.png"
+  },
+  "TFT16_TahmKench": {
+    "name": "탐 켄치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_tahmkench/hud/tft16_tahmkench_square.png"
+  },
+  "TFT16_Taric": {
+    "name": "타릭",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_taric/hud/tft16_taric_square.png"
+  },
+  "TFT16_Teemo": {
+    "name": "티모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_teemo/hud/tft16_teemo_square.png"
+  },
+  "TFT16_Thresh": {
+    "name": "쓰레쉬 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_thresh/hud/tft16_thresh_square.png"
+  },
+  "TFT16_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_tristana/hud/tft16_tristana_square.png"
+  },
+  "TFT16_Tryndamere": {
+    "name": "트린다미어 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_tryndamere/hud/tft16_tryndamere_square.png"
+  },
+  "TFT16_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_twistedfate/hud/tft16_twistedfate_square.png"
+  },
+  "TFT16_Vayne": {
+    "name": "베인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_vayne/hud/tft16_vayne_square.png"
+  },
+  "TFT16_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_veigar/hud/tft16_veigar_square.png"
+  },
+  "TFT16_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_vi/hud/tft16_vi_square.png"
+  },
+  "TFT16_Viego": {
+    "name": "비에고",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_viego/hud/tft16_viego_square.png"
+  },
+  "TFT16_Volibear": {
+    "name": "볼리베어 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_volibear/hud/tft16_volibear_square.png"
+  },
+  "TFT16_Warwick": {
+    "name": "워윅",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_warwick/hud/tft16_warwick_square.png"
+  },
+  "TFT16_Wukong": {
+    "name": "오공",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_wukong/hud/tft16_wukong_square.png"
+  },
+  "TFT16_Xerath": {
+    "name": "제라스 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_xerath/hud/tft16_xerath_square.png"
+  },
+  "TFT16_XinZhao": {
+    "name": "신 짜오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_xinzhao/hud/tft16_xinzhao_square.png"
+  },
+  "TFT16_Yasuo": {
+    "name": "야스오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_yasuo/hud/tft16_yasuo_square.png"
+  },
+  "TFT16_Yone": {
+    "name": "요네",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_yone/hud/tft16_yone_square.png"
+  },
+  "TFT16_Yorick": {
+    "name": "요릭 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_yorick/hud/tft16_yorick_square.png"
+  },
+  "TFT16_Yunara": {
+    "name": "유나라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_yunara/hud/tft16_yunara_square.png"
+  },
+  "TFT16_Zaahen": {
+    "name": "자헨",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_zaahen/hud/tft16_zaahen_square.png"
+  },
+  "TFT16_Ziggs": {
+    "name": "직스 ",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_ziggs/hud/tft16_ziggs_square.png"
+  },
+  "TFT16_Zilean": {
+    "name": "질리언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_zilean/hud/tft16_zilean_square.png"
+  },
+  "TFT16_Zoe": {
+    "name": "조이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_zoe/hud/tft16_zoe_square.png"
+  },
+  "TFT17_Aatrox": {
+    "name": "아트록스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_aatrox/hud/tft17_aatrox_square.png"
+  },
+  "TFT17_Akali": {
+    "name": "아칼리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_akali/hud/tft17_akali_square.png"
+  },
+  "TFT17_AurelionSol": {
+    "name": "아우렐리온 솔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_aurelionsol/hud/tft17_aurelionsol_square.png"
+  },
+  "TFT17_Aurora": {
+    "name": "오로라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_aurora/hud/tft17_aurora_square.png"
+  },
+  "TFT17_Bard": {
+    "name": "바드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_bard/hud/tft17_bard_square.png"
+  },
+  "TFT17_Belveth": {
+    "name": "벨베스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_belveth/hud/tft17_belveth_square.png"
+  },
+  "TFT17_Blitzcrank": {
+    "name": "블리츠크랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_blitzcrank/hud/tft17_blitzcrank_square.png"
+  },
+  "TFT17_Briar": {
+    "name": "브라이어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_briar/hud/tft17_briar_square.png"
+  },
+  "TFT17_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_caitlyn/hud/tft17_caitlyn_square.png"
+  },
+  "TFT17_Chogath": {
+    "name": "초가스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_chogath/hud/tft17_chogath_square.png"
+  },
+  "TFT17_Corki": {
+    "name": "코르키",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_corki/hud/tft17_corki_square.png"
+  },
+  "TFT17_DRXTracker": {
+    "name": "N.O.V.A. 협동 공격",
+    "image": "https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/tft15/tft15_powerexpunge.png"
+  },
+  "TFT17_DarkStarDamageTracker": {
+    "name": "블랙홀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/tft15/tft15_powerexpunge.png"
+  },
+  "TFT17_DarkStar_FakeUnit": {
+    "name": "소형 블랙홀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_animasquadprop/tft17_darkstar_square.png"
+  },
+  "TFT17_Diana": {
+    "name": "다이애나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/tft/championsplashes/patching/tft17_diana_teamplanner_splash.png"
+  },
+  "TFT17_Enemy_Aatrox": {
+    "name": "태고족 우두머리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_enemy_aatrox/hud/tft17_enemy_aatrox_square.png"
+  },
+  "TFT17_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_ezreal/hud/tft17_ezreal_square.png"
+  },
+  "TFT17_Fiora": {
+    "name": "피오라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_fiora/hud/tft17_fiora_square.png"
+  },
+  "TFT17_Fizz": {
+    "name": "피즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_fizz/hud/tft17_fizz_square.png"
+  },
+  "TFT17_Galio": {
+    "name": "거대 메크 로봇",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_galio/hud/tft17_galio_square.png"
+  },
+  "TFT17_Gnar": {
+    "name": "나르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_gnar/hud/tft17_gnar_square.png"
+  },
+  "TFT17_Gragas": {
+    "name": "그라가스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_gragas/hud/tft17_gragas_square.png"
+  },
+  "TFT17_Graves": {
+    "name": "그레이브즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_graves/hud/tft17_graves_square.png"
+  },
+  "TFT17_Gwen": {
+    "name": "그웬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_gwen/hud/tft17_gwen_square.png"
+  },
+  "TFT17_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_illaoi/hud/tft17_illaoi_square.png"
+  },
+  "TFT17_IvernMinion": {
+    "name": "꼬마 정령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_ivernminion/hud/tft17_ivernminion_square.png"
+  },
+  "TFT17_Jax": {
+    "name": "잭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_jax/hud/tft17_jax_square.png"
+  },
+  "TFT17_Jhin": {
+    "name": "진",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_jhin/hud/tft17_jhin_square.png"
+  },
+  "TFT17_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_jinx/hud/tft17_jinx_square.png"
+  },
+  "TFT17_Kaisa": {
+    "name": "카이사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_kaisa/hud/tft17_kaisa_square.png"
+  },
+  "TFT17_Karma": {
+    "name": "카르마",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_karma/hud/tft17_karma_square.png"
+  },
+  "TFT17_Kindred": {
+    "name": "킨드레드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_kindred/hud/tft17_kindred_square.png"
+  },
+  "TFT17_Leblanc": {
+    "name": "르블랑",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_leblanc/hud/tft17_leblanc_square.png"
+  },
+  "TFT17_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_leona/hud/tft17_leona_square.png"
+  },
+  "TFT17_Lissandra": {
+    "name": "리산드라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_lissandra/hud/tft17_lissandra_square.png"
+  },
+  "TFT17_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_lulu/hud/tft17_lulu_square.png"
+  },
+  "TFT17_Maokai": {
+    "name": "마오카이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_maokai/hud/tft17_maokai_square.png"
+  },
+  "TFT17_MasterYi": {
+    "name": "마스터 이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_masteryi/hud/tft17_masteryi_square.png"
+  },
+  "TFT17_Milio": {
+    "name": "밀리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_milio/hud/tft17_milio_square.png"
+  },
+  "TFT17_MissFortune": {
+    "name": "미스 포츈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_missfortune/hud/tft17_missfortune_square.png"
+  },
+  "TFT17_MissFortune_TraitClone": {
+    "name": "미스 포츈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_missfortune/hud/tft17_missfortune_square.png"
+  },
+  "TFT17_Mordekaiser": {
+    "name": "모데카이저",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_mordekaiser/hud/tft17_mordekaiser_square.png"
+  },
+  "TFT17_Morgana": {
+    "name": "모르가나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_morgana/hud/tft17_morgana_square.png"
+  },
+  "TFT17_Nami": {
+    "name": "나미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_nami/hud/tft17_nami_square.png"
+  },
+  "TFT17_Nasus": {
+    "name": "나서스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_nasus/hud/tft17_nasus_square.png"
+  },
+  "TFT17_Nunu": {
+    "name": "누누와 윌럼프",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_nunu/hud/tft17_nunu_square.png"
+  },
+  "TFT17_Ornn": {
+    "name": "오른",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_ornn/hud/tft17_ornn_square.png"
+  },
+  "TFT17_PVE_ElderDragon": {
+    "name": "우주 장로 드래곤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_pve_elderdragon/hud/tft17_pve_elderdragon_square.png"
+  },
+  "TFT17_PVE_Gromp": {
+    "name": "우주 심술두꺼비",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT17_PVE_Krug": {
+    "name": "우주 난동꾼",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT17_PVE_Minion": {
+    "name": "우주 오징어",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT17_PVE_Pix": {
+    "name": "우주 요정나비",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT17_PVE_Raptor": {
+    "name": "우주 고철 수집가",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT17_Pantheon": {
+    "name": "판테온",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_pantheon/hud/tft17_pantheon_square.png"
+  },
+  "TFT17_Poppy": {
+    "name": "뽀삐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_poppy/hud/tft17_poppy_square.png"
+  },
+  "TFT17_PrimordianTracker": {
+    "name": "군체 유충 피해량",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_primordiantracker/hud/tft17_primordiantracker_square.png"
+  },
+  "TFT17_Pyke": {
+    "name": "파이크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_pyke/hud/tft17_pyke_square.png"
+  },
+  "TFT17_Rammus": {
+    "name": "람머스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_rammus/hud/tft17_rammus_square.png"
+  },
+  "TFT17_RekSai": {
+    "name": "렉사이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_reksai/hud/tft17_reksai_square.png"
+  },
+  "TFT17_Rhaast": {
+    "name": "라아스트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_rhaast/hud/tft17_kayn_slay_square.png"
+  },
+  "TFT17_Riven": {
+    "name": "리븐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_riven/hud/tft17_riven_square.png"
+  },
+  "TFT17_Samira": {
+    "name": "사미라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_samira/hud/tft17_samira_square.png"
+  },
+  "TFT17_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_shen/hud/tft17_shen_square.png"
+  },
+  "TFT17_Sona": {
+    "name": "소나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_sona/hud/tft17_sona_square.png"
+  },
+  "TFT17_Summon": {
+    "name": "비아와 바이엔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_summon/hud/tft17_summon_square.png"
+  },
+  "TFT17_TahmKench": {
+    "name": "탐 켄치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_tahmkench/hud/tft17_tahmkench_square.png"
+  },
+  "TFT17_Talon": {
+    "name": "탈론",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_talon/hud/tft17_talon_square.png"
+  },
+  "TFT17_Teemo": {
+    "name": "티모",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_teemo/hud/tft17_teemo_square.png"
+  },
+  "TFT17_TimebreakerCore": {
+    "name": "시간균열자코어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_timebreakercore/hud/tft17_timebreakercore_square.png"
+  },
+  "TFT17_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_twistedfate/hud/tft17_twistedfate_square.png"
+  },
+  "TFT17_Urgot": {
+    "name": "우르곳",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_urgot/hud/tft17_urgot_square.png"
+  },
+  "TFT17_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_veigar/hud/tft17_veigar_square.png"
+  },
+  "TFT17_Vex": {
+    "name": "벡스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_vex/hud/tft17_vex_square.png"
+  },
+  "TFT17_Viktor": {
+    "name": "빅토르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_viktor/hud/tft17_viktor_square.png"
+  },
+  "TFT17_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_xayah/hud/tft17_xayah_square.png"
+  },
+  "TFT17_Zed": {
+    "name": "제드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_zed/hud/tft17_zed_square.png"
+  },
+  "TFT17_Zoe": {
+    "name": "조이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft17_zoe/hud/tft17_zoe_square.png"
+  },
+  "TFT3_Ahri": {
+    "name": "아리",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Annie": {
+    "name": "애니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_annie/hud/tft3_annie_square.png"
+  },
+  "TFT3_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_AurelionSol": {
+    "name": "아우렐리온 솔",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Bard": {
+    "name": "바드",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_BardMeep": {
+    "name": "정령",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Blitzcrank": {
+    "name": "블리츠크랭크",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Caitlyn": {
+    "name": "케이틀린",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Cassiopeia": {
+    "name": "카시오페아",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Ekko": {
+    "name": "에코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_ekko/hud/tft3_ekko_square.png"
+  },
+  "TFT3_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_ezreal/hud/tft3_ezreal_square.png"
+  },
+  "TFT3_Fiora": {
+    "name": "피오라",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Fizz": {
+    "name": "피즈",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Gangplank": {
+    "name": "갱플랭크",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Gnar": {
+    "name": "나르",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Graves": {
+    "name": "그레이브즈",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Irelia": {
+    "name": "이렐리아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_irelia/hud/tft3_irelia_square.png"
+  },
+  "TFT3_Janna": {
+    "name": "잔나",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_JarvanIV": {
+    "name": "자르반 4세",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Jayce": {
+    "name": "제이스",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Jhin": {
+    "name": "진",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Karma": {
+    "name": "카르마",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_karma/hud/tft3_karma_square.png"
+  },
+  "TFT3_KogMaw": {
+    "name": "코그모",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_leona/hud/tft3_leona_square.png"
+  },
+  "TFT3_Lucian": {
+    "name": "루시안",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Malphite": {
+    "name": "말파이트",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_MasterYi": {
+    "name": "마스터 이",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Mordekaiser": {
+    "name": "모데카이저",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_mordekaiser/hud/tft3_mordekaiser_square.png"
+  },
+  "TFT3_NPC_Cyte": {
+    "name": "세포",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_NPC_Kayn": {
+    "name": "케인",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_NPC_KaynElite": {
+    "name": "케인",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_NPC_Krug": {
+    "name": "game_character_displayname_SRUKrugMini",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_NPC_Raptor": {
+    "name": "칼날부리",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_NPC_Wolf": {
+    "name": "잠입자",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Nautilus": {
+    "name": "노틸러스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_nautilus/hud/tft3_nautilus_square.png"
+  },
+  "TFT3_Neeko": {
+    "name": "니코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_neeko/hud/tft3_neeko_square.png"
+  },
+  "TFT3_Nocturne": {
+    "name": "녹턴",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Poppy": {
+    "name": "뽀삐",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Rakan": {
+    "name": "라칸",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Riven": {
+    "name": "리븐",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Rumble": {
+    "name": "럼블",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_rumble/hud/tft3_rumble_square.png"
+  },
+  "TFT3_Shaco": {
+    "name": "샤코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_shaco/hud/tft3_shaco_square.png"
+  },
+  "TFT3_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Soraka": {
+    "name": "소라카",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_soraka/hud/tft3_soraka_square.png"
+  },
+  "TFT3_SuperMech": {
+    "name": "슈퍼 메크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_supermech/hud/tft3_supermech_square.png"
+  },
+  "TFT3_Syndra": {
+    "name": "신드라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_syndra/hud/tft3_syndra_square.png"
+  },
+  "TFT3_Teemo": {
+    "name": "티모",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Thresh": {
+    "name": "쓰레쉬",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Urgot": {
+    "name": "우르곳",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Vayne": {
+    "name": "베인",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Viktor": {
+    "name": "빅토르",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_WuKong": {
+    "name": "오공",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Xerath": {
+    "name": "제라스",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_XinZhao": {
+    "name": "신 짜오",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Yasuo": {
+    "name": "야스오",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Zed": {
+    "name": "제드",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Ziggs": {
+    "name": "직스",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFT3_Zoe": {
+    "name": "조이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft3_zoe/hud/tft3_zoe_square.png"
+  },
+  "TFT5_EmblemArmoryKey": {
+    "name": "특성의 고서",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft8_teamupprop/hud/icons2d/tft5_emblemarmorykey_square.png"
+  },
+  "TFT6_MercenaryChest": {
+    "name": "용병 상자",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT7_Aatrox": {
+    "name": "아트록스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_aatrox/hud/tft7_aatrox_square.png"
+  },
+  "TFT7_Anivia": {
+    "name": "애니비아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_anivia/hud/tft7_anivia_square.png"
+  },
+  "TFT7_AoShin": {
+    "name": "아오 신",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_aoshin/hud/tft7_aoshin_square.png"
+  },
+  "TFT7_Aphelios": {
+    "name": "아펠리오스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_aphelios/hud/tft7_aphelios_square.png"
+  },
+  "TFT7_AquaticDragon": {
+    "name": "솜",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_aquaticdragon/hud/tft7_sohm_square.png"
+  },
+  "TFT7_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_ashe/hud/tft7_ashe_square.png"
+  },
+  "TFT7_AurelionSol": {
+    "name": "아우렐리온 솔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_aurelionsol/hud/tft7_aurelionsol_square.png"
+  },
+  "TFT7_Bard": {
+    "name": "바드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_bard/hud/tft7_bard_square.png"
+  },
+  "TFT7_Braum": {
+    "name": "브라움",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_braum/hud/tft7_braum_square.png"
+  },
+  "TFT7_Corki": {
+    "name": "코르키",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_corki/hud/tft7_corki_square.png"
+  },
+  "TFT7_Diana": {
+    "name": "다이애나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_diana/hud/tft7_diana_square.png"
+  },
+  "TFT7_DragonBlue": {
+    "name": "다에야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragonblue/hud/tft7_miragedragon_square.png"
+  },
+  "TFT7_DragonEarth": {
+    "name": "테라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragonearth/hud/tft7_dragonearth_square.png"
+  },
+  "TFT7_DragonGold": {
+    "name": "이다스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragongold/hud/tft7_shimmerscaledragon_square.png"
+  },
+  "TFT7_DragonGreen": {
+    "name": "시오유",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragongreen/hud/tft7_jadedragon_square.png"
+  },
+  "TFT7_DragonGuild": {
+    "name": "쌩쌩이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragonguild/hud/tft7_dragonguild_square.png"
+  },
+  "TFT7_DragonPurple": {
+    "name": "사이펜",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragonpurple/hud/tft7_whispersdragon_square.png"
+  },
+  "TFT7_DragonSwain": {
+    "name": "폭군 스웨인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_dragonswain/hud/tft7_dragonswain_square.png"
+  },
+  "TFT7_Elise": {
+    "name": "엘리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_elise/hud/tft7_elise_square.png"
+  },
+  "TFT7_EliseSpider": {
+    "name": "엘리스 거미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_elisespider/hud/tft7_elisespider_square.png"
+  },
+  "TFT7_Ezreal": {
+    "name": "이즈리얼",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_ezreal/hud/tft7_ezreal_square.png"
+  },
+  "TFT7_Gnar": {
+    "name": "나르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_gnar/hud/tft7_gnar_square.png"
+  },
+  "TFT7_GnarBig": {
+    "name": "메가 나르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_gnarbig/hud/tft7_gnarbig_square.png"
+  },
+  "TFT7_Graves": {
+    "name": "그레이브즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_graves/hud/tft7_graves_square.png"
+  },
+  "TFT7_Hecarim": {
+    "name": "헤카림",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_hecarim/hud/tft7_hecarim_square.png"
+  },
+  "TFT7_Heimerdinger": {
+    "name": "하이머딩거",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_heimerdinger/hud/tft7_heimerdinger_square.png"
+  },
+  "TFT7_Illaoi": {
+    "name": "일라오이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_illaoi/hud/tft7_illaoi_square.png"
+  },
+  "TFT7_IllaoiMinion": {
+    "name": "일라오이 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_illaoiminion/hud/tft7_illaoiminion_square.png"
+  },
+  "TFT7_IvernMinion": {
+    "name": "조이의 데이지",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft5_ivernminion/hud/tft5_ivernminion_square.png"
+  },
+  "TFT7_JadeKrug": {
+    "name": "비취 돌거북",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_krug/hud/ancientkrug_square.png"
+  },
+  "TFT7_JadeStatue": {
+    "name": "비취 조각상",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft7_jadestatue_square.png"
+  },
+  "TFT7_Jax": {
+    "name": "잭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_jax/hud/tft7_jax_square.png"
+  },
+  "TFT7_Jayce": {
+    "name": "제이스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_jayce/hud/tft7_jayce_square.png"
+  },
+  "TFT7_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_jinx/hud/tft7_jinx_square.png"
+  },
+  "TFT7_JinxMine": {
+    "name": "징크스 지뢰",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT7_Kaisa": {
+    "name": "카이사",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_kaisa/hud/tft7_kaisa_square.png"
+  },
+  "TFT7_Karma": {
+    "name": "카르마",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_karma/hud/tft7_karma_square.png"
+  },
+  "TFT7_Kayn": {
+    "name": "케인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_kayn/hud/tft7_kayn_square.png"
+  },
+  "TFT7_LagoonRelic": {
+    "name": "심해석",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT7_LeeSin": {
+    "name": "리 신",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_leesin/hud/tft7_leesin_square.png"
+  },
+  "TFT7_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_leona/hud/tft7_leona_square.png"
+  },
+  "TFT7_Lillia": {
+    "name": "릴리아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_lillia/hud/tft7_lillia_square.png"
+  },
+  "TFT7_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_lulu/hud/tft7_lulu_square.png"
+  },
+  "TFT7_Lux": {
+    "name": "럭스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_lux/hud/tft7_lux_square.png"
+  },
+  "TFT7_Malphite": {
+    "name": "말파이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_malphite/hud/tft7_malphite_square.png"
+  },
+  "TFT7_Nami": {
+    "name": "나미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nami/hud/tft7_nami_square.png"
+  },
+  "TFT7_Nasus": {
+    "name": "나서스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nasus/hud/tft7_nasus_square.png"
+  },
+  "TFT7_Neeko": {
+    "name": "니코",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_neeko/hud/tft7_neeko_square.png"
+  },
+  "TFT7_Nidalee": {
+    "name": "니달리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nidalee/hud/tft7_nidalee_square.png"
+  },
+  "TFT7_Nilah": {
+    "name": "닐라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nilah/hud/tft7_nilah_square.png"
+  },
+  "TFT7_Nomsy": {
+    "name": "뇸뇸이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nomsy/hud/tft7_nomsy_square.png"
+  },
+  "TFT7_Nunu": {
+    "name": "누누와 윌럼프",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_nunu/hud/tft7_nunu_square.png"
+  },
+  "TFT7_Olaf": {
+    "name": "올라프",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_olaf/hud/tft7_olaf_square.png"
+  },
+  "TFT7_Orbs": {
+    "name": "조이 구슬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT7_Ornn": {
+    "name": "오른",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_ornn/hud/tft7_ornn_square.png"
+  },
+  "TFT7_Pantheon": {
+    "name": "판테온",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_pantheon/hud/tft7_pantheon_square.png"
+  },
+  "TFT7_Pyke": {
+    "name": "파이크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_pyke/hud/tft7_pyke_square.png"
+  },
+  "TFT7_Qiyana": {
+    "name": "키아나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_qiyana/hud/tft7_qiyana_square.png"
+  },
+  "TFT7_Rakan": {
+    "name": "라칸",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_rakan/hud/tft7_rakan_square.png"
+  },
+  "TFT7_Rell": {
+    "name": "렐",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_rell/hud/tft7_rell_square.png"
+  },
+  "TFT7_Rengar": {
+    "name": "렝가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_rengar/hud/tft7_rengar_square.png"
+  },
+  "TFT7_Ryze": {
+    "name": "라이즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_ryze/hud/tft7_ryze_square.png"
+  },
+  "TFT7_Sejuani": {
+    "name": "세주아니",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_sejuani/hud/tft7_sejuani_square.png"
+  },
+  "TFT7_Senna": {
+    "name": "세나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_senna/hud/tft7_senna_square.png"
+  },
+  "TFT7_Seraphine": {
+    "name": "세라핀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_seraphine/hud/tft7_seraphine_square.png"
+  },
+  "TFT7_Sett": {
+    "name": "세트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_sett/hud/tft7_sett_square.png"
+  },
+  "TFT7_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_shen/hud/tft7_shen_square.png"
+  },
+  "TFT7_ShimmerscaleProp": {
+    "name": "황금 드래곤의 저장고",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFT7_Shyvana": {
+    "name": "쉬바나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_shyvana/hud/tft7_shyvana_square.png"
+  },
+  "TFT7_ShyvanaDragon": {
+    "name": "쉬바나 용 형상",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_shyvanadragon/hud/tft7_shyvanadragon_square.png"
+  },
+  "TFT7_Skarner": {
+    "name": "스카너",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_skarner/hud/tft7_skarner_square.png"
+  },
+  "TFT7_Sona": {
+    "name": "소나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_sona/hud/tft7_sona_square.png"
+  },
+  "TFT7_Soraka": {
+    "name": "소라카",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_soraka/hud/tft7_soraka_square.png"
+  },
+  "TFT7_Swain": {
+    "name": "스웨인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_swain/hud/tft7_swain_square.png"
+  },
+  "TFT7_SwainDemonForm": {
+    "name": "스웨인 악마 형상",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_swaindemonform/hud/tft7_swaindemonform_square.png"
+  },
+  "TFT7_Sylas": {
+    "name": "사일러스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_sylas/hud/tft7_sylas_square.png"
+  },
+  "TFT7_TahmKench": {
+    "name": "탐 켄치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_tahmkench/hud/tft7_tahmkench_square.png"
+  },
+  "TFT7_Taliyah": {
+    "name": "탈리야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_taliyah/hud/tft7_taliyah_square.png"
+  },
+  "TFT7_Talon": {
+    "name": "탈론",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_talon/hud/tft7_talon_square.png"
+  },
+  "TFT7_Taric": {
+    "name": "타릭",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_taric/hud/tft7_taric_square.png"
+  },
+  "TFT7_TempestStrike": {
+    "name": "폭풍 타격",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_tempeststrike/hud/tft7_tempeststrike_square.png"
+  },
+  "TFT7_Thresh": {
+    "name": "쓰레쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_thresh/hud/tft7_thresh_square.png"
+  },
+  "TFT7_TrainerDragon": {
+    "name": "뇸뇸이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft7_nomsy_square.png"
+  },
+  "TFT7_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_tristana/hud/tft7_tristana_square.png"
+  },
+  "TFT7_Twitch": {
+    "name": "트위치",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_twitch/hud/tft7_twitch_square.png"
+  },
+  "TFT7_Varus": {
+    "name": "바루스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_varus/hud/tft7_varus_square.png"
+  },
+  "TFT7_Vladimir": {
+    "name": "블라디미르",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_vladimir/hud/tft7_vladimir_square.png"
+  },
+  "TFT7_Volibear": {
+    "name": "볼리베어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_volibear/hud/tft7_volibear_square.png"
+  },
+  "TFT7_Wukong": {
+    "name": "오공",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_wukong/hud/tft7_wukong_square.png"
+  },
+  "TFT7_Xayah": {
+    "name": "자야",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_xayah/hud/tft7_xayah_square.png"
+  },
+  "TFT7_Yasuo": {
+    "name": "야스오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_yasuo/hud/tft7_yasuo_square.png"
+  },
+  "TFT7_Yone": {
+    "name": "요네",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_yone/hud/tft7_yone_square.png"
+  },
+  "TFT7_Zac": {
+    "name": "자크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_zac/hud/tft7_zac_square.png"
+  },
+  "TFT7_Zeri": {
+    "name": "제리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_zeri/hud/tft7_zeri_square.png"
+  },
+  "TFT7_Zoe": {
+    "name": "조이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_zoe/hud/tft7_zoe_square.png"
+  },
+  "TFT7_Zyra": {
+    "name": "자이라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7_zyra/hud/tft7_zyra_square.png"
+  },
+  "TFT7b_Heimerdinger": {
+    "name": "하이머딩거",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7b_heimerdinger/hud/tft7b_heimerdinger_square.png"
+  },
+  "TFT7b_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7b_lulu/hud/tft7b_lulu_square.png"
+  },
+  "TFT7b_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7b_tristana/hud/tft7b_tristana_square.png"
+  },
+  "TFT7b_Volibear": {
+    "name": "볼리베어",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft7b_volibear/hud/tft7b_volibear_square.png"
+  },
+  "TFT9_SLIME_Crab": {
+    "name": "협곡 바위 게",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft9_slime_crab/hud/icons2d/tft9_slime_crab_spell.png"
+  },
+  "TFTEvent5YR_BilgewaterCannons": {
+    "name": "빌지워터 대포",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_bilgewatercannons/hud/tftevent5yr_bilgewatercannons_square.png"
+  },
+  "TFTEvent5YR_BirthdayPenguNPC": {
+    "name": "소환수 배불뚝이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFTEvent5YR_Brock": {
+    "name": "브록",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFTEvent5YR_DemacianStandard": {
+    "name": "데마시아",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_demacianstandard/hud/tftevent5yr_demacianstandard_square.png"
+  },
+  "TFTEvent5YR_Galio": {
+    "name": "갈리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_galio/hud/tftevent5yr_galio_square.png"
+  },
+  "TFTEvent5YR_Hecarim": {
+    "name": "해커림",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFTEvent5YR_HighRollerDamageTracker": {
+    "name": "세비카의 징크스 팔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_highrollerdamagetracker/hud/tftevent5yr_highrollerdamagetracker_square.png"
+  },
+  "TFTEvent5YR_IxtalProp": {
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft16_explorerprop/hud/tft16_explorerprop_square.png"
+  },
+  "TFTEvent5YR_Kayle": {
+    "name": "케일",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_kayle/hud/tftevent5yr_kayle_square.png"
+  },
+  "TFTEvent5YR_Nitro_SummonLevel2": {
+    "name": "R-080T",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_nitro_summonlevel2/hud/tftevent5yr_nitro_summonlevel2_square.png"
+  },
+  "TFTEvent5YR_Nitro_SummonLevel4": {
+    "name": "T-43X",
+    "image": "https://raw.communitydragon.org/latest/game/none"
+  },
+  "TFTEvent5YR_PenguGarenNPC": {
+    "name": "펭구 가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_pengugarennpc/hud/tftevent5yr_pengugarennpc_square.png"
+  },
+  "TFTEvent5YR_SuperMech": {
+    "name": "슈퍼 메크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_supermech/hud/tftevent5yr_supermech_square.png"
+  },
+  "TFTEvent5YR_TheCrewDamageTracker": {
+    "name": "크루 함선",
+    "image": "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_15_starcrew.png"
+  },
+  "TFTEvent5YR_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tftevent5yr_veigar/hud/tftevent5yr_veigar_square.png"
+  },
+  "TFTEventER_Dragon": {
+    "name": "드래곤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_dragon/hud/tfteventer_dragon_square.png"
+  },
+  "TFTEventER_Golem": {
+    "name": "골렘",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_golem/hud/tfteventer_golem_square.png"
+  },
+  "TFTEventER_LizardElder": {
+    "name": "도마뱀 장로",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_lizardelder/hud/tfteventer_lizardelder_square.png"
+  },
+  "TFTEventER_LizardYoung": {
+    "name": "새끼 도마뱀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_lizardyoung/hud/tfteventer_lizardyoung_square.png"
+  },
+  "TFTEventER_MinionMelee": {
+    "name": "근접 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_minionmelee/hud/tfteventer_minionmelee_square.png"
+  },
+  "TFTEventER_MinionRanged": {
+    "name": "원거리 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_minionranged/hud/tfteventer_minionranged_square.png"
+  },
+  "TFTEventER_MinionSiege": {
+    "name": "공성 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_minionsiege/hud/tfteventer_minionsiege_square.png"
+  },
+  "TFTEventER_MinionSuper": {
+    "name": "슈퍼 미니언",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_minionsuper/hud/tfteventer_minionsuper_square.png"
+  },
+  "TFTEventER_Wraith": {
+    "name": "악령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_wraith/hud/tfteventer_wraith_square.png"
+  },
+  "TFTEventER_WraithLesser": {
+    "name": "하급 망령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfteventer_wraithlesser/hud/tfteventer_wraithlesser_square.png"
+  },
+  "TFTEvent_CT_ChonccNPC": {
+    "name": "소환수 배불뚝이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_itemunknown/skins/skin0/tft_item_unknown.png"
+  },
+  "TFTTutorial_Ahri": {
+    "name": "아리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_ahri/hud/tft_ahri_square.png"
+  },
+  "TFTTutorial_Akali": {
+    "name": "아칼리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_akali/hud/tft_akali_square.png"
+  },
+  "TFTTutorial_Ashe": {
+    "name": "애쉬",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_ashe/hud/tft_ashe_square.png"
+  },
+  "TFTTutorial_Blitzcrank": {
+    "name": "블리츠크랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_blitzcrank/hud/tft_steamgolem_square.png"
+  },
+  "TFTTutorial_Braum": {
+    "name": "브라움",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_braum/hud/tft_braum_square.png"
+  },
+  "TFTTutorial_Camille": {
+    "name": "카밀",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_camille/hud/tft_camille_square.png"
+  },
+  "TFTTutorial_Darius": {
+    "name": "다리우스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_darius/hud/tft_darius_square_0.png"
+  },
+  "TFTTutorial_Elise": {
+    "name": "엘리스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_elise/hud/tft_elise_square.png"
+  },
+  "TFTTutorial_EliseSpider": {
+    "name": "엘리스 거미",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfttutorial_elisespider/hud/tfttutorial_elisespider_square.png"
+  },
+  "TFTTutorial_Evelynn": {
+    "name": "이블린",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_evelynn/hud/tft_evelynn_square.png"
+  },
+  "TFTTutorial_Fiora": {
+    "name": "피오라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_fiora/hud/tft_fiora_square.png"
+  },
+  "TFTTutorial_Galio": {
+    "name": "갈리오",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tfttutorial_galio/hud/tfttutorial_galio_square.png"
+  },
+  "TFTTutorial_Gangplank": {
+    "name": "갱플랭크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_gangplank/hud/tft_gangplank_square.png"
+  },
+  "TFTTutorial_Garen": {
+    "name": "가렌",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_garen/hud/tft_garen_square.png"
+  },
+  "TFTTutorial_Graves": {
+    "name": "그레이브즈",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_graves/hud/tft_graves_square.png"
+  },
+  "TFTTutorial_Jayce": {
+    "name": "제이스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_jayce/hud/tft_jayce_square.png"
+  },
+  "TFTTutorial_Jinx": {
+    "name": "징크스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_jinx/hud/tft_jinx_square.png"
+  },
+  "TFTTutorial_Kassadin": {
+    "name": "카사딘",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_kassadin/hud/tft_kassadin_square_0.png"
+  },
+  "TFTTutorial_Katarina": {
+    "name": "카타리나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_katarina/hud/tft_katarina_square.png"
+  },
+  "TFTTutorial_Kayle": {
+    "name": "케일",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_kayle/hud/tft_kayle_square.png"
+  },
+  "TFTTutorial_Khazix": {
+    "name": "카직스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_khazix/hud/tft_khazix_square.png"
+  },
+  "TFTTutorial_Leona": {
+    "name": "레오나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_leona/hud/tft_leona_square.png"
+  },
+  "TFTTutorial_Lissandra": {
+    "name": "리산드라",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_lissandra/hud/tft_lissandra_square.png"
+  },
+  "TFTTutorial_Lucian": {
+    "name": "루시안",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_lucian/hud/tft_lucian_square.png"
+  },
+  "TFTTutorial_Lulu": {
+    "name": "룰루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_lulu/hud/tft_lulu_square_0.png"
+  },
+  "TFTTutorial_Nidalee": {
+    "name": "니달리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_nidalee/hud/tft_nidalee_square.png"
+  },
+  "TFTTutorial_Pyke": {
+    "name": "파이크",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_pyke/hud/tft_pyke_square_0.png"
+  },
+  "TFTTutorial_RekSai": {
+    "name": "렉사이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_reksai/hud/tft_reksai_square.png"
+  },
+  "TFTTutorial_Shen": {
+    "name": "쉔",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_shen/hud/tft_shen_square.png"
+  },
+  "TFTTutorial_Tristana": {
+    "name": "트리스타나",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_tristana/hud/tft_tristana_square.png"
+  },
+  "TFTTutorial_TwistedFate": {
+    "name": "트위스티드 페이트",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_twistedfate/hud/tft_twistedfate_square.png"
+  },
+  "TFTTutorial_Varus": {
+    "name": "바루스",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_varus/hud/tft_varus_square_0.png"
+  },
+  "TFTTutorial_Vayne": {
+    "name": "베인",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_vayne/hud/tft_vayne_square.png"
+  },
+  "TFTTutorial_Veigar": {
+    "name": "베이가",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_veigar/hud/tft_veigar_square.png"
+  },
+  "TFTTutorial_Vi": {
+    "name": "바이",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_vi/hud/tft_vi_square.png"
+  },
+  "TFTTutorial_Warwick": {
+    "name": "워윅",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_warwick/hud/tft_warwick_square_0.png"
+  },
+  "TFTTutorial_Zed": {
+    "name": "제드",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_zed/hud/tft_zed_square_0.png"
+  },
+  "TFT_ArmoryKeyCompleted": {
+    "name": "완성 아이템 모루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_armorykeycompleted/hud/icons2d/tft_armorykeycompleted_square.png"
+  },
+  "TFT_ArmoryKeyComponent": {
+    "name": "조합 아이템 모루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_armorykeycomponent/hud/icons2d/tft_armorykeycomponent_square.png"
+  },
+  "TFT_ArmoryKeyOrnn": {
+    "name": "유물 아이템 모루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_armorykeyornn/hud/icons2d/tft_armorykeyornn_square.png"
+  },
+  "TFT_ArmoryKeySupport": {
+    "name": "지원 아이템 모루",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_armorykeysupport/hud/tft_armorykeysupport_square.png"
+  },
+  "TFT_BlueGolem": {
+    "name": "골렘",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_bluegolem/hud/tft_bluegolem_spell.png"
+  },
+  "TFT_ElderDragon": {
+    "name": "장로 드래곤",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_elderdragon/hud/dragon_square_elder.png"
+  },
+  "TFT_Krug": {
+    "name": "돌거북",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_krug/hud/ancientkrug_square.png"
+  },
+  "TFT_Murkwolf": {
+    "name": "어스름늑대",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_murkwolf/hud/tft_murkwolf_square.png"
+  },
+  "TFT_MurkwolfMini": {
+    "name": "어스름늑대",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_murkwolf/hud/tft_murkwolf_square.png"
+  },
+  "TFT_Razorbeak": {
+    "name": "칼날부리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_razorbeak/hud/razorbeak_square.png"
+  },
+  "TFT_RazorbeakMini": {
+    "name": "칼날부리",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_razorbeak/hud/razorbeak_square.png"
+  },
+  "TFT_RiftHerald": {
+    "name": "협곡의 전령",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_riftherald/hud/tft9_riftherald_square.png"
+  },
+  "TFT_TrainingDummy": {
+    "name": "훈련 봇",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_trainingdummy/hud/icons2d/tft_trainingdummy_donothing.png"
+  },
+  "TFT_Voidspawn": {
+    "name": "공허 생물",
+    "image": "https://raw.communitydragon.org/latest/game/assets/characters/tft_voidspawn/hud/icons2d/voidspawn_squarecopy.png"
+  }
+}

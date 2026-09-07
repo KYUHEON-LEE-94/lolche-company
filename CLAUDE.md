@@ -737,6 +737,17 @@ const IMAGE_FILENAME_OVERRIDES: Record<string, string> = {
 ```
 새 시즌 챔피언 이미지 404 발생 시 CommunityDragon `files.exported.txt`에서 실제 파일명 확인 후 맵에 추가.
 
+### 한글 이름·이미지 폴백 정적 맵 (`krUnits.generated.json`)
+
+ddragon에 없는 세트 유닛(세트18 `DA_*` 등)의 한글명·이미지는 CommunityDragon `ko_kr.json`에서 온다.
+이 파일은 실측 ≈23.5MB라 Next Data Cache 2MB 한도를 넘어 런타임 fetch가 콜드 스타트마다 재파싱돼
+상세 전적을 느리게 했다. 그래서 **빌드타임에 `{ apiName → { name, image } }` 컴팩트 맵으로 정적화**한다.
+
+- 생성: `npm run gen:tft-locale` (= `scripts/gen-tft-kr-units.mjs`) → `lib/tft/krUnits.generated.json`(커밋).
+- **새 TFT 세트 출시 시 1회 실행 후 커밋.** `image`는 `cdIconUrl` 규칙이 적용된 완성 PNG URL이라 런타임 변환 없음.
+- `lib/tft/tftLocale.ts`는 이 JSON을 정적 import(런타임 CD fetch 0). 80KB+ JSON이 클라 번들에 새지 않도록
+  `import 'server-only'` 경계이며, 클라가 쓰는 순수 함수 `rarityBorderClass`는 `lib/tft/rarity.ts`로 분리했다.
+
 ## 주의 사항
 
 - `SUPABASE_SERVICE_ROLE_KEY`는 RLS를 우회하므로 서버 사이드에서만 사용
