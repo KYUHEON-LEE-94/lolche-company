@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabaseClient } from '@/lib/supabase'
-import { archiveSeason, updateSeasonStatusAction, deleteSeasonHallOfFameAction } from '@/lib/actions/season-actions'
+import { archiveSeason, updateSeasonStatusAction, deleteSeasonHallOfFameAction, createSeasonAction } from '@/lib/actions/season-actions'
 import {Spinner} from '@/app/components/Spinner'
 import SeasonRolloverPanel from '@/app/admin/seasons/SeasonRolloverPanel'
 import SeasonEndScheduler from '@/app/admin/seasons/SeasonEndScheduler'
@@ -52,12 +52,8 @@ export default function AdminSeasonManagementPage() {
     const handleCreateSeason = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newSeason.season_name || !newSeason.set_number) return
-        const { error } = await supabaseClient.from('seasons').insert({
-            season_name: newSeason.season_name,
-            set_number:  parseInt(newSeason.set_number),
-            is_active:   false,
-        })
-        if (error) alert('등록 실패: ' + error.message)
+        const result = await createSeasonAction(newSeason.season_name, parseInt(newSeason.set_number))
+        if (!result.ok) alert('등록 실패: ' + result.message)
         else {
             setIsModalOpen(false)
             setNewSeason({ season_name: '', set_number: '' })

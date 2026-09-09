@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabaseClient } from '@/lib/supabase'
-import { getDiscordAvatarUrl, getDiscordDisplayName, getDiscordId } from '@/lib/auth/discord'
+import { getDiscordAvatarUrl, getDiscordDisplayName } from '@/lib/auth/discord'
 import type { User } from '@supabase/supabase-js'
 import { BTN_NEUTRAL } from '@/lib/ui/styles'
 
@@ -24,26 +24,18 @@ export default function AuthButtons() {
   useEffect(() => {
     let mounted = true
 
-    async function checkAdmin(user: User) {
-      const { data: byUserId } = await supabaseClient
-          .from('admins')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-      if (byUserId) return true
-
-      // user_id 백필 전(첫 로그인 직후 등) 대비 fallback
-      const discordId = getDiscordId(user)
-      if (!discordId) return false
-
-      const { data: byDiscordId } = await supabaseClient
-          .from('admins')
-          .select('user_id')
-          .eq('discord_id', discordId)
-          .maybeSingle()
-
-      return !!byDiscordId
+    // admins 테이블은 RLS 로 브라우저(anon)에서 직접 읽을 수 없으므로
+    // 관리자 판정은 서버 라우트(requireAdmin: user_id 매칭 → discord_id 폴백 → user_id 백필)에 위임한다.
+    // 네트워크/조회 실패는 관리자 아님으로 조용히 degrade 한다(기존 동작과 동일).
+    async function checkAdmin() {
+      try {
+        const res = await fetch('/api/admin/me', { cache: 'no-store' })
+        if (!res.ok) return false
+        const body = await res.json()
+        return body?.ok === true
+      } catch {
+        return false
+      }
     }
 
     async function applyUser(user: User | null) {
@@ -56,7 +48,7 @@ export default function AuthButtons() {
         return
       }
 
-      const admin = await checkAdmin(user)
+      const admin = await checkAdmin()
       if (!mounted) return
       setIsAdmin(admin)
     }

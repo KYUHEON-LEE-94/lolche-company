@@ -244,6 +244,26 @@ LoL 단계 전체를 건너뛰고 `null`을 반환해 기존 저장값을 덮어
 > **주의:** `supabaseService`, `supabaseAdmin`은 service role key를 사용하므로
 > 절대 클라이언트 컴포넌트에서 import하지 않는다.
 
+## RLS (Row Level Security)
+
+**모든 public 테이블에 RLS가 적용되어 있다.** anon 키는 `NEXT_PUBLIC_SUPABASE_ANON_KEY`로 브라우저에 공개되므로,
+RLS가 없으면 누구나 anon 키로 테이블을 직접 읽고 쓸 수 있다. 마이그레이션: `scripts/sql/20260909_enable_rls_public_tables.sql`.
+
+- **A 그룹(공개 읽기):** `members`, `seasons`, `profile_frames` — `enable RLS` + `select using(true)` 정책만.
+  공개 페이지가 anon으로 SELECT하므로 읽기는 열어두고, **쓰기 정책은 만들지 않아 브라우저 쓰기를 차단**한다.
+- **B 그룹(서버 전용):** `admins`, `hall_of_fame`, `tft_matches`, `tft_match_participants`, `member_rank_history`,
+  `sync_logs`, `custom_game_rounds`, `custom_game_results`, `custom_game_guests`, `custom_game_guest_results`,
+  `custom_game_teams` — `enable RLS`만, **정책 0개**. anon/authenticated 완전 차단, service role만 접근.
+  (`admins`는 공개 select 정책조차 두지 않는다 — 관리자 명단은 anon 에게 노출되면 안 된다.)
+- **service role**(`supabaseService`/`supabaseAdmin`)은 RLS를 우회하므로 서버 라우트·Server Action·Sync는 무영향.
+- **`admins`는 브라우저에서 직접 읽지 않는다.** 관리자 판정은 서버 라우트 `GET /api/admin/me`로만 한다
+  (`AuthButtons.tsx`가 `res.ok && body.ok === true`로 판정). `admins`에 직접 쿼리하지 말 것.
+- **시즌 생성은 Server Action `createSeasonAction`(service role)으로만 한다.** 브라우저 anon INSERT는 RLS로 차단된다.
+
+> **새 public 테이블 추가 시 규칙:** 반드시 `enable row level security`를 켜고,
+> 공개 페이지가 anon으로 읽어야 하면 `for select ... using(true)` 정책을 준다(쓰기 정책은 만들지 않는다).
+> 서버 전용이면 정책 0개로 둔다. 쓰기는 항상 service role(서버 라우트/Server Action) 경유.
+
 ## 동기화 흐름
 
 ### ★ 세트 전환 랭크 보존 불변식 (절대 되돌리지 말 것)

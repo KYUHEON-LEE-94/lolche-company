@@ -67,6 +67,36 @@ export async function archiveSeason(seasonId: number, queueType: 'solo' | 'doubl
     }
 }
 
+/**
+ * 새 시즌을 생성한다(비활성 상태로). 브라우저 anon INSERT 를 대체하는 서버 액션이다.
+ * seasons 에 RLS 를 켜면 브라우저(anon)에서는 쓰기가 막히므로 service role 로 우회한다.
+ */
+export async function createSeasonAction(seasonName: string, setNumber: number) {
+    const { ok } = await requireAdmin()
+    if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
+
+    const name = typeof seasonName === 'string' ? seasonName.trim() : ''
+    if (!name || name.length > 60) {
+        return { ok: false, message: '시즌 이름은 1~60자로 입력하세요.' }
+    }
+    if (!Number.isInteger(setNumber) || setNumber < 1 || setNumber > 999) {
+        return { ok: false, message: '세트 번호는 1~999의 정수여야 합니다.' }
+    }
+
+    try {
+        const { supabaseService } = await import('@/lib/supabase/service')
+        const { error } = await supabaseService
+            .schema('public')
+            .from('seasons')
+            .insert({ season_name: name, set_number: setNumber, is_active: false })
+        if (error) throw error
+        revalidatePath('/admin/seasons')
+        return { ok: true }
+    } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : '오류가 발생했습니다.' }
+    }
+}
+
 export async function updateSeasonStatusAction(id: number, targetStatus: boolean) {
     const { ok } = await requireAdmin()
     if (!ok) return { ok: false, message: '관리자 권한이 필요합니다.' }
