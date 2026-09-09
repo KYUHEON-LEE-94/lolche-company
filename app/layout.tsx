@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SiteNav from "@/app/components/SiteNav";
+import { getSiteUrl } from "@/lib/og/siteUrl";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // OG 이미지는 절대 URL 이어야 크롤러가 읽는다. 운영에서는 SITE_URL 을 등록한다.
+  metadataBase: getSiteUrl(),
   title: "롤토 컴퍼니",
   description: "롤토 컴퍼니 단톡방 멤버들 순위 사이트",
+  openGraph: {
+    type: "website",
+    siteName: "롤체 컴퍼니",
+    locale: "ko_KR",
+    title: "롤토 컴퍼니",
+    description: "롤토 컴퍼니 단톡방 멤버들 순위 사이트",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

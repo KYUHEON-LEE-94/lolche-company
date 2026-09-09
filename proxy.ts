@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import {
+  OG_PREVIEW_TARGETS,
+  isCrawlerUserAgent,
+  isMetadataImagePath,
+  isOgPreviewPath,
+} from '@/lib/og/targets'
 
 /** 로그인 없이 접근 가능한 경로 (prefix 매칭) */
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm']
@@ -16,6 +22,20 @@ export async function proxy(request: NextRequest) {
 
   if (BYPASS_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next()
+  }
+
+  // 링크 미리보기용 공개면. 여기서 여는 것은 (1) metadata 이미지 라우트와 (2) `/og/*`
+  // 메타 전용 페이지뿐이며, 둘 다 OG 카드에 이미 인쇄되는 데이터만 담는다.
+  // 이미지 원본은 카카오처럼 별도 UA 로 재요청되므로 UA 와 무관하게 열어야 한다.
+  if (isMetadataImagePath(pathname) || isOgPreviewPath(pathname)) {
+    return NextResponse.next()
+  }
+
+  // ⚠ UA 는 위조 가능하다. 크롤러 UA 라도 실제 앱 페이지는 절대 통과시키지 않고
+  //    본문 없는 `/og/*` 로 rewrite 만 한다(URL 은 그대로라 공유 링크가 유지된다).
+  const ogTarget = OG_PREVIEW_TARGETS[pathname]
+  if (ogTarget && isCrawlerUserAgent(request.headers.get('user-agent'))) {
+    return NextResponse.rewrite(new URL(ogTarget, request.url))
   }
 
   // 공식 패턴: 요청/응답 쿠키 양쪽에 써야 갱신된 세션 토큰이 유실되지 않는다.

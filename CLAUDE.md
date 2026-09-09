@@ -165,6 +165,8 @@ RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 NEXT_PUBLIC_DISCORD_GUILD_ID=       # 값 있으면 그 Discord 서버(길드) 멤버만 로그인 허용, 비우면 게이트 off (기존 동작)
+SITE_URL=                           # OG 절대 URL 기준(metadataBase). 미설정 시 VERCEL_PROJECT_PRODUCTION_URL → VERCEL_URL → localhost 폴백.
+                                    # VERCEL_URL 은 배포마다 바뀌므로 운영에서는 반드시 SITE_URL 을 등록한다 (lib/og/siteUrl.ts)
 ```
 
 ### Discord 활동 요약
