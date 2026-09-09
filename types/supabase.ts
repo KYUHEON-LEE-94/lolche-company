@@ -373,6 +373,25 @@ export type CustomGame = {
   max_rounds: number
   created_at: string
   ended_at: string | null
+  /** 30분 전 디스코드 채널 알림 발송 기록(20260734). 마이그레이션 미적용 환경이 있어 optional. */
+  reminder_sent_at?: string | null
+  /** 60분 전 웹 푸시 발송 기록(20260911). reminder_sent_at 과 완전히 독립적이다. */
+  push_reminder_sent_at?: string | null
+}
+
+/**
+ * 웹 푸시(VAPID) 구독. 기기(브라우저)당 1행이며 endpoint 가 전역 유니크다.
+ * RLS 정책 0개(서버 전용) — service role 로만 읽고 쓴다.
+ */
+export type PushSubscription = {
+  id: string
+  member_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  user_agent: string | null
+  created_at: string
+  last_used_at: string | null
 }
 
 export type CustomGameTeam = {
@@ -614,6 +633,19 @@ export interface Database {
         Insert: Optional<SteamFeaturedDealSnapshot> & { id?: boolean }
         Relationships: []
         Update: Optional<SteamFeaturedDealSnapshot>
+      }
+      push_subscriptions: {
+        Row: PushSubscription
+        Insert: Optional<Omit<PushSubscription, 'id' | 'created_at'>> & {
+          id?: string
+          created_at?: string
+          member_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+        }
+        Relationships: []
+        Update: Optional<PushSubscription>
       }
       // --- 내전 테이블 ---
       custom_games: {

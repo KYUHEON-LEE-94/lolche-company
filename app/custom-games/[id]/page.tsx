@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
 import SteamThumb from '@/app/steam/SteamThumb'
+import PushNotifyToggle from '@/app/components/PushNotifyToggle'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
 import LolTeamAssignPanel, {
   EMPTY_LOL_DRAFT,
@@ -1089,6 +1090,8 @@ export default function CustomGameDetailPage() {
                   {isTft && ` · 최대 ${game.max_rounds}판 · ${rounds.length}판 완료`}
                 </p>
               </div>
+
+              {!isClosed && <PushNotifyToggle />}
 
               {addingRound && (
                 <div className="mb-6 flex items-center gap-3 px-4 py-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-brand-ink text-sm">

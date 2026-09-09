@@ -40,6 +40,18 @@
 - **시작 임박(기본 30분 전)** 자동 알림 — 내전당 1회만 발송
 - 웹훅 방식이라 봇 불필요. URL 은 `DISCORD_WEBHOOK_URL` 환경변수로만 관리(서버 전용)
 
+### 웹 푸시 알림 (PWA)
+- 내전 상세의 **"🔔 시작 1시간 전 알림"** 토글로 기기(브라우저)에 푸시 구독을 등록
+- 구독은 **기기 단위**이며 특정 내전에 종속되지 않는다 — 켜 두면 내가 **확정 참가**한(또는 주최한)
+  모든 내전의 시작 1시간 전에 알림이 온다. **대기자는 받지 않는다**
+- 발송은 `/api/cron/notify-reminders` 가 함께 처리한다 —
+  **30분 창 = 디스코드 채널 웹훅**, **60분 창 = 개인 기기 웹 푸시**로 서로 독립적이며 각자 1회씩 발송
+- VAPID 키(`NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`)가 없으면
+  푸시만 조용히 skip 되고 디스코드 알림은 그대로 동작한다
+- **PWA**: `/manifest.webmanifest` + `/sw.js` 로 홈 화면 설치 지원.
+  ⚠ **iOS/iPadOS 는 홈 화면에 추가한 PWA 안에서만** 웹 푸시가 동작한다(iOS 16.4+).
+  Safari 탭에서는 토글 대신 설치 안내가 표시된다
+
 ### Discord 활동
 - TFT 페이지에서 승인 멤버의 최근 30일 음성 시간·활동일·메시지 수 확인
 - DB에 연결된 Discord 계정만 활동 봇 데이터와 서버에서 매칭하며 Discord ID는 브라우저에 노출하지 않음
@@ -86,7 +98,7 @@
 | 작업 | 주기 | 트리거 | 엔드포인트 |
 |---|---|---|---|
 | **전체 랭크 동기화**(롤체·롤 티어/전적) | 30분~1시간 | **cron-job.org** | `/api/admin/sync-all` |
-| **내전 시작 임박 알림** | 5~10분 | **cron-job.org** | `/api/cron/notify-reminders` |
+| **내전 시작 임박 알림**(30분=디스코드 채널 · 60분=웹 푸시) | 5~10분 | **cron-job.org** | `/api/cron/notify-reminders` |
 | **스팀 캐시**(보유 게임·persona·온라인) | 매일 | **cron-job.org** | `/api/admin/sync-steam` |
 | 패치 노트(롤체·롤)·스팀 할인 | 매일 | GitHub Actions | `/api/cron/sync-tft-patch-notes` 등 |
 | 이달의 음성왕 포인트 | 매달 1~3일 | GitHub Actions | `/api/cron/monthly-voice-award` |

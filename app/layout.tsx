@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SiteNav from "@/app/components/SiteNav";
+import PwaServiceWorker from "@/app/components/PwaServiceWorker";
 import { getSiteUrl } from "@/lib/og/siteUrl";
 
 const geistSans = Geist({
@@ -27,6 +28,9 @@ export const metadata: Metadata = {
     description: "롤토 컴퍼니 단톡방 멤버들 순위 사이트",
   },
   twitter: { card: "summary_large_image" },
+  manifest: "/manifest.webmanifest",
+  // iOS 는 홈 화면에 추가한 PWA 안에서만 웹 푸시를 지원한다(iOS 16.4+).
+  appleWebApp: { capable: true, title: "롤체 컴퍼니", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({
@@ -55,6 +59,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning
       >
+      <PwaServiceWorker />
       <SiteNav />
       {children}
       </body>

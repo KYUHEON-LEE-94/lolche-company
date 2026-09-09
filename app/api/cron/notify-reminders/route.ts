@@ -4,8 +4,11 @@ import { isMissingColumnError } from '@/lib/customGames/game'
 import { isMissingTableError } from '@/lib/db/pgErrors'
 import { sendDiscordWebhook, DISCORD_COLOR, notifySeasonEndingSoon, type DiscordEmbed } from '@/lib/discord/notify'
 import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGames/display'
+import { sendCustomGamePushReminders, type PushReminderResult } from '@/lib/push/sendGameReminders'
 
 export const dynamic = 'force-dynamic'
+// web-push 는 node crypto 를 쓰므로 엣지 승격을 막는다.
+export const runtime = 'nodejs'
 
 /** 시작 몇 분 전부터 "임박" 알림을 보낼지. */
 const configuredWindow = Number(process.env.REMINDER_WINDOW_MIN ?? '30')
@@ -171,9 +174,19 @@ export async function GET(req: Request) {
     customGameSent += 1
   }
 
+  // 신규: 60분 창 웹 푸시. 위 30분 디스코드 알림과 독립적이며, 여기서 예외가 나도
+  // 캘린더·시즌 알림은 계속 진행되어야 하므로 통째로 try/catch 한다.
+  let push: PushReminderResult
+  try {
+    push = await sendCustomGamePushReminders(now)
+  } catch (e) {
+    console.error('[notify-reminders] 웹 푸시 실패', e instanceof Error ? e.message : '오류 발생')
+    push = { sent: 0, failed: 0, games: 0, skipped: 'error', migrationRequired: false }
+  }
+
   const calendar = await sendCalendarReminders(req, now)
   const season = await sendSeasonEndReminder(now)
-  return NextResponse.json({ ok: true, sent: customGameSent + calendar.sent + season.sent, custom_game_sent: customGameSent, calendar_sent: calendar.sent, season_reminder_sent: season.sent, calendar_migration_required: calendar.migrationRequired, ...(customGameMigrationRequired ? { migration_required: true } : {}) })
+  return NextResponse.json({ ok: true, sent: customGameSent + calendar.sent + season.sent, custom_game_sent: customGameSent, calendar_sent: calendar.sent, season_reminder_sent: season.sent, calendar_migration_required: calendar.migrationRequired, push_sent: push.sent, push_failed: push.failed, push_games: push.games, ...(push.skipped ? { push_skipped: push.skipped } : {}), ...(push.migrationRequired ? { push_migration_required: true } : {}), ...(customGameMigrationRequired ? { migration_required: true } : {}) })
 }
 
 /** 시즌 마감 며칠 전부터 "임박" 알림을 보낼지(일). */

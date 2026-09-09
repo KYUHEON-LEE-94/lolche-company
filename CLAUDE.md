@@ -28,8 +28,11 @@ app/
   page.tsx                      # 홈 (랭킹 목록, Server Component, ISR 60s)
   MemberRanking.tsx             # 랭킹 UI (Client Component)
   layout.tsx                    # 루트 레이아웃
+  manifest.ts                   # PWA manifest (Next 규약 → /manifest.webmanifest)
   components/                   # 공용 컴포넌트
     AuthButtons.tsx             # 로그인/로그아웃/관리자 버튼
+    PwaServiceWorker.tsx        # /sw.js 등록 (Client, 세션 미접근·렌더 없음). 루트 레이아웃에 삽입
+    PushNotifyToggle.tsx        # 웹 푸시 구독 토글 + iOS 설치 안내 (Client). 내전 상세에 배치
     Spinner.tsx                 # 로딩 스피너
     TierPanel.tsx
     ui/PageHeader.tsx           # kicker + h1 + 설명. **순수 서버 컴포넌트**('use client' 금지 — /steam ISR)
@@ -63,6 +66,8 @@ app/
       [id]/route.ts             #   PATCH 수정 / DELETE 삭제(마지막 1개는 409)
       [id]/primary/route.ts     #   POST 대표 지정 (set_primary_riot_account RPC)
     me/steam/route.ts           # 내 스팀 연결 조회(GET)/등록(POST)/해제(DELETE) — 세션 소유권 기반
+    me/push-subscription/route.ts  # 웹 푸시 구독 등록(POST, endpoint upsert)/해제(DELETE, member_id 조건 필수)
+                                #   runtime='nodejs'. BYPASS 아님(세션 필요). 테이블 부재 → 503
     steam/                      # ⚠ 전부 force-dynamic + **DB만 조회**. `lib/steam/*` import 금지
       game-options/route.ts     #   내전 스팀 게임 후보 (steam_game_options RPC, 로그인+approved)
       shared-with-me/route.ts   #   "나와 같은 게임을 가진 사람들" 요약 (steam_shared_with_member RPC)
@@ -76,7 +81,8 @@ app/
       matches/route.ts          # 최근 매치 조회 (tft_matches !inner 조인, 단일 쿼리)
       history/route.ts          # 랭크 히스토리 조회
     cron/
-      notify-reminders/route.ts # 내전 시작 임박 디스코드 알림 (GET, Bearer 인증). ★ 외부 크론(cron-job.org)이 5~10분마다 호출한다.
+      notify-reminders/route.ts # 내전 시작 임박 알림 (GET, Bearer 인증). 30분 창=디스코드 채널, 60분 창=웹 푸시.
+                                # ★ 외부 크론(cron-job.org)이 5~10분마다 호출한다.
                                 # (GitHub Actions 예약은 분 단위 주기를 대량 드롭해서 cron-job.org 로 이전 — README '자동화' 참조)
                                 # reminder_sent_at 으로 내전당 1회만 발송(20260734). BYPASS_PATHS 등록 필수
       weekly-rank-report/route.ts # 주간 랭크 리포트 디스코드 발송 (GET, Bearer 인증). GitHub Actions 가 월 09/12/15시 KST 3회 호출.
@@ -113,6 +119,10 @@ lib/
     resolveSteamId.ts           # 입력 4형태 → SteamID64 정규화
     appDetails.ts               # store appdetails(비공식)로 멀티플레이 판정
     storeSearch.ts              # store storesearch(비공식)로 전체 카탈로그 검색. 키 불필요, 타임아웃·캐시 내장
+  push/                         # 웹 푸시(VAPID)
+    webPush.ts                  # ⚠ `import 'server-only'` — VAPID 개인키 경계. 발송 + 410/404 만료 판별
+    sendGameReminders.ts        # 60분 창 내전 푸시 (독립 select + push_reminder_sent_at claim)
+    clientKey.ts                # urlBase64ToUint8Array — 브라우저 전용 순수 함수('server-only' 금지)
   sync/
     syncMember.ts               # 재시도 + 지수 백오프 래퍼
     doSyncMember.ts             # Riot API 실제 호출 + DB 업데이트
@@ -167,7 +177,11 @@ WEEKLY_REPORT_INCLUDE_DOWN=true      # 'false' 면 주간 리포트에서 📉 �
 DISCORD_ACTIVITY_API_KEY=            # ⚠ 서버 전용. Discord 활동 요약 API Bearer 키. NEXT_PUBLIC_ 금지
 DISCORD_ACTIVITY_GUILD_ID=1408525217940377723  # 활동을 조회할 롤체컴퍼니 Discord 서버 ID (봇 /health 로 검증한 실제 길드)
 DISCORD_ACTIVITY_API_BASE_URL=https://tactician-discord-bot.up.railway.app
-REMINDER_WINDOW_MIN=30              # 내전 시작 몇 분 전부터 "임박" 알림을 보낼지
+REMINDER_WINDOW_MIN=30              # 내전 시작 몇 분 전부터 디스코드 채널 "임박" 알림을 보낼지
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=       # 웹 푸시 VAPID 공개키(base64url). 공개값이라 NEXT_PUBLIC_ 가능
+VAPID_PRIVATE_KEY=                  # ⚠ 서버 전용. NEXT_PUBLIC_ 절대 금지. 소스·문서·로그에 값 기록 금지
+VAPID_SUBJECT=mailto:admin@example.com  # 또는 https://<사이트 도메인>
+PUSH_REMINDER_WINDOW_MIN=60         # 내전 시작 몇 분 전에 웹 푸시를 보낼지 (기본 60, 1~360 클램프)
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
@@ -195,6 +209,50 @@ SITE_URL=                           # OG 절대 URL 기준(metadataBase). 미설
 - `/`(대시보드) → `fetchWeeklyDiscordTop5()` → `DashboardDiscordTop5`(최근 7일 음성 TOP5, 우측 열에서 '모집 중 내전'과 반반). ISR(revalidate 60)이지만 공개 집계라 세션 접근 없음.
 - `/admin/discord-activity` → `DiscordActivityAdminClient`(일/주/월/기간지정 → `GET /api/admin/discord-activity?from&to`, requireAdmin, force-dynamic).
   일·주·월·기간은 전부 프런트에서 from/to(YYYY-MM-DD)로 환산해 보내고, 기준일은 서버(KST)에서 시드한다.
+
+### 웹 푸시(Web Push / VAPID) + PWA
+
+내전 시작 **1시간 전**에 참가자 **개인 기기**로 푸시를 보낸다. 디스코드 봇 토큰이 필요 없다.
+마이그레이션: `scripts/sql/20260911_web_push_subscriptions.sql`.
+
+**★ 기존 30분 디스코드 채널 알림과 완전히 분리한다 (되돌리지 말 것).**
+`notify-reminders` 라우트는 두 창을 한 호출에서 처리하지만 **쿼리·claim 컬럼이 서로 다르다**:
+
+| 창 | 대상 | claim 컬럼 | 코드 |
+|---|---|---|---|
+| `REMINDER_WINDOW_MIN`(30분) | 디스코드 **채널** 웹훅 | `custom_games.reminder_sent_at` | 라우트 본문(기존) |
+| `PUSH_REMINDER_WINDOW_MIN`(60분) | 참가자 **개인 기기** 웹 푸시 | `custom_games.push_reminder_sent_at` | `lib/push/sendGameReminders.ts` |
+
+기존 select 에 `push_reminder_sent_at` 을 **절대 추가하지 않는다** — 마이그레이션 미적용 환경에서
+42703 이 나 30분 디스코드 알림이 통째로 죽는다. 푸시 함수는 라우트에서 try/catch 로 감싸 호출한다.
+
+- **대상자 = 확정 인원 ∪ 주최자.** 대기열은 저장하지 않으므로 `splitParticipants` +
+  `effectiveMemberCapacity` 로 파생한다(재구현 금지). 대기자는 그 시각에 플레이하지 않아
+  알림이 오정보가 되므로 제외 — 정책은 `PUSH_TO_WAITLIST = false` 상수 1줄로 뒤집는다.
+- **구독 0건이어도 claim 은 수행한다.** 매 폴링마다 같은 내전을 재조회하는 낭비를 막는다.
+- **410/404 응답은 만료 구독**이므로 `push_subscriptions` 에서 자동 삭제한다.
+- VAPID 3종 중 하나라도 없으면 푸시 단계 **전체 skip**(`push_skipped:'vapid_not_configured'`)이고
+  **claim 하지 않는다** — 나중에 키를 넣으면 그대로 동작한다.
+- 키 생성: `npx web-push generate-vapid-keys` → **Vercel 서버 환경변수로만** 등록.
+  ⚠ 키를 교체하면 기존 구독이 전부 무효가 된다(410 으로 자동 정리되지만 재구독 필요). 한 번 정하면 고정.
+- `web-push` 는 node `crypto` 를 쓰므로 사용 라우트에 `export const runtime = 'nodejs'` 를 명시한다.
+  `lib/push/webPush.ts` 는 `import 'server-only'` — 개인키가 클라 번들에 새면 안 된다.
+
+**PWA:** `app/manifest.ts`(→ `/manifest.webmanifest`) + `public/sw.js` + `app/components/PwaServiceWorker.tsx`.
+아이콘은 `npm run gen:pwa-icons`(sharp 는 next 전이 의존 — 런타임 의존성 추가 0)로 `public/images/logo2.png`
+에서 생성해 `public/icons/` 에 **커밋**한다(`gen:tft-locale` 과 같은 생성물 커밋 패턴).
+`public/images/logo*.png` 원본은 덮어쓰지 않는다.
+
+> **proxy 무수정:** `proxy.ts` matcher 의 "확장자 있는 요청 제외" 규칙 덕에 `/sw.js`,
+> `/manifest.webmanifest`, `/icons/*.png` 는 미로그인에서도 200 이다.
+> `/api/me/push-subscription` 은 세션이 필요하므로 **BYPASS_PATHS 에 넣지 않는다.**
+
+**⚠ iOS 제약:** iOS/iPadOS 는 **홈 화면에 추가한 PWA 안에서만** 웹 푸시를 지원한다(16.4+).
+Safari 탭에는 `window.PushManager` 자체가 없다. `PushNotifyToggle` 이 `isIos && !isStandalone` 을
+감지해 토글 대신 설치 안내를 띄운다(미지원 브라우저·공개키 미설정이면 아예 렌더하지 않는다).
+
+**구독 상태의 진실은 브라우저의 `pushManager.getSubscription()`** 이다. 서버 GET 을 따로 두면
+기기별 진실과 어긋나므로 만들지 않고, 마운트 시 멱등 POST 로만 재동기화한다.
 
 ### Discord 길드 로그인 게이트 — `NEXT_PUBLIC_DISCORD_GUILD_ID`
 
@@ -263,7 +321,9 @@ RLS가 없으면 누구나 anon 키로 테이블을 직접 읽고 쓸 수 있다
   공개 페이지가 anon으로 SELECT하므로 읽기는 열어두고, **쓰기 정책은 만들지 않아 브라우저 쓰기를 차단**한다.
 - **B 그룹(서버 전용):** `admins`, `hall_of_fame`, `tft_matches`, `tft_match_participants`, `member_rank_history`,
   `sync_logs`, `custom_game_rounds`, `custom_game_results`, `custom_game_guests`, `custom_game_guest_results`,
-  `custom_game_teams` — `enable RLS`만, **정책 0개**. anon/authenticated 완전 차단, service role만 접근.
+  `custom_game_teams`, `push_subscriptions` — `enable RLS`만, **정책 0개**. anon/authenticated 완전 차단, service role만 접근.
+  (`push_subscriptions`에 self-INSERT 정책을 주면 사용자가 콘솔에서 남의 `member_id`로 구독을 심어
+  타인 기기로 알림을 보내거나 남의 구독을 지울 수 있다 — `members` self-UPDATE 금지와 같은 이유다.)
   (`admins`는 공개 select 정책조차 두지 않는다 — 관리자 명단은 anon 에게 노출되면 안 된다.)
 - **service role**(`supabaseService`/`supabaseAdmin`)은 RLS를 우회하므로 서버 라우트·Server Action·Sync는 무영향.
 - **`admins`는 브라우저에서 직접 읽지 않는다.** 관리자 판정은 서버 라우트 `GET /api/admin/me`로만 한다
@@ -384,6 +444,7 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 | `custom_game_rounds` / `_results` / `_guest_results` / `_teams` | TFT 내전 라운드·결과·팀 배정 |
 | `steam_apps` | 스팀 앱 메타 + `is_multiplayer` 3-값 캐시 (true/false/null=분류 미확인). 앱당 1회 조회 후 영구 보관 |
 | `steam_owned_games` | 멤버별 보유 게임 + `playtime_forever`/`playtime_2weeks`(분). `/steam`이 읽는 유일한 소스 |
+| `push_subscriptions` | 웹 푸시 구독. **기기(브라우저)당 1행**, `endpoint` 전역 유니크, `member_id` FK cascade. RLS 정책 0개 |
 
 `members.discord_avatar_url` (20260729_discord_avatar.sql): Discord OAuth 세션의
 `user_metadata.avatar_url` 원문. 로그인마다 `app/auth/callback/route.ts`가 갱신한다.
@@ -824,4 +885,5 @@ ddragon에 없는 세트 유닛(세트18 `DA_*` 등)의 한글명·이미지는 
 | 2026-07-23 | 디자인 통일 | 전 페이지, `SiteNav` | 디자인 토큰(`lib/ui/styles.ts` + `@theme`) 도입, 폰트 복원, 홈 아이콘 |
 | 2026-07-23 | 카탈로그 검색 | `SteamGamePicker`, `app/api/steam-catalog/` | 내전 스팀 게임을 보유 목록 밖에서도 고를 수 있게 |
 | 2026-07-23 | 지금 접속 중 | `SteamPresence`, `lib/steam/presence.ts`, `app/api/steam-presence/` | 스팀 실시간 상태. ISR 페이지 불변 + 외부 호출 경계 분리 |
+| 2026-09-09 | 웹 푸시 + PWA | `lib/push/`, `app/manifest.ts`, `public/sw.js`, `notify-reminders` | 내전 시작 1시간 전 개인 기기 알림. 기존 30분 디스코드 알림은 무변경 |
 | 2026-09-09 | 주간 랭크 리포트 | `lib/discord/weeklyReport.ts`, `/api/cron/weekly-rank-report`, `/api/admin/weekly-rank-report` | 매주 월요일 지난 주 랭크 요약 디스코드 자동 발송(단일행 CAS 멱등) |
