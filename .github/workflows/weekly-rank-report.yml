@@ -1,0 +1,27 @@
+name: 주간 랭크 리포트
+
+# 매주 월요일, 지난 주(월~일 KST) 롤체 랭크 요약을 디스코드로 발송한다.
+# 멱등(weekly_rank_report_state 단일행 CAS, week_key = KST 월요일)이라 여러 번 호출해도 발송은 1회.
+on:
+  schedule:
+    # 월요일 00:00 / 03:00 / 06:00 UTC = 09:00 / 12:00 / 15:00 KST.
+    # GitHub 예약은 best-effort 라 드롭되므로 같은 주에 3회 재시도한다.
+    - cron: '0 0,3,6 * * 1'
+  workflow_dispatch: {} # 수동 실행용
+
+concurrency:
+  group: weekly-rank-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 주간 리포트 엔드포인트 호출
+        run: |
+          curl -fsS --max-time 60 -X GET \
+            "${SITE_URL%/}/api/cron/weekly-rank-report" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

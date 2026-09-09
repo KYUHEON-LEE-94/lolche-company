@@ -303,6 +303,14 @@ export type LolPatchNoteSyncState = {
   updated_at: string
 }
 
+/** 주간 랭크 리포트 발송 상태(단일행). 20260910_weekly_rank_report.sql */
+export type WeeklyRankReportState = {
+  id: boolean
+  last_sent_week: string | null
+  last_sent_at: string | null
+  updated_at: string
+}
+
 // --- 신규 타입 추가: HallOfFame ---
 export type HallOfFame = {
   id: string
@@ -548,6 +556,12 @@ export interface Database {
         Update: Optional<LolPatchNoteSyncState>
         Relationships: []
       }
+      weekly_rank_report_state: {
+        Row: WeeklyRankReportState
+        Insert: Optional<WeeklyRankReportState> & { id?: boolean }
+        Update: Optional<WeeklyRankReportState>
+        Relationships: []
+      }
       // --- 신규 테이블 추가: hall_of_fame ---
       hall_of_fame: {
         Row: HallOfFame
@@ -722,6 +736,16 @@ export interface Database {
       finish_steam_featured_deal_sync: {
         Args: { p_lock_token: string; p_success: boolean }
         Returns: { status: 'finished' | 'not_owner'; last_success_at: string | null }[]
+      }
+      /** 주간 랭크 리포트 발송 선점(같은 week_key 는 1회만 claimed=true). */
+      claim_weekly_rank_report: {
+        Args: { p_week_key: string }
+        Returns: { claimed: boolean; last_sent_week: string | null }[]
+      }
+      /** 발송 실패 시 선점 롤백. */
+      release_weekly_rank_report: {
+        Args: { p_week_key: string; p_prev_week: string | null }
+        Returns: undefined
       }
       replace_steam_featured_deal_snapshot: {
         Args: { p_lock_token: string; p_deals: Json }

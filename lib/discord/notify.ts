@@ -18,9 +18,24 @@ export type DiscordEmbed = {
   timestamp?: string
 }
 
-export async function sendDiscordWebhook(embeds: DiscordEmbed[], content?: string): Promise<void> {
-  const url = process.env.DISCORD_WEBHOOK_URL
-  if (!url) return // 미설정이면 조용히 건너뛴다(로컬·미구성 환경 degrade).
+export type SendDiscordWebhookOptions = {
+  /** 미지정이면 DISCORD_WEBHOOK_URL. 리포트 전용 채널 등 다른 웹훅으로 보낼 때만 쓴다. */
+  webhookUrl?: string
+  /** true 면 실패 시 throw 한다. 기본값 false — 기존 호출부의 "오류를 삼킨다" 동작을 보존한다. */
+  throwOnFailure?: boolean
+}
+
+export async function sendDiscordWebhook(
+  embeds: DiscordEmbed[],
+  content?: string,
+  options?: SendDiscordWebhookOptions,
+): Promise<void> {
+  const url = options?.webhookUrl || process.env.DISCORD_WEBHOOK_URL
+  if (!url) {
+    // 미설정이면 조용히 건너뛴다(로컬·미구성 환경 degrade).
+    if (options?.throwOnFailure) throw new Error('webhook_not_configured')
+    return
+  }
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -34,8 +49,10 @@ export async function sendDiscordWebhook(embeds: DiscordEmbed[], content?: strin
     if (!res.ok) {
       // 본문·URL 은 로그에 싣지 않는다(웹훅 토큰이 URL 에 있으므로).
       console.warn('[discord] 웹훅 응답 비정상:', res.status)
+      if (options?.throwOnFailure) throw new Error(`webhook_status_${res.status}`)
     }
   } catch (e) {
+    if (options?.throwOnFailure) throw e
     console.warn('[discord] 웹훅 전송 실패:', e instanceof Error ? e.message : '오류')
   } finally {
     clearTimeout(timer)
@@ -69,7 +86,7 @@ const TIER_KO: Record<string, string> = {
 
 const GAME_KO = { tft: '롤체', lol: '롤' } as const
 
-function tierKo(tier: string): string {
+export function tierKo(tier: string): string {
   return TIER_KO[tier.toUpperCase()] ?? tier
 }
 
@@ -142,6 +159,25 @@ export async function notifySeasonEndingSoon(
       timestamp: new Date().toISOString(),
     },
   ])
+}
+
+/**
+ * 주간 랭크 리포트 발송. 전용 채널 웹훅이 있으면 그쪽으로, 없으면 기본 웹훅으로 보낸다.
+ * 멱등 롤백 판단이 필요하므로 성공 여부를 반환한다(오류를 삼키지 않는다).
+ * ⚠ 웹훅 URL 은 어떤 로그·반환값에도 싣지 않는다.
+ */
+export async function notifyWeeklyRankReport(
+  embed: DiscordEmbed,
+): Promise<'sent' | 'skipped' | 'failed'> {
+  const url = process.env.DISCORD_REPORT_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL
+  if (!url) return 'skipped'
+  try {
+    await sendDiscordWebhook([embed], undefined, { webhookUrl: url, throwOnFailure: true })
+    return 'sent'
+  } catch (e) {
+    console.warn('[discord] 주간 리포트 발송 실패:', e instanceof Error ? e.message : '오류')
+    return 'failed'
+  }
 }
 
 /** 매달 전월 음성 활동 1위 발표 + 포인트 지급 알림. */

@@ -79,11 +79,17 @@ app/
       notify-reminders/route.ts # 내전 시작 임박 디스코드 알림 (GET, Bearer 인증). ★ 외부 크론(cron-job.org)이 5~10분마다 호출한다.
                                 # (GitHub Actions 예약은 분 단위 주기를 대량 드롭해서 cron-job.org 로 이전 — README '자동화' 참조)
                                 # reminder_sent_at 으로 내전당 1회만 발송(20260734). BYPASS_PATHS 등록 필수
+      weekly-rank-report/route.ts # 주간 랭크 리포트 디스코드 발송 (GET, Bearer 인증). GitHub Actions 가 월 09/12/15시 KST 3회 호출.
+                                # weekly_rank_report_state 단일행 CAS(week_key)로 주당 1회만 발송(20260910).
+                                # ★ 마이그레이션 미적용·웹훅 미설정·이미 발송됨은 전부 200 + reason (curl -fsS 가 실패하지 않도록).
+                                # BYPASS_PATHS 등록 필수
     admin/
       sync-all/route.ts         # 전체 멤버 동기화 (GET=크론, POST=수동). GET은 커서 배치 1개만 처리한다.
                                 # ★ 외부 크론(cron-job.org)이 30분~1시간마다 호출한다(호출당 2명씩, stale 1시간+만 갱신).
                                 # (GitHub Actions 예약은 신뢰성이 낮아 이전 — README '자동화' 참조)
       sync-steam/route.ts       # 스팀 캐시 동기화 (GET=크론, POST=관리자)
+      weekly-rank-report/route.ts # 주간 랭크 리포트 수동/미리보기 (POST, requireAdmin, ?dry_run=1 · ?force=1)
+                                # ★ 세션 기반이라 /api/cron 이 아니라 /api/admin 아래에 둔다(BYPASS 아님)
       members/                  # 멤버 CRUD API (route=목록, create/update/[id])
         [id]/approve/route.ts   # 승인 + 즉시 동기화
         [id]/reject/route.ts    # 거절 + 사유
@@ -156,6 +162,8 @@ STEAM_PRESENCE_TTL_MS=60000         # "지금 접속 중" 인메모리 캐시 TT
 ADMIN_SYNC_TOKEN=                   # 크론 트리거용 시크릿 (CRON_SECRET 없을 때 fallback)
 CRON_SECRET=                        # Vercel Cron 전용 시크릿 (설정 시 ADMIN_SYNC_TOKEN보다 우선)
 DISCORD_WEBHOOK_URL=                 # ⚠ 서버 전용. 내전 생성·임박 알림용 디스코드 웹훅. 비우면 알림 skip
+DISCORD_REPORT_WEBHOOK_URL=          # ⚠ 서버 전용. 주간 랭크 리포트 전용 채널 웹훅. 없으면 DISCORD_WEBHOOK_URL 폴백, 둘 다 없으면 skip
+WEEKLY_REPORT_INCLUDE_DOWN=true      # 'false' 면 주간 리포트에서 📉 하락왕 필드 생략(재배포 없이 분위기 조절)
 DISCORD_ACTIVITY_API_KEY=            # ⚠ 서버 전용. Discord 활동 요약 API Bearer 키. NEXT_PUBLIC_ 금지
 DISCORD_ACTIVITY_GUILD_ID=1408525217940377723  # 활동을 조회할 롤체컴퍼니 Discord 서버 ID (봇 /health 로 검증한 실제 길드)
 DISCORD_ACTIVITY_API_BASE_URL=https://tactician-discord-bot.up.railway.app
@@ -816,3 +824,4 @@ ddragon에 없는 세트 유닛(세트18 `DA_*` 등)의 한글명·이미지는 
 | 2026-07-23 | 디자인 통일 | 전 페이지, `SiteNav` | 디자인 토큰(`lib/ui/styles.ts` + `@theme`) 도입, 폰트 복원, 홈 아이콘 |
 | 2026-07-23 | 카탈로그 검색 | `SteamGamePicker`, `app/api/steam-catalog/` | 내전 스팀 게임을 보유 목록 밖에서도 고를 수 있게 |
 | 2026-07-23 | 지금 접속 중 | `SteamPresence`, `lib/steam/presence.ts`, `app/api/steam-presence/` | 스팀 실시간 상태. ISR 페이지 불변 + 외부 호출 경계 분리 |
+| 2026-09-09 | 주간 랭크 리포트 | `lib/discord/weeklyReport.ts`, `/api/cron/weekly-rank-report`, `/api/admin/weekly-rank-report` | 매주 월요일 지난 주 랭크 요약 디스코드 자동 발송(단일행 CAS 멱등) |

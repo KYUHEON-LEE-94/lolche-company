@@ -90,9 +90,18 @@
 | **스팀 캐시**(보유 게임·persona·온라인) | 매일 | **cron-job.org** | `/api/admin/sync-steam` |
 | 패치 노트(롤체·롤)·스팀 할인 | 매일 | GitHub Actions | `/api/cron/sync-tft-patch-notes` 등 |
 | 이달의 음성왕 포인트 | 매달 1~3일 | GitHub Actions | `/api/cron/monthly-voice-award` |
+| 주간 랭크 리포트(지난 주 상승·판수·TOP3 디스코드 발송) | 매주 월 09/12/15시 KST | GitHub Actions | `/api/cron/weekly-rank-report` |
 
-> 스케줄 트리거는 **cron-job.org(고빈도·스팀) + GitHub Actions(일간 패치노트·월간 음성왕)** 두 곳뿐이다.
+> 스케줄 트리거는 **cron-job.org(고빈도·스팀) + GitHub Actions(일간 패치노트·주간 리포트·월간 음성왕)** 두 곳뿐이다.
 > Vercel Cron(`vercel.json`)은 cron-job.org 와 중복이라 제거했다 — 트리거를 한 곳에 모아 중복 호출을 없앤다.
+
+> **주간 랭크 리포트**는 지난 주(월 00:00 ~ 일 24:00 KST) 상승왕·최다 플레이·현재 TOP3 를 디스코드 임베드로
+> 1회 발송한다. GitHub 예약 드롭 대비로 월요일 3회 호출하지만 `weekly_rank_report_state` 단일행
+> compare-and-set(주 시작일 키)으로 **발송은 주당 1회**다. 마이그레이션 미적용·웹훅 미설정·이미 발송됨은
+> 전부 200 + `reason` 이라 워크플로가 빨개지지 않는다. SQL: `scripts/sql/20260910_weekly_rank_report.sql`.
+> 전용 채널을 쓰려면 Vercel 서버 환경변수 `DISCORD_REPORT_WEBHOOK_URL`(⚠ `NEXT_PUBLIC_` 금지)을 등록한다.
+> 미설정 시 `DISCORD_WEBHOOK_URL` 로 폴백하고, 둘 다 없으면 발송을 건너뛴다.
+> 관리자 미리보기는 `POST /api/admin/weekly-rank-report?dry_run=1`(발송·선점 없음).
 
 ### ⚠ 고빈도 크론은 cron-job.org 를 쓴다 (GitHub Actions 아님)
 

@@ -11,7 +11,7 @@ import {
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm']
 
 /** 프록시 자체를 건너뛰는 경로 (Vercel 크론은 Bearer 토큰으로 인증) */
-const BYPASS_PATHS = ['/api/admin/sync-all', '/api/admin/sync-steam', '/api/cron/notify-reminders', '/api/cron/monthly-voice-award', '/api/cron/sync-tft-patch-notes', '/api/cron/sync-steam-featured-deals', '/api/cron/sync-lol-patch-notes']
+const BYPASS_PATHS = ['/api/admin/sync-all', '/api/admin/sync-steam', '/api/cron/notify-reminders', '/api/cron/monthly-voice-award', '/api/cron/sync-tft-patch-notes', '/api/cron/sync-steam-featured-deals', '/api/cron/sync-lol-patch-notes', '/api/cron/weekly-rank-report']
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
