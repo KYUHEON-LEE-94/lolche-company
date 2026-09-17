@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import { supabase } from '@/lib/supabase'
 import { compareRank } from '@/lib/constants/tierOrder'
 import { isApexTier } from '@/lib/tft/tierScore'
@@ -25,20 +26,24 @@ function detailLabel(tier: string | null, rank: string | null, lp: number | null
 }
 
 /** OG 표면은 인증 없는 크롤러가 보는 곳이라 최소권한(anon)만 쓴다. seasons 는 RLS A그룹(공개 select). */
-export async function getOgSeason(): Promise<OgSeason | null> {
-  try {
-    const { data, error } = await supabase
-      .from('seasons')
-      .select('season_name,set_number')
-      .eq('is_active', true)
-      .maybeSingle()
-    if (error || !data) return null
-    return { season_name: data.season_name, set_number: data.set_number }
-  } catch (e) {
-    console.warn('[og] 시즌 조회 실패', e instanceof Error ? e.message : '오류 발생')
-    return null
-  }
-}
+export const getOgSeason = unstable_cache(
+  async (): Promise<OgSeason | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('seasons')
+        .select('season_name,set_number')
+        .eq('is_active', true)
+        .maybeSingle()
+      if (error || !data) return null
+      return { season_name: data.season_name, set_number: data.set_number }
+    } catch (e) {
+      console.warn('[og] 시즌 조회 실패', e instanceof Error ? e.message : '오류 발생')
+      return null
+    }
+  },
+  ['og-season'],
+  { revalidate: 600 },
+)
 
 type RankedMember = { name: string; tier: string | null; rank: string | null; lp: number | null }
 
@@ -55,46 +60,54 @@ function toTop3(rows: RankedMember[]): OgRankRow[] {
     }))
 }
 
-export async function getTftTop3(): Promise<OgRankRow[]> {
-  try {
-    const { data, error } = await supabase
-      .from('members')
-      .select('member_name,tft_tier,tft_rank,tft_league_points')
-      .eq('status', 'approved')
-      .not('tft_tier', 'is', null)
-    if (error || !data) return []
-    return toTop3(
-      data.map((row) => ({
-        name: row.member_name,
-        tier: row.tft_tier,
-        rank: row.tft_rank,
-        lp: row.tft_league_points,
-      })),
-    )
-  } catch (e) {
-    console.warn('[og] TFT 랭킹 조회 실패', e instanceof Error ? e.message : '오류 발생')
-    return []
-  }
-}
+export const getTftTop3 = unstable_cache(
+  async (): Promise<OgRankRow[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('member_name,tft_tier,tft_rank,tft_league_points')
+        .eq('status', 'approved')
+        .not('tft_tier', 'is', null)
+      if (error || !data) return []
+      return toTop3(
+        data.map((row) => ({
+          name: row.member_name,
+          tier: row.tft_tier,
+          rank: row.tft_rank,
+          lp: row.tft_league_points,
+        })),
+      )
+    } catch (e) {
+      console.warn('[og] TFT 랭킹 조회 실패', e instanceof Error ? e.message : '오류 발생')
+      return []
+    }
+  },
+  ['og-tft-top3'],
+  { revalidate: 600 },
+)
 
-export async function getLolTop3(): Promise<OgRankRow[]> {
-  try {
-    const { data, error } = await supabase
-      .from('members')
-      .select('member_name,lol_tier,lol_rank,lol_league_points')
-      .eq('status', 'approved')
-      .not('lol_tier', 'is', null)
-    if (error || !data) return []
-    return toTop3(
-      data.map((row) => ({
-        name: row.member_name,
-        tier: row.lol_tier,
-        rank: row.lol_rank,
-        lp: row.lol_league_points,
-      })),
-    )
-  } catch (e) {
-    console.warn('[og] LoL 랭킹 조회 실패', e instanceof Error ? e.message : '오류 발생')
-    return []
-  }
-}
+export const getLolTop3 = unstable_cache(
+  async (): Promise<OgRankRow[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('member_name,lol_tier,lol_rank,lol_league_points')
+        .eq('status', 'approved')
+        .not('lol_tier', 'is', null)
+      if (error || !data) return []
+      return toTop3(
+        data.map((row) => ({
+          name: row.member_name,
+          tier: row.lol_tier,
+          rank: row.lol_rank,
+          lp: row.lol_league_points,
+        })),
+      )
+    } catch (e) {
+      console.warn('[og] LoL 랭킹 조회 실패', e instanceof Error ? e.message : '오류 발생')
+      return []
+    }
+  },
+  ['og-lol-top3'],
+  { revalidate: 600 },
+)
