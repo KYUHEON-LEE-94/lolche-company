@@ -9,7 +9,11 @@ import {
   migrationRequiredResponse,
   steamMigrationRequiredResponse,
 } from '@/lib/customGames/game'
-import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
+import {
+  effectiveMemberCapacity,
+  participationPosition,
+  splitParticipants,
+} from '@/lib/customGames/waitlist'
 import {
   parseCapacity,
   parseGameKind,
@@ -198,7 +202,11 @@ export async function GET(_req: Request, ctx: Ctx) {
     lol_teams: lolTeams,
     can_manage: canManageGame(game, viewerMemberId, viewer?.isAdmin ?? false),
     my_participation: mine
-      ? { id: mine.id, position: mine.position, confirmed: mine.confirmed }
+      ? {
+          id: mine.id,
+          ...participationPosition(mine.position - 1, confirmedParticipants.length),
+          is_host: mine.is_host,
+        }
       : null,
     ...(fetched.migrationRequired ? { migration_required: true } : {}),
   })

@@ -7,12 +7,12 @@
 
 | # | 배치 | 항목 | 상태 | 커밋 |
 |---|---|---|---|---|
-| 1 | A | 부계정 1개 실패가 멤버 전체 동기화를 멈춤 + 부계정 등록 시 존재 검증 없음 | ✅ 완료 | 배치 A 커밋 |
-| 2 | A | sync-all 이 실패 멤버에 막힘(id 순 정렬) + rejected 멤버도 동기화 | ✅ 완료 | 배치 A 커밋 |
-| 3 | A | 매 동기화마다 매치 상세 5건 재다운로드 + 공백 구간 매치 영구 누락 | ✅ 완료 | 배치 A 커밋 |
-| 4 | B | 내전 대기 순번 오표시(목록·토스트) | ⏳ 대기 | |
-| 5 | B | 내전 생성/수정 모달 에러가 오버레이 뒤에 숨음 | ⏳ 대기 | |
-| 6 | B | 주최자에게 실패하는 '참가 취소' 노출 + 상세 페이지 삭제 버튼 없음 | ⏳ 대기 | |
+| 1 | A | 부계정 1개 실패가 멤버 전체 동기화를 멈춤 + 부계정 등록 시 존재 검증 없음 | ✅ 완료 | `1a20fd2` |
+| 2 | A | sync-all 이 실패 멤버에 막힘(id 순 정렬) + rejected 멤버도 동기화 | ✅ 완료 | `1a20fd2` |
+| 3 | A | 매 동기화마다 매치 상세 5건 재다운로드 + 공백 구간 매치 영구 누락 | ✅ 완료 | `1a20fd2` |
+| 4 | B | 내전 대기 순번 오표시(목록·토스트) | ✅ 완료 | 배치 B 커밋 |
+| 5 | B | 내전 생성/수정 모달 에러가 오버레이 뒤에 숨음 | ✅ 완료 | 배치 B 커밋 |
+| 6 | B | 주최자에게 실패하는 '참가 취소' 노출 + 상세 페이지 삭제 버튼 없음 | ✅ 완료 | 배치 B 커밋 |
 | 7 | C | TOP5 진입 알림 반복 발송 | ⏳ 대기 | |
 | 8 | C | 내전 일정 변경 시 리마인더 재무장 안 됨 | ⏳ 대기 | |
 | 9 | C | 동기화 재시도 시 `tft_*_prev` 덮어써 승급 알림 유실 | ⏳ 대기 | |
@@ -79,3 +79,42 @@
 - 코드 리뷰 ✅ 부계정만 try/catch·대표 실패 throw 유지·`if (!primaryResult) throw` 유지·`CLEARED_RANK_COLUMNS` 펼침 유지(riot_puuid 덮어쓰기 없음)·or 필터 문자열·`toFetch` 상한·recent5 쿼리·any 없음·catch 패턴·`server-only`
 - 런타임(읽기 전용) ✅ sync-all 선정 쿼리 실DB 실행 400 없음(8행, started_at asc 정렬 확인) / recent5 쿼리 4명 196~542ms, 저장값과 전원 일치 / 없는 member_id → 빈 결과 / Riot account-v1 없는 ID → 404(not_found 매핑 확인) / 비인증: riot-accounts POST·PATCH·me/member 401, sync-all GET 401(토큰 없음·오답), 관리자 POST 403 — 인증 전 Riot 호출 없음
 - 미실행: 실제 동기화·계정 등록(운영 DB 쓰기 금지)
+
+### 배치 B — 내전 화면 (#4~#6)
+
+커밋: `fix: 내전 대기 순번·모달 에러·주최자 취소/상세 삭제 정비 — 대기 1번이 "대기 9번"으로 보였다`
+
+**문제**
+- #4 서버 `position` 은 확정+대기 전체 1-based 순번인데 목록 배지·목록/상세 토스트가 이를 그대로 "대기 N번"으로 표시 → 정원 8 꽉 찬 내전의 첫 대기자가 "대기 9번"으로 보였다(상세 배지만 클라에서 보정 중).
+- #5 생성/수정 모달의 검증·서버 에러를 페이지 알림(`showMsg`)으로 띄워 모달 오버레이 뒤에 가려 보이지 않았다.
+- #6 주최자에게 서버가 400으로 거절하는 '참가 취소' 버튼이 노출됐고, 상세 페이지에는 삭제 버튼이 없어 목록으로 돌아가야만 삭제할 수 있었다.
+
+**변경 파일**
+| 파일 | 내용 |
+|---|---|
+| `lib/customGames/waitlist.ts` | `participationPosition(index, confirmedCount)` 순수 헬퍼 → `{ position, confirmed, waitlist_position }`(확정이면 null). server-only 아님(클라 import 중) |
+| `app/api/custom-games/route.ts` | 목록 GET `my_participation` 에 헬퍼 결과 + `is_host`(`host_member_id !== null` 명시 — null===null 함정 차단) |
+| `app/api/custom-games/[id]/route.ts` | 상세 GET `my_participation` 에 헬퍼 결과 + `is_host` |
+| `app/api/custom-games/[id]/join/route.ts` | POST 응답에 `waitlist_position`(미발견 null). 기존 필드 유지 |
+| `app/custom-games/page.tsx` | 배지·토스트 `waitlist_position`, 주최자 취소 숨김, 생성 모달 인라인 에러(`createError`/`closeModal()`) |
+| `app/custom-games/[id]/page.tsx` | 배지·토스트 `waitlist_position`, 주최자 취소 숨김, 헤더 삭제 버튼(+ `router.push('/custom-games')`), 수정 모달 인라인 에러(`editError`/`closeEdit()`) |
+| `CLAUDE.md` | 내전 API 목록 아래 `my_participation` 필드 설명 + "대기 순번 표시는 `waitlist_position` 만" 규칙 |
+
+**주요 결정**
+- **파생만, 저장 없음:** `waitlist_position` 은 응답 시 `splitParticipants` + `effectiveMemberCapacity`(게스트 차감) 결과의 `confirmed.length` 기준으로 계산한다. status 컬럼·승격 로직 없음. `position` 은 하위호환으로 유지.
+- **`is_host` 는 UX용:** 버튼 숨김일 뿐 서버 join DELETE 의 400 검사가 실제 방어선. 관리자(비주최자)는 `is_host=false` 라 취소 버튼이 계속 보인다.
+- **헤더 래퍼:** `game && (!isClosed || canManage)` 로 넓히고 참가/취소/수정/라운드/종료 버튼에 각각 `!isClosed` 를 붙여 종료된 내전에서 기존 버튼이 재노출되지 않게 했다. 삭제만 종료된 내전에도 노출(목록과 동일한 confirm 문구).
+- **삭제 성공 시 `deleting` 유지:** 이동 전 재클릭 방지. 실패 시에만 해제 + 페이지 에러. 종료 버튼 disabled 에도 `deleting` 추가.
+- **모달 에러 초기화:** 열 때·제출 시작·모든 닫기 경로(배경/취소/성공)에서 null. 수정 성공 토스트는 기존대로 페이지 알림.
+
+**알려진 한계**
+- 상세 헤더 모바일 넘침은 `flex-wrap` 만 추가 — 레이아웃 재구성은 배치 D #13.
+- 상세 배지는 구 응답 대비 `waitlist_position ?? position - confirmedList.length` 폴백을 남겼다(목록·토스트는 `?? '-'`).
+- (기존) `GET /api/custom-games/not-a-uuid` 는 Postgres `22P02` 로 500 — 이번 변경 범위 밖.
+
+**검증 결과**
+- `npx tsc --noEmit` ✅ 에러 0 / `npm run lint` ✅ 0 errors(기존 무관 warning 1건) / `npm run build` ✅ (클라 번들 server-only import 없음)
+- 헬퍼 단위 검증(node) ✅ 정원 8·확정 8 → index 8 = position 9·waitlist 1 / index 7 = 확정·null / 게스트 2 + 정원 8 → 7번째 멤버 waitlist 1 / index 10 → waitlist 3 / 게스트가 정원 초과(effective 0) → 첫 멤버 waitlist 1 / `splitParticipants` 9명 통합 → 9번째 waitlist 1
+- 코드 리뷰 ✅ 검증 포인트 1~8 대조 — `is_host` null 함정(목록 명시 거부, 상세는 참가자 member_id 비교), 종료 내전 버튼 재노출 없음, 모달 에러 초기화 경로 전부, any 없음
+- 런타임(읽기 전용, 비로그인) ✅ `/custom-games`·상세 → 307 `/login?next=...`(proxy 게이트 정상) / 목록 GET 200 `my_participation:null`·`can_manage:false` / 상세 GET 200 / 없는 UUID → 404
+- 미실행: 내전 생성·참가·삭제 및 로그인 UI 수동 확인(운영 DB 쓰기 금지)

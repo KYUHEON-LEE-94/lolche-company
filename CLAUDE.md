@@ -708,6 +708,12 @@ self-INSERT/DELETE 정책을 만들면 사용자가 콘솔에서 `joined_at`을 
 | POST | `/api/custom-games/[id]/rounds\|teams\|guests` | TFT 전용 |
 | GET | `/api/steam/game-options?q=&multiplayer_only=` | 스팀 게임 후보 (로그인 + approved, DB만 조회) |
 
+**`my_participation` 필드 (목록·상세 GET, join POST 응답):** `position`(확정+대기 전체 1-based 순번, 하위호환) /
+`confirmed` / `waitlist_position`(대기자일 때 1-based, 확정이면 `null`) / `is_host`(목록·상세만, UX용).
+**대기 순번 표시는 `waitlist_position`만 사용한다** — `position`을 "대기 N번"으로 쓰면 확정 인원만큼 부풀려진다.
+파생은 `lib/customGames/waitlist.ts`의 `participationPosition()` 한 곳(응답 시 계산만, 저장 금지).
+`is_host`는 주최자 "참가 취소" 버튼 숨김용일 뿐이며 서버 join DELETE의 400 검사가 실제 방어선이다.
+
 **생성/수정 요청 형식:**
 `{ title, scheduled_date: "YYYY-MM-DD", scheduled_time: "HH:mm", capacity, game_kind, game_kind_label?, steam_app_id?, game_type?, max_rounds? }`
 

@@ -39,3 +39,16 @@ function compareByOrder(a: ParticipantOrderRow, b: ParticipantOrderRow): number 
 export function effectiveMemberCapacity(capacity: number, guestCount: number): number {
   return Math.max(0, capacity - guestCount)
 }
+
+/**
+ * 순번 파생 결과. position 은 확정+대기 전체의 1-based 순번(하위호환)이고,
+ * 대기 순번 표시는 반드시 waitlist_position 을 쓴다 — position 을 그대로 "대기 N번"으로
+ * 보여주면 확정 인원만큼 부풀려진다. 확정자는 waitlist_position=null.
+ */
+export function participationPosition(index: number, confirmedCount: number) {
+  return {
+    position: index + 1,
+    confirmed: index < confirmedCount,
+    waitlist_position: index >= confirmedCount ? index - confirmedCount + 1 : null,
+  }
+}

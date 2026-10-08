@@ -45,7 +45,13 @@ type GameRow = {
   confirmed_count?: number
   waitlist_count?: number
   can_manage?: boolean
-  my_participation?: { position: number; confirmed: boolean } | null
+  // 대기 순번 표시는 waitlist_position 만 쓴다(position 은 확정 포함 전체 순번).
+  my_participation?: {
+    position: number
+    confirmed: boolean
+    waitlist_position?: number | null
+    is_host?: boolean
+  } | null
 }
 
 const DEFAULT_CAPACITY = 8
@@ -78,6 +84,7 @@ export default function CustomGamesPage() {
   const [gameType, setGameType] = useState<'solo' | 'team'>('solo')
   const [maxRounds, setMaxRounds] = useState(5)
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const [busyId, setBusyId] = useState<string | null>(null)
 
@@ -116,13 +123,21 @@ export default function CustomGamesPage() {
     setLolMode('rift')
     setGameType('solo')
     setMaxRounds(5)
+    setCreateError(null)
     setShowModal(true)
   }
 
+  const closeModal = () => {
+    setShowModal(false)
+    setCreateError(null)
+  }
+
   const handleCreate = async () => {
-    if (!titleInput.trim()) { showMsg('error', '제목을 입력하세요'); return }
-    if (!dateInput || !timeInput) { showMsg('error', '일자와 시간을 모두 입력하세요'); return }
-    if (gameKind === 'etc' && !kindLabel.trim()) { showMsg('error', '기타 게임은 종류 이름을 입력하세요'); return }
+    // 에러는 모달 내부에 표시한다 — 페이지 알림은 모달 배경 뒤에 가려 보이지 않는다.
+    setCreateError(null)
+    if (!titleInput.trim()) { setCreateError('제목을 입력하세요'); return }
+    if (!dateInput || !timeInput) { setCreateError('일자와 시간을 모두 입력하세요'); return }
+    if (gameKind === 'etc' && !kindLabel.trim()) { setCreateError('기타 게임은 종류 이름을 입력하세요'); return }
 
     setCreating(true)
     try {
@@ -149,10 +164,10 @@ export default function CustomGamesPage() {
         }),
       })
       const body = await res.json()
-      if (!res.ok) { showMsg('error', body.error ?? '생성 실패'); return }
-      setShowModal(false)
+      if (!res.ok) { setCreateError(body.error ?? '생성 실패'); return }
+      closeModal()
       router.push(`/custom-games/${body.id}`)
-    } catch { showMsg('error', '생성 중 오류가 발생했습니다') }
+    } catch { setCreateError('생성 중 오류가 발생했습니다') }
     finally { setCreating(false) }
   }
 
@@ -162,7 +177,7 @@ export default function CustomGamesPage() {
       const res = await fetch(`/api/custom-games/${game.id}/join`, { method: 'POST' })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) { showMsg('error', body.error ?? '신청 실패'); return }
-      showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.position}번으로 신청되었습니다`)
+      showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.waitlist_position ?? '-'}번으로 신청되었습니다`)
       await loadGames()
     } catch { showMsg('error', '신청 중 오류가 발생했습니다') }
     finally { setBusyId(null) }
@@ -307,7 +322,7 @@ export default function CustomGamesPage() {
                         <Badge className={mine.confirmed
                           ? 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink'
                           : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}>
-                          {mine.confirmed ? '참가 확정' : `대기 ${mine.position}번`}
+                          {mine.confirmed ? '참가 확정' : `대기 ${mine.waitlist_position ?? '-'}번`}
                         </Badge>
                       )}
                     </div>
@@ -334,7 +349,8 @@ export default function CustomGamesPage() {
                         </button>
                       )}
 
-                      {joinable && mine && (
+                      {/* 주최자는 서버가 취소를 400으로 막는다 — 버튼 자체를 숨긴다(관리자는 is_host=false라 노출). */}
+                      {joinable && mine && !mine.is_host && (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleLeave(g) }}
@@ -384,7 +400,7 @@ export default function CustomGamesPage() {
           <div
             className="absolute inset-0"
             style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-            onClick={() => !creating && setShowModal(false)}
+            onClick={() => !creating && closeModal()}
           />
           <div
             className="relative w-full max-w-lg rounded-2xl border border-line bg-panel p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
@@ -583,10 +599,16 @@ export default function CustomGamesPage() {
               </p>
             </div>
 
+            {createError && (
+              <div role="alert" className={ALERT.error}>
+                {createError}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-1">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={closeModal}
                 disabled={creating}
                 className="flex-1 py-3 rounded-xl text-sm font-bold
                   bg-surface-2 border border-line text-muted

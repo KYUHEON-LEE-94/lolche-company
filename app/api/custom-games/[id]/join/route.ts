@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, isApprovedMember } from '@/lib/customGames/authorize'
 import { fetchGame, isUniqueViolation, type GameRow } from '@/lib/customGames/game'
-import { effectiveMemberCapacity, splitParticipants } from '@/lib/customGames/waitlist'
+import {
+  effectiveMemberCapacity,
+  participationPosition,
+  splitParticipants,
+} from '@/lib/customGames/waitlist'
 import { JOINABLE_STATUSES, signupLimit, type GameStatus } from '@/lib/customGames/constants'
 
 export const dynamic = 'force-dynamic'
@@ -33,9 +37,13 @@ async function derivePosition(game: GameRow, memberId: string) {
   const ordered = [...confirmed, ...waitlist]
   const index = ordered.findIndex((p) => p.member_id === memberId)
 
+  const derived =
+    index >= 0
+      ? participationPosition(index, confirmed.length)
+      : { position: null, confirmed: false, waitlist_position: null }
+
   return {
-    position: index >= 0 ? index + 1 : null,
-    confirmed: index >= 0 && index < confirmed.length,
+    ...derived,
     confirmed_count: confirmed.length,
     waitlist_count: waitlist.length,
   }

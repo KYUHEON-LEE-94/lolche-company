@@ -15,7 +15,11 @@ import {
   steamMigrationRequiredResponse,
   type GameRow,
 } from '@/lib/customGames/game'
-import { splitParticipants, effectiveMemberCapacity } from '@/lib/customGames/waitlist'
+import {
+  splitParticipants,
+  effectiveMemberCapacity,
+  participationPosition,
+} from '@/lib/customGames/waitlist'
 import {
   ACTIVE_STATUSES,
   MAX_ACTIVE_GAMES_PER_HOST,
@@ -148,7 +152,13 @@ export async function GET() {
       waitlist_count: waitlist.length,
       can_manage: canManageGame(game, viewerMemberId, viewer?.isAdmin ?? false),
       my_participation:
-        myIndex >= 0 ? { position: myIndex + 1, confirmed: myIndex < confirmed.length } : null,
+        myIndex >= 0
+          ? {
+              ...participationPosition(myIndex, confirmed.length),
+              // host_member_id 는 추방 시 null — null===null 로 통과하지 않도록 명시적으로 거부한다.
+              is_host: game.host_member_id !== null && game.host_member_id === viewerMemberId,
+            }
+          : null,
     }
   })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
 import Link from 'next/link'
@@ -32,7 +32,7 @@ import {
   toKstDateInput,
   toKstTimeInput,
 } from '@/lib/customGames/display'
-import { CONTAINER, PANEL } from '@/lib/ui/styles'
+import { ALERT, CONTAINER, PANEL } from '@/lib/ui/styles'
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -121,7 +121,14 @@ type MemberOption = {
   lol_league_points: number | null
 }
 
-type MyParticipation = { id: string; position: number; confirmed: boolean } | null
+// 대기 순번 표시는 waitlist_position 만 쓴다(position 은 확정 포함 전체 순번).
+type MyParticipation = {
+  id: string
+  position: number
+  confirmed: boolean
+  waitlist_position?: number | null
+  is_host?: boolean
+} | null
 
 // teamDraft: 4팀 × 2슬롯 = [[slot0, slot1], ...]  null = 미배정
 type TeamDraft = [string | null, string | null][]
@@ -313,6 +320,7 @@ function TeamAssignPanel({
 
 export default function CustomGameDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const gameId = params.id as string
 
   const [game, setGame] = useState<GameDetail | null>(null)
@@ -329,6 +337,7 @@ export default function CustomGameDetailPage() {
 
   const [addingRound, setAddingRound] = useState(false)
   const [ending, setEnding] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [joining, setJoining] = useState(false)
   const [kickingId, setKickingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -350,6 +359,7 @@ export default function CustomGameDetailPage() {
   const [editMaxRounds, setEditMaxRounds] = useState(5)
   const [editSteamGame, setEditSteamGame] = useState<SteamGameSelection>({ label: '', appId: null })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
   const [migrationRequired, setMigrationRequired] = useState(false)
 
   // 팀 배정 상태
@@ -522,7 +532,7 @@ export default function CustomGameDetailPage() {
       const res = await fetch(`/api/custom-games/${gameId}/join`, { method: 'POST' })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) { showMsg('error', body.error ?? '신청 실패'); return }
-      showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.position}번으로 신청되었습니다`)
+      showMsg('success', body.confirmed ? '참가가 확정되었습니다' : `대기 ${body.waitlist_position ?? '-'}번으로 신청되었습니다`)
       await loadDetail()
     } catch { showMsg('error', '신청 중 오류가 발생했습니다') }
     finally { setJoining(false) }
@@ -562,11 +572,19 @@ export default function CustomGameDetailPage() {
     setEditCapacity(game.capacity)
     setEditMaxRounds(game.max_rounds)
     setEditSteamGame({ label: game.game_kind_label ?? '', appId: game.steam_app_id })
+    setEditError(null)
     setShowEdit(true)
+  }
+
+  const closeEdit = () => {
+    setShowEdit(false)
+    setEditError(null)
   }
 
   const handleSaveEdit = async () => {
     if (!game) return
+    // 에러는 모달 내부에 표시한다 — 페이지 알림은 모달 배경 뒤에 가려 보이지 않는다.
+    setEditError(null)
     setSavingEdit(true)
     try {
       // 일자·시간은 문자열 그대로 전송한다 (서버가 KST 오프셋을 붙여 변환).
@@ -588,12 +606,27 @@ export default function CustomGameDetailPage() {
         }),
       })
       const body = await res.json()
-      if (!res.ok) { showMsg('error', body.error ?? '수정 실패'); return }
-      setShowEdit(false)
+      if (!res.ok) { setEditError(body.error ?? '수정 실패'); return }
+      closeEdit()
       showMsg('success', '수정되었습니다')
       await loadDetail()
-    } catch { showMsg('error', '수정 중 오류가 발생했습니다') }
+    } catch { setEditError('수정 중 오류가 발생했습니다') }
     finally { setSavingEdit(false) }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('이 내전을 삭제하시겠습니까? 모든 참가 신청과 라운드 기록이 함께 삭제됩니다.')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/custom-games/${gameId}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { showMsg('error', body.error ?? '삭제 실패'); setDeleting(false); return }
+      // 성공 시 deleting 을 풀지 않는다 — 이동 전까지 버튼 재클릭을 막는다.
+      router.push('/custom-games')
+    } catch {
+      showMsg('error', '삭제 중 오류가 발생했습니다')
+      setDeleting(false)
+    }
   }
 
   const handleAddRound = async () => {
@@ -946,9 +979,10 @@ export default function CustomGameDetailPage() {
             )}
           </div>
 
-          {game && !isClosed && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isRecruiting && !myParticipation && (
+          {/* 삭제는 종료된 내전에도 노출한다 — 나머지 버튼은 각자 !isClosed 로 기존 동작을 유지한다. */}
+          {game && (!isClosed || canManage) && (
+            <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
+              {!isClosed && isRecruiting && !myParticipation && (
                 <button
                   type="button"
                   onClick={handleJoin}
@@ -963,7 +997,8 @@ export default function CustomGameDetailPage() {
                   {seatsTaken >= game.capacity ? '대기 신청' : '참가 신청'}
                 </button>
               )}
-              {isRecruiting && myParticipation && (
+              {/* 주최자는 서버가 취소를 400으로 막는다 — 버튼 자체를 숨긴다(관리자는 is_host=false라 노출). */}
+              {!isClosed && isRecruiting && myParticipation && !myParticipation.is_host && (
                 <button
                   type="button"
                   onClick={handleLeave}
@@ -978,7 +1013,7 @@ export default function CustomGameDetailPage() {
                   참가 취소
                 </button>
               )}
-              {canManage && (
+              {canManage && !isClosed && (
                 <button
                   type="button"
                   onClick={handleOpenEdit}
@@ -990,7 +1025,7 @@ export default function CustomGameDetailPage() {
                   수정
                 </button>
               )}
-              {canManage && isTft && (
+              {canManage && isTft && !isClosed && (
                 <button
                   type="button"
                   onClick={handleAddRound}
@@ -1005,11 +1040,11 @@ export default function CustomGameDetailPage() {
                   {addingRound ? <><Spinner size={4} /> 탐색 중...</> : (isTeam && !teamsAssigned ? '팀 배정 필요' : '라운드 추가')}
                 </button>
               )}
-              {canManage && (
+              {canManage && !isClosed && (
                 <button
                   type="button"
                   onClick={handleEnd}
-                  disabled={addingRound || ending}
+                  disabled={addingRound || ending || deleting}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                     text-sm font-bold transition-all duration-200
                     bg-red-500/10 border border-red-500/20 text-danger-ink
@@ -1017,6 +1052,20 @@ export default function CustomGameDetailPage() {
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {ending ? <><Spinner size={4} /> 종료 중...</> : '내전 종료'}
+                </button>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting || addingRound || ending}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                    text-sm font-bold transition-all duration-200
+                    bg-red-500/20 border border-red-500/40 text-danger-ink
+                    hover:bg-red-500/30 hover:text-danger-ink
+                    disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deleting ? <><Spinner size={4} /> 삭제 중...</> : '삭제'}
                 </button>
               )}
             </div>
@@ -1076,7 +1125,7 @@ export default function CustomGameDetailPage() {
                     <Badge className={myParticipation.confirmed
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-ok-ink'
                       : 'bg-orange-500/10 border-orange-500/20 text-orange-400'}>
-                      {myParticipation.confirmed ? '참가 확정' : `대기 ${myParticipation.position - confirmedList.length}번`}
+                      {myParticipation.confirmed ? '참가 확정' : `대기 ${myParticipation.waitlist_position ?? myParticipation.position - confirmedList.length}번`}
                     </Badge>
                   )}
                 </div>
@@ -1635,7 +1684,7 @@ export default function CustomGameDetailPage() {
           <div
             className="absolute inset-0"
             style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-            onClick={() => !savingEdit && setShowEdit(false)}
+            onClick={() => !savingEdit && closeEdit()}
           />
           <div
             className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
@@ -1742,10 +1791,16 @@ export default function CustomGameDetailPage() {
               </div>
             )}
 
+            {editError && (
+              <div role="alert" className={ALERT.error}>
+                {editError}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-1">
               <button
                 type="button"
-                onClick={() => setShowEdit(false)}
+                onClick={closeEdit}
                 disabled={savingEdit}
                 className="flex-1 py-3 rounded-xl text-sm font-bold
                   bg-surface-2 border border-line text-muted
