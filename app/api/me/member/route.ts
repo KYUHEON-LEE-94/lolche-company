@@ -9,8 +9,14 @@ import {
   ensurePrimaryAccount,
   mirrorPrimaryToMember,
 } from '@/lib/members/primaryAccount'
+import { RIOT_ID_NOT_FOUND_MESSAGE, isRiotIdNotFound } from '@/lib/riot/verifyRiotId'
 
 export const dynamic = 'force-dynamic'
+
+/** members 쓰기 이전에만 호출한다 — 존재하지 않는 Riot ID 로 행을 바꾸지 않는다. */
+function riotIdNotFoundResponse() {
+  return NextResponse.json({ ok: false, message: RIOT_ID_NOT_FOUND_MESSAGE }, { status: 400 })
+}
 
 /**
  * members(사람)와 riot_accounts(계정) 양쪽을 정합화한다.
@@ -174,6 +180,9 @@ export async function POST(req: Request) {
 
   if (existing) {
     const riotIdChanged = !isSameRiotId(input, existing)
+    if (riotIdChanged && (await isRiotIdNotFound(input.riot_game_name, input.riot_tagline))) {
+      return riotIdNotFoundResponse()
+    }
     const backToPending =
       existing.status !== 'approved' ||
       (riotIdChanged && REQUIRE_REAPPROVAL_ON_RIOT_ID_CHANGE)
@@ -225,7 +234,7 @@ export async function POST(req: Request) {
     const { data: discordRow } = await supabaseService
       .schema('public')
       .from('members')
-      .select('id, user_id')
+      .select('id, user_id, riot_game_name, riot_tagline')
       .eq('discord_id', discordId)
       .maybeSingle()
 
@@ -237,6 +246,16 @@ export async function POST(req: Request) {
     }
 
     if (discordRow) {
+      if (
+        !isSameRiotId(input, {
+          riot_game_name: discordRow.riot_game_name ?? '',
+          riot_tagline: discordRow.riot_tagline ?? '',
+        }) &&
+        (await isRiotIdNotFound(input.riot_game_name, input.riot_tagline))
+      ) {
+        return riotIdNotFoundResponse()
+      }
+
       const { error: linkError } = await supabaseService
         .schema('public')
         .from('members')
@@ -348,6 +367,11 @@ export async function POST(req: Request) {
         ? '기존 멤버 정보에 연결했습니다. 바로 랭킹에 반영돼요.'
         : '기존 멤버 정보에 연결했습니다. 관리자 승인 후 랭킹에 표시돼요.',
     })
+  }
+
+  // 인계(takeover) 경로는 이미 DB에 있던 Riot ID 그대로라 확인하지 않는다. 신규 행만 확인.
+  if (await isRiotIdNotFound(input.riot_game_name, input.riot_tagline)) {
+    return riotIdNotFoundResponse()
   }
 
   const { data: created, error: insertError } = await supabaseService

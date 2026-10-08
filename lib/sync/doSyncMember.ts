@@ -24,6 +24,8 @@ import type { RiotAccount } from '@/types/supabase'
 
 const RIOT_MATCH_DETAIL_DELAY_MS = Number(process.env.RIOT_MATCH_DETAIL_DELAY_MS ?? '1200')
 const RIOT_ACCOUNT_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
+const RIOT_MATCH_ID_LOOKBACK = Number(process.env.RIOT_MATCH_ID_LOOKBACK ?? '20')
+const MAX_NEW_MATCH_DETAILS_PER_SYNC = Number(process.env.RIOT_MAX_NEW_MATCH_DETAILS ?? '5')
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -168,14 +170,41 @@ export async function doSyncMember(memberId: string) {
     primaryAccount = primary
     let primaryResult: AccountSnapshot | null = null
 
-    for (const [index, account] of accounts.entries()) {
+    // 대표를 먼저 처리한다. 부계정 실패(잘못된 Riot ID·일시 오류)가 대표 랭크·매치 수집을
+    // 막지 않도록 부계정은 실패를 격리하고 기존 저장값을 그대로 둔다.
+    const ordered = [primary, ...accounts.filter((a) => a.id !== primary.id)]
+
+    for (const [index, account] of ordered.entries()) {
       if (index > 0 && RIOT_ACCOUNT_DELAY_MS > 0) await sleep(RIOT_ACCOUNT_DELAY_MS)
 
-      const snapshot = await fetchAccountLeagues(
-        account.riot_game_name,
-        account.riot_tagline,
-        account.riot_puuid,
-      )
+      const isPrimary = account.id === primary.id
+      let snapshot: AccountSnapshot
+      if (isPrimary) {
+        snapshot = await fetchAccountLeagues(
+          account.riot_game_name,
+          account.riot_tagline,
+          account.riot_puuid,
+        )
+      } else {
+        try {
+          snapshot = await fetchAccountLeagues(
+            account.riot_game_name,
+            account.riot_tagline,
+            account.riot_puuid,
+          )
+        } catch (e) {
+          console.warn('[sync] 부계정 리그 조회 실패 — 건너뜀', {
+            memberId,
+            accountId: account.id,
+            accountNo: account.account_no,
+            status: e instanceof RiotApiError ? e.status : null,
+            message: e instanceof Error ? e.message : '오류 발생',
+          })
+          // 레이트리밋이면 남은 부계정도 같은 결과이므로 호출을 더 소모하지 않는다.
+          if (e instanceof RiotApiError && e.status === 429) break
+          continue
+        }
+      }
 
       const { error: accountUpdateError } = await supabaseAdmin
         .from('riot_accounts')
@@ -190,7 +219,7 @@ export async function doSyncMember(memberId: string) {
       // 23505(다른 멤버가 같은 puuid를 선점)여도 나머지 계정 동기화는 계속한다.
       if (accountUpdateError) console.error('riot_accounts update error', accountUpdateError)
 
-      if (account.id === primary.id) primaryResult = snapshot
+      if (isPrimary) primaryResult = snapshot
     }
 
     if (!primaryResult) throw new SyncError('Primary riot account sync failed', 500)
@@ -331,10 +360,27 @@ export async function doSyncMember(memberId: string) {
 
   // 매치 상세는 호출당 대기시간이 길어 동기화 비용의 대부분을 차지한다.
   // 계정 수만큼 늘리면 배치가 maxDuration을 넘기므로 대표 계정만 수집한다.
-  const matchIds = await fetchMatchIdsByPuuid(puuid)
-  const recentPlacements: number[] = []
+  // 이미 적재한 매치는 상세를 다시 받지 않는다(증분 수집). 신규 상세는 회당 상한까지만.
+  const matchIds = await fetchMatchIdsByPuuid(puuid, RIOT_MATCH_ID_LOOKBACK)
 
-  for (const matchId of matchIds) {
+  const existingMatchIds = new Set<string>()
+  if (matchIds.length > 0) {
+    const { data: existingRows, error: existingError } = await supabaseAdmin
+      .from('tft_match_participants')
+      .select('match_id')
+      .eq('member_id', memberId)
+      .in('match_id', matchIds)
+    if (existingError) console.error('tft_match_participants existing lookup error', existingError)
+    else for (const row of existingRows ?? []) existingMatchIds.add(row.match_id)
+  }
+
+  // matchIds 는 최신순. myPart 가 없는 매치(참가자 행을 못 만든 경우)는 다음 동기화에서
+  // 다시 받게 되지만, 상한이 회당 비용을 제한한다.
+  const toFetch = matchIds
+    .filter((id) => !existingMatchIds.has(id))
+    .slice(0, MAX_NEW_MATCH_DETAILS_PER_SYNC)
+
+  for (const matchId of toFetch) {
     if (RIOT_MATCH_DETAIL_DELAY_MS > 0) await sleep(RIOT_MATCH_DETAIL_DELAY_MS)
 
     const match = await fetchMatchById(matchId)
@@ -361,8 +407,6 @@ export async function doSyncMember(memberId: string) {
     const myPart = info.participants.find((p) => p.puuid === puuid)
     if (!myPart) continue
 
-    recentPlacements.push(myPart.placement ?? 8)
-
     await supabaseAdmin
       .from('tft_match_participants')
       .delete()
@@ -387,14 +431,35 @@ export async function doSyncMember(memberId: string) {
     if (partInsertError) console.error('tft_match_participants insert error', partInsertError)
   }
 
-  if (recentPlacements.length > 0) {
-    const recent5 = recentPlacements.slice(0, 5).join(',')
-    const { error: recentUpdateError } = await supabaseAdmin
-      .from('members')
-      .update({ tft_recent5: recent5 })
-      .eq('id', memberId)
+  // 증분 수집이라 이번에 받은 상세만으로는 최근 5판을 만들 수 없다 → DB 기준으로 계산한다.
+  // member_id 기준이라 대표 전환 직후엔 이전 대표 계정 판이 섞일 수 있지만,
+  // puuid 기준이면 puuid 재발급 시 이력이 끊기므로 이쪽을 택한다.
+  //
+  // ★ 부모는 반드시 participants(member_id 필터)다. tft_matches 를 부모로 두고 임베드 필터를 걸면
+  //   전체 매치를 game_datetime 순으로 훑어 실DB에서 statement timeout(57014)이 났다.
+  //   to-one 관계 컬럼 정렬(`tft_matches(game_datetime)`)은 부모 행을 정렬한다.
+  const { data: recentRows, error: recentError } = await supabaseAdmin
+    .from('tft_match_participants')
+    .select('placement, tft_matches!inner(game_datetime)')
+    .eq('member_id', memberId)
+    .order('tft_matches(game_datetime)', { ascending: false, nullsFirst: false })
+    .limit(5)
 
-    if (recentUpdateError) console.error('members.tft_recent5 update error', recentUpdateError)
+  if (recentError) {
+    console.error('recent5 lookup error', recentError)
+  } else {
+    const rows = (recentRows ?? []) as unknown as { placement: number | null }[]
+    if (rows.length > 0) {
+      const recent5 = rows.map((r) => r.placement ?? 8).join(',')
+      if (recent5 !== member.tft_recent5) {
+        const { error: recentUpdateError } = await supabaseAdmin
+          .from('members')
+          .update({ tft_recent5: recent5 })
+          .eq('id', memberId)
+
+        if (recentUpdateError) console.error('members.tft_recent5 update error', recentUpdateError)
+      }
+    }
   }
 
   // 조건형 TFT 연승/챌린저 업적은 전적 적재 뒤에만 계산한다. 실패해도 랭크 동기화는 유지한다.

@@ -185,6 +185,9 @@ PUSH_REMINDER_WINDOW_MIN=60         # 내전 시작 몇 분 전에 웹 푸시를
 RIOT_MATCH_DETAIL_DELAY_MS=1200     # 매치 API 호출 간격(ms)
 RIOT_MEMBER_DELAY_MS=800            # 멤버 간 · 라이엇 계정 간 호출 간격(ms)
 SYNC_ALL_BATCH=10                   # 1회 전체 동기화 멤버 수 (계정 최대 3개 감안해 20→10)
+SYNC_FAILED_BACKOFF_HOURS=3         # failed 멤버를 sync-all 이 다시 고르기까지의 간격(시간)
+RIOT_MATCH_ID_LOOKBACK=20           # 동기화마다 조회할 최근 매치 ID 수 (이미 적재된 매치는 상세 생략)
+RIOT_MAX_NEW_MATCH_DETAILS=5        # 동기화 1회당 신규 매치 상세 호출 상한
 NEXT_PUBLIC_MIN_SYNC_INTERVAL_SEC=300  # 프론트 쿨다운 표시용
 NEXT_PUBLIC_DISCORD_GUILD_ID=       # 값 있으면 그 Discord 서버(길드) 멤버만 로그인 허용, 비우면 게이트 off (기존 동작)
 SITE_URL=                           # OG 절대 URL 기준(metadataBase). 미설정 시 VERCEL_PROJECT_PRODUCTION_URL → VERCEL_URL → localhost 폴백.
@@ -544,6 +547,21 @@ URL 쿼리 파라미터(`?api_key=`)로 전송하지 않는다 — 서버 로그
 - **매치 상세(건당 1200ms)·LoL·`member_rank_history`는 대표 계정만** — 비용의 대부분이 매치 상세다
 - `SYNC_ALL_BATCH` 기본값 **10** (계정 3배를 감안해 20에서 하향)
 - 개별 동기화 쿨다운은 계정 수와 무관하게 `members.last_synced_at`(사람 단위) 기준 유지
+- **대표 먼저 + 부계정 실패 격리:** `doSyncMember()`는 대표 계정을 먼저 조회하고, 부계정 조회 실패는
+  `console.warn` 후 건너뛴다(그 부계정 행은 update 하지 않아 기존 값 보존, 429면 남은 부계정 중단).
+  대표 실패만 throw → 재시도/failed. 부계정 실패는 sync_logs 상 success 로 남는다(로그로만 확인)
+- **등록 시 Riot ID 검증:** `lib/riot/verifyRiotId.ts`(`server-only`, TFT 키). 404/400 → **400 거절**(DB 무변경),
+  Riot 장애(429·5xx·키 미설정)는 등록을 막지 않고 `riot_puuid=null`로 저장. `/api/me/riot-accounts` POST·PATCH는
+  해석한 puuid 를 즉시 저장한다. `/api/me/member`·`/api/admin/members/create|update`는 Riot ID가 **실제로 바뀔 때만**
+  members 쓰기 이전에 존재 여부만 확인한다(인계 경로 제외)
+- **sync-all 선정:** `status≠'rejected'` 중 (stale ∧ running·failed 아님) ∪ (stale ∧ failed ∧ 마지막 시도가
+  `SYNC_FAILED_BACKOFF_HOURS`(기본 3) 이전) ∪ (30분+ stuck running). 정렬은 `last_sync_started_at asc nulls first, id`.
+  **id 커서는 쓰지 않는다**(요청의 `cursorId`는 무시) — 처리된 멤버는 상태로 자연 제외되므로 반복 조회로 진행된다.
+  관리자 화면 루프는 최대 50회로 방어
+- **매치 상세 증분 수집:** 매치 ID를 `RIOT_MATCH_ID_LOOKBACK`(기본 20)개 받아 `tft_match_participants`에
+  이미 있는 것은 건너뛰고, 신규 상세는 회당 `RIOT_MAX_NEW_MATCH_DETAILS`(기본 5)건까지만 받는다.
+  정상 상태의 2회차 동기화는 상세 호출 0건. `tft_recent5`는 DB 기준(participants `member_id` → `tft_matches(game_datetime)`
+  desc 5건)으로 계산한다. ⚠ `tft_matches`를 부모로 두고 임베드 필터를 걸면 실DB에서 statement timeout(57014)
 
 ### 마이그레이션 미적용 시 degrade
 

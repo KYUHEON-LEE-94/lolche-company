@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
-import { parseMemberInput } from '@/lib/members/memberInput'
+import { isSameRiotId, parseMemberInput } from '@/lib/members/memberInput'
 import { ensurePrimaryAccount, mirrorPrimaryToMember } from '@/lib/members/primaryAccount'
+import { RIOT_ID_NOT_FOUND_MESSAGE, isRiotIdNotFound } from '@/lib/riot/verifyRiotId'
 
 export async function POST(req: Request) {
     const { ok, supabase } = await requireAdmin()
@@ -24,6 +25,20 @@ export async function POST(req: Request) {
     const parsed = parseMemberInput(body)
     if (!parsed.ok) {
         return NextResponse.json({ ok: false, message: parsed.message }, { status: 400 })
+    }
+
+    // Riot ID가 실제로 바뀔 때만 존재 여부를 확인한다(이름만 수정할 때 Riot 호출 0회).
+    const { data: current } = await supabase
+        .schema('public')
+        .from('members')
+        .select('riot_game_name, riot_tagline')
+        .eq('id', id)
+        .maybeSingle()
+    if (
+        (!current || !isSameRiotId(parsed.value, current)) &&
+        (await isRiotIdNotFound(parsed.value.riot_game_name, parsed.value.riot_tagline))
+    ) {
+        return NextResponse.json({ ok: false, message: RIOT_ID_NOT_FOUND_MESSAGE }, { status: 400 })
     }
 
     // 관리자 수정은 status를 건드리지 않는다(승인 상태 유지).

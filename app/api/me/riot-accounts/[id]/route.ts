@@ -16,6 +16,7 @@ import {
   pickPrimaryAccount,
   riotAccountsMigrationResponse,
 } from '@/lib/members/primaryAccount'
+import { RIOT_ID_NOT_FOUND_MESSAGE, verifyRiotId } from '@/lib/riot/verifyRiotId'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,9 +65,16 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return NextResponse.json({ ok: false, message: '이미 등록한 라이엇 ID입니다.' }, { status: 409 })
   }
 
+  // 존재하지 않는 ID면 DB를 건드리기 전에 거절한다. Riot 장애로 확인 불가면 막지 않는다.
+  const verification = await verifyRiotId(parsed.value.riot_game_name, parsed.value.riot_tagline)
+  if (verification.status === 'not_found') {
+    return NextResponse.json({ ok: false, message: RIOT_ID_NOT_FOUND_MESSAGE }, { status: 400 })
+  }
+  const resolvedPuuid = verification.status === 'ok' ? verification.puuid : null
+
   const isPrimary = pickPrimaryAccount(listed.accounts)?.id === accountId
 
-  // 다른 사람의 계정으로 바뀌었으므로 puuid·랭크는 전부 무효다.
+  // 다른 사람의 계정으로 바뀌었으므로 옛 puuid·랭크는 전부 무효다.
   // 남겨 두면 다음 동기화 전까지 옛 계정의 티어가 랭킹에 남는다.
   const clearRiotId = (cleared: Record<string, null>) =>
     supabaseAdmin
@@ -74,7 +82,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
       .update({
         riot_game_name: parsed.value.riot_game_name,
         riot_tagline: parsed.value.riot_tagline,
-        riot_puuid: null,
+        riot_puuid: resolvedPuuid,
         ...cleared,
       })
       .eq('id', accountId)

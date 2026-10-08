@@ -3,6 +3,7 @@ import { requireAdmin } from '@/app/lib/isAdmin'
 import { revalidatePath } from 'next/cache'
 import { parseMemberInput } from '@/lib/members/memberInput'
 import { ensurePrimaryAccount } from '@/lib/members/primaryAccount'
+import { RIOT_ID_NOT_FOUND_MESSAGE, isRiotIdNotFound } from '@/lib/riot/verifyRiotId'
 
 export async function POST(req: Request) {
     const { ok, user, supabase } = await requireAdmin()
@@ -13,6 +14,10 @@ export async function POST(req: Request) {
     const parsed = parseMemberInput(body)
     if (!parsed.ok) {
         return NextResponse.json({ ok: false, message: parsed.message }, { status: 400 })
+    }
+
+    if (await isRiotIdNotFound(parsed.value.riot_game_name, parsed.value.riot_tagline)) {
+        return NextResponse.json({ ok: false, message: RIOT_ID_NOT_FOUND_MESSAGE }, { status: 400 })
     }
 
     const { data, error } = await supabase

@@ -15,6 +15,8 @@ const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '10')
 const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
 const STALE_HOURS = Number(process.env.SYNC_STALE_HOURS ?? '1')
 const STUCK_RUNNING_MINUTES = 30
+// 실패 멤버 재시도 간격. 잘못된 Riot ID 는 매번 실패하므로 매 배치 슬롯을 차지하지 않게 한다.
+const FAILED_BACKOFF_HOURS = Number(process.env.SYNC_FAILED_BACKOFF_HOURS ?? '3')
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
@@ -68,6 +70,7 @@ async function runSyncAll(params: {
 
   const staleSince = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString()
   const stuckSince = new Date(Date.now() - STUCK_RUNNING_MINUTES * 60 * 1000).toISOString()
+  const backoffSince = new Date(Date.now() - FAILED_BACKOFF_HOURS * 3600 * 1000).toISOString()
 
   const vercelCron = params.req?.headers.get('x-vercel-cron')
   console.log('[sync-all] start', {
@@ -84,21 +87,28 @@ async function runSyncAll(params: {
     await cleanupSyncLogs()
   }
 
-  // Case 1: stale(미동기화/오래됨) AND not-actively-running
-  // Case 2: stuck-running(30분 이상 running 상태 — stale 여부 무관하게 재시도)
-  const case1 = `and(or(last_synced_at.is.null,last_synced_at.lt.${staleSince}),or(sync_status.is.null,sync_status.neq.running))`
-  const case2 = `and(sync_status.eq.running,last_sync_started_at.lt.${stuckSince})`
+  // 선정 규칙:
+  //   fresh  — stale AND (상태 없음 | running·failed 아님)
+  //   failed — stale AND failed AND 마지막 시도가 백오프 시간 이전 (잘못된 Riot ID 가 매 배치를 잠식하지 않게)
+  //   stuck  — running 이 30분 이상 (stale 여부 무관하게 재시도)
+  // 정렬은 "가장 오래 시도 안 한 멤버" 우선 → id 순 고정 정렬로 앞쪽 멤버만 반복 처리되던 기아를 막는다.
+  //
+  // ★ cursorId 는 받되 쓰지 않는다. 처리된 멤버는 success(stale 아님) / failed(백오프) /
+  //   running(최근 started) 로 자연 제외되므로, 같은 조건을 반복 조회해도 진행이 보장된다.
+  //   (id 커서와 last_sync_started_at 정렬은 함께 쓸 수 없다.)
+  const stale = `or(last_synced_at.is.null,last_synced_at.lt.${staleSince})`
+  const caseFresh = `and(${stale},or(sync_status.is.null,sync_status.not.in.(running,failed)))`
+  const caseFailed = `and(${stale},sync_status.eq.failed,or(last_sync_started_at.is.null,last_sync_started_at.lt.${backoffSince}))`
+  const caseStuck = `and(sync_status.eq.running,last_sync_started_at.lt.${stuckSince})`
 
-  let q = supabaseAdmin
+  const { data: members, error } = await supabaseAdmin
       .from('members')
       .select('id, member_name, last_synced_at, sync_status')
-      .or(`${case1},${case2}`)
+      .neq('status', 'rejected')
+      .or(`${caseFresh},${caseFailed},${caseStuck}`)
+      .order('last_sync_started_at', { ascending: true, nullsFirst: true })
       .order('id', { ascending: true })
       .limit(limit)
-
-  if (cursorId) q = q.gt('id', cursorId)
-
-  const { data: members, error } = await q
   if (error) {
     console.error('[sync-all] members query error', error)
     return NextResponse.json({ error: '멤버 조회 실패', detail: String(error) }, { status: 500 })

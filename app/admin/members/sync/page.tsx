@@ -27,6 +27,8 @@ type MemberRow = {
   discord_registered: boolean
 }
 
+const MAX_SYNC_ALL_ROUNDS = 50
+
 type Banner = { tone: 'error' | 'success' | 'warn'; msg: string }
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected'
 type LoginFilter = 'all' | 'linked' | 'unlinked'
@@ -167,7 +169,8 @@ export default function AdminMemberSyncPage() {
       let cursorId: string | null = null
       let totalProcessed = 0
 
-      while (true) {
+      // 서버는 커서 대신 상태로 진행하므로, 상태 갱신이 실패하는 이상 상황에서 무한 루프를 막는 상한.
+      for (let i = 0; i < MAX_SYNC_ALL_ROUNDS; i++) {
         const res: Response = await fetch('/api/admin/sync-all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

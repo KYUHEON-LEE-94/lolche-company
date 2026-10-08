@@ -12,6 +12,7 @@ import {
   pickPrimaryAccount,
   riotAccountsMigrationResponse,
 } from '@/lib/members/primaryAccount'
+import { RIOT_ID_NOT_FOUND_MESSAGE, verifyRiotId } from '@/lib/riot/verifyRiotId'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,6 +116,11 @@ export async function POST(req: Request) {
     )
   }
 
+  const verification = await verifyRiotId(parsed.value.riot_game_name, parsed.value.riot_tagline)
+  if (verification.status === 'not_found') {
+    return NextResponse.json({ ok: false, message: RIOT_ID_NOT_FOUND_MESSAGE }, { status: 400 })
+  }
+
   const isFirst = listed.accounts.length === 0
 
   const { data: created, error } = await supabaseAdmin
@@ -126,6 +132,8 @@ export async function POST(req: Request) {
       is_primary: isFirst,
       riot_game_name: parsed.value.riot_game_name,
       riot_tagline: parsed.value.riot_tagline,
+      // Riot 장애로 확인 불가면 null — 동기화가 나중에 해석한다.
+      riot_puuid: verification.status === 'ok' ? verification.puuid : null,
     })
     .select('id')
     .single()
