@@ -1,4 +1,5 @@
 import { NextResponse, after } from 'next/server'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getViewerMember, canManageGame, isApprovedMember } from '@/lib/customGames/authorize'
 import { sendDiscordWebhook, DISCORD_COLOR } from '@/lib/discord/notify'
@@ -35,6 +36,46 @@ export const dynamic = 'force-dynamic'
 
 type ParticipantRow = { id: string; custom_game_id: string; member_id: string; joined_at: string }
 
+/**
+ * 목록 상한. 예전에는 전체 내전을 무필터로 읽고 전체 ID 로 참가자·게스트를 .in() 조회해
+ * 종료된 내전이 쌓일수록 응답과 URL 길이가 선형으로 커졌다.
+ * 활성(모집·진행 중)은 사실상 전부 보여야 하므로 넉넉히, 종료·취소는 최근 것만 노출한다
+ * (그 이전 내전도 상세 링크로는 계속 접근 가능하다).
+ */
+const ACTIVE_LIST_LIMIT = 100
+const ENDED_LIST_LIMIT = 30
+
+type ListRow = Record<string, unknown> & { created_at: string | null }
+type ListRowsResult = { data: ListRow[]; error: null } | { data: null; error: PostgrestError }
+
+/** 활성/종료를 따로 상한 조회한 뒤 created_at desc 로 합친다. 하나라도 실패하면 그 에러를 돌려준다. */
+async function fetchListRows(columns: string): Promise<ListRowsResult> {
+  const [active, ended] = await Promise.all([
+    supabaseAdmin
+      .from('custom_games')
+      .select(columns)
+      .in('status', [...ACTIVE_STATUSES])
+      .order('created_at', { ascending: false })
+      .limit(ACTIVE_LIST_LIMIT),
+    supabaseAdmin
+      .from('custom_games')
+      .select(columns)
+      .not('status', 'in', `(${ACTIVE_STATUSES.join(',')})`)
+      .order('created_at', { ascending: false })
+      .limit(ENDED_LIST_LIMIT),
+  ])
+
+  if (active.error) return { data: null, error: active.error }
+  if (ended.error) return { data: null, error: ended.error }
+
+  const toMs = (row: ListRow) => (row.created_at ? new Date(row.created_at).getTime() : 0)
+  const rows = [
+    ...((active.data ?? []) as unknown as ListRow[]),
+    ...((ended.data ?? []) as unknown as ListRow[]),
+  ].sort((a, b) => toMs(b) - toMs(a))
+  return { data: rows, error: null }
+}
+
 export async function GET() {
   const viewer = await getViewerMember()
   const viewerMemberId = viewer?.member?.id ?? null
@@ -43,10 +84,7 @@ export async function GET() {
   let migrationRequired = false
   let gameRows: unknown[] | null = null
 
-  const primary = await supabaseAdmin
-    .from('custom_games')
-    .select(GAME_COLUMNS)
-    .order('created_at', { ascending: false })
+  const primary = await fetchListRows(GAME_COLUMNS)
 
   if (primary.error) {
     if (!isMissingColumnError(primary.error)) {
@@ -55,10 +93,7 @@ export async function GET() {
     migrationRequired = true
 
     // 20260731(lol_mode) 미적용 → PRE_LOL 로 내려간다(steam_app_id 는 존재).
-    const preLol = await supabaseAdmin
-      .from('custom_games')
-      .select(PRE_LOL_GAME_COLUMNS)
-      .order('created_at', { ascending: false })
+    const preLol = await fetchListRows(PRE_LOL_GAME_COLUMNS)
 
     if (preLol.error) {
       if (!isMissingColumnError(preLol.error)) {
@@ -66,20 +101,14 @@ export async function GET() {
       }
 
       // 20260727(steam_app_id)까지 미적용 → LEGACY 로 내려간다.
-      const legacy = await supabaseAdmin
-        .from('custom_games')
-        .select(LEGACY_GAME_COLUMNS)
-        .order('created_at', { ascending: false })
+      const legacy = await fetchListRows(LEGACY_GAME_COLUMNS)
 
       if (legacy.error) {
         if (!isMissingColumnError(legacy.error)) {
           return NextResponse.json({ error: legacy.error.message }, { status: 500 })
         }
         // 20260725 자체가 미적용 — 모집 컬럼이 없어 집계를 만들 수 없다.
-        const preRecruit = await supabaseAdmin
-          .from('custom_games')
-          .select(PRE_RECRUIT_GAME_COLUMNS)
-          .order('created_at', { ascending: false })
+        const preRecruit = await fetchListRows(PRE_RECRUIT_GAME_COLUMNS)
 
         if (preRecruit.error) {
           return NextResponse.json({ error: preRecruit.error.message }, { status: 500 })

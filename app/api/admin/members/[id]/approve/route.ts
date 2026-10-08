@@ -56,14 +56,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   let syncWarning: string | null = null
   try {
     const result = await syncOneMember(memberId, doSyncMember)
+    // skipped = 다른 실행(크론 등)이 이미 이 멤버를 동기화 중이다. 실패가 아니므로 경고하지 않는다.
+    const skipped = result.skipped === 'in_progress'
     await writeSyncLog({
       type: 'manual',
       memberId,
-      status: result.ok ? 'success' : 'error',
-      message: result.error ?? null,
+      status: skipped ? 'skipped' : result.ok ? 'success' : 'error',
+      message: skipped ? 'in_progress' : result.error ?? null,
       durationMs: Date.now() - t0,
     })
-    if (!result.ok) {
+    if (!result.ok && !skipped) {
       syncWarning = result.error ?? '동기화에 실패했습니다. Riot ID를 확인해주세요.'
     }
   } catch (e) {

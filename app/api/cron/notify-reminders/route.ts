@@ -5,6 +5,7 @@ import { isMissingTableError } from '@/lib/db/pgErrors'
 import { sendDiscordWebhook, DISCORD_COLOR, notifySeasonEndingSoon, type DiscordEmbed } from '@/lib/discord/notify'
 import { formatKstSchedule, gameKindLabel, lolModeLabel } from '@/lib/customGames/display'
 import { sendCustomGamePushReminders, type PushReminderResult } from '@/lib/push/sendGameReminders'
+import { ACTIVE_STATUSES } from '@/lib/customGames/constants'
 
 export const dynamic = 'force-dynamic'
 // web-push 는 node crypto 를 쓰므로 엣지 승격을 막는다.
@@ -93,7 +94,7 @@ async function sendCalendarReminders(req: Request, now: Date): Promise<{ sent: n
 
 /**
  * 내전 "시작 임박" 알림 크론.
- *   모집 중 + 시작 WINDOW_MIN 분 이내 + 아직 미발송 내전을 찾아 디스코드로 1회 알린 뒤
+ *   활성(모집 중·진행 중) + 시작 WINDOW_MIN 분 이내 + 아직 미발송 내전을 찾아 디스코드로 1회 알린 뒤
  *   reminder_sent_at 을 기록한다(중복 방지). 외부 스케줄러(GitHub Actions)가 주기적으로 호출한다.
  *   인증은 기존 크론과 동일하게 Authorization: Bearer CRON_SECRET(또는 ADMIN_SYNC_TOKEN).
  */
@@ -110,7 +111,8 @@ export async function GET(req: Request) {
   const { data, error } = await supabaseAdmin
     .from('custom_games')
     .select('id, title, game_kind, game_kind_label, lol_mode, capacity, scheduled_at, host_member_id')
-    .eq('status', 'recruiting')
+    // 시작 전에 '진행 중'으로 일찍 전환된 내전도 알린다(웹 푸시 sendGameReminders 와 같은 정책).
+    .in('status', [...ACTIVE_STATUSES])
     .is('reminder_sent_at', null)
     .not('scheduled_at', 'is', null)
     .gte('scheduled_at', now.toISOString())

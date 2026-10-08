@@ -361,74 +361,87 @@ export async function doSyncMember(memberId: string) {
   // 매치 상세는 호출당 대기시간이 길어 동기화 비용의 대부분을 차지한다.
   // 계정 수만큼 늘리면 배치가 maxDuration을 넘기므로 대표 계정만 수집한다.
   // 이미 적재한 매치는 상세를 다시 받지 않는다(증분 수집). 신규 상세는 회당 상한까지만.
-  const matchIds = await fetchMatchIdsByPuuid(puuid, RIOT_MATCH_ID_LOOKBACK)
+  //
+  // ★ 이 단계의 Riot 오류(429/5xx)는 여기서 삼킨다. mirrorPrimaryToMember(recordPrev) 이후에 throw 하면
+  //   syncOneMember 재시도가 doSyncMember 전체를 다시 돌려 2회차의 `member`(=이전 값)와 tft_*_prev 가
+  //   이미 새 값이 되고, 승급 알림·TOP5 진입 판정이 무력화된다. 못 받은 매치는 다음 동기화에서
+  //   증분(lookback)으로 회수된다.
+  try {
+    const matchIds = await fetchMatchIdsByPuuid(puuid, RIOT_MATCH_ID_LOOKBACK)
 
-  const existingMatchIds = new Set<string>()
-  if (matchIds.length > 0) {
-    const { data: existingRows, error: existingError } = await supabaseAdmin
-      .from('tft_match_participants')
-      .select('match_id')
-      .eq('member_id', memberId)
-      .in('match_id', matchIds)
-    if (existingError) console.error('tft_match_participants existing lookup error', existingError)
-    else for (const row of existingRows ?? []) existingMatchIds.add(row.match_id)
-  }
-
-  // matchIds 는 최신순. myPart 가 없는 매치(참가자 행을 못 만든 경우)는 다음 동기화에서
-  // 다시 받게 되지만, 상한이 회당 비용을 제한한다.
-  const toFetch = matchIds
-    .filter((id) => !existingMatchIds.has(id))
-    .slice(0, MAX_NEW_MATCH_DETAILS_PER_SYNC)
-
-  for (const matchId of toFetch) {
-    if (RIOT_MATCH_DETAIL_DELAY_MS > 0) await sleep(RIOT_MATCH_DETAIL_DELAY_MS)
-
-    const match = await fetchMatchById(matchId)
-    const { metadata, info } = match
-
-    const matchRow = {
-      match_id: metadata.match_id,
-      data_version: metadata.data_version ?? null,
-      game_datetime: info.game_datetime ? new Date(info.game_datetime).toISOString() : null,
-      queue_id: info.queue_id ?? null,
-      tft_set_number: info.tft_set_number ?? null,
-      game_length_seconds: info.game_length != null ? Math.round(info.game_length) : null,
+    const existingMatchIds = new Set<string>()
+    if (matchIds.length > 0) {
+      const { data: existingRows, error: existingError } = await supabaseAdmin
+        .from('tft_match_participants')
+        .select('match_id')
+        .eq('member_id', memberId)
+        .in('match_id', matchIds)
+      if (existingError) console.error('tft_match_participants existing lookup error', existingError)
+      else for (const row of existingRows ?? []) existingMatchIds.add(row.match_id)
     }
 
-    const { error: matchUpsertError } = await supabaseAdmin
-      .from('tft_matches')
-      .upsert([matchRow], { onConflict: 'match_id' })
+    // matchIds 는 최신순. myPart 가 없는 매치(참가자 행을 못 만든 경우)는 다음 동기화에서
+    // 다시 받게 되지만, 상한이 회당 비용을 제한한다.
+    const toFetch = matchIds
+      .filter((id) => !existingMatchIds.has(id))
+      .slice(0, MAX_NEW_MATCH_DETAILS_PER_SYNC)
 
-    if (matchUpsertError) {
-      console.error('tft_matches upsert error', matchUpsertError)
-      continue
-    }
+    for (const matchId of toFetch) {
+      if (RIOT_MATCH_DETAIL_DELAY_MS > 0) await sleep(RIOT_MATCH_DETAIL_DELAY_MS)
 
-    const myPart = info.participants.find((p) => p.puuid === puuid)
-    if (!myPart) continue
+      const match = await fetchMatchById(matchId)
+      const { metadata, info } = match
 
-    await supabaseAdmin
-      .from('tft_match_participants')
-      .delete()
-      .eq('match_id', metadata.match_id)
-      .eq('member_id', memberId)
-
-    const { error: partInsertError } = await supabaseAdmin
-      .from('tft_match_participants')
-      .insert([{
+      const matchRow = {
         match_id: metadata.match_id,
-        member_id: memberId,
-        puuid,
-        placement: myPart.placement ?? null,
-        level: myPart.level ?? null,
-        time_eliminated: myPart.time_eliminated ?? null,
-        total_damage_to_players: myPart.total_damage_to_players ?? null,
-        augments: myPart.augments ?? null,
-        traits: myPart.traits ?? null,
-        units: myPart.units ?? null,
-      }])
+        data_version: metadata.data_version ?? null,
+        game_datetime: info.game_datetime ? new Date(info.game_datetime).toISOString() : null,
+        queue_id: info.queue_id ?? null,
+        tft_set_number: info.tft_set_number ?? null,
+        game_length_seconds: info.game_length != null ? Math.round(info.game_length) : null,
+      }
 
-    if (partInsertError) console.error('tft_match_participants insert error', partInsertError)
+      const { error: matchUpsertError } = await supabaseAdmin
+        .from('tft_matches')
+        .upsert([matchRow], { onConflict: 'match_id' })
+
+      if (matchUpsertError) {
+        console.error('tft_matches upsert error', matchUpsertError)
+        continue
+      }
+
+      const myPart = info.participants.find((p) => p.puuid === puuid)
+      if (!myPart) continue
+
+      await supabaseAdmin
+        .from('tft_match_participants')
+        .delete()
+        .eq('match_id', metadata.match_id)
+        .eq('member_id', memberId)
+
+      const { error: partInsertError } = await supabaseAdmin
+        .from('tft_match_participants')
+        .insert([{
+          match_id: metadata.match_id,
+          member_id: memberId,
+          puuid,
+          placement: myPart.placement ?? null,
+          level: myPart.level ?? null,
+          time_eliminated: myPart.time_eliminated ?? null,
+          total_damage_to_players: myPart.total_damage_to_players ?? null,
+          augments: myPart.augments ?? null,
+          traits: myPart.traits ?? null,
+          units: myPart.units ?? null,
+        }])
+
+      if (partInsertError) console.error('tft_match_participants insert error', partInsertError)
+    }
+  } catch (e) {
+    console.warn('[sync] 매치 수집 실패 — 다음 동기화에서 증분 재시도', {
+      memberId,
+      status: e instanceof RiotApiError ? e.status : null,
+      message: e instanceof Error ? e.message : '오류 발생',
+    })
   }
 
   // 증분 수집이라 이번에 받은 상세만으로는 최근 5판을 만들 수 없다 → DB 기준으로 계산한다.

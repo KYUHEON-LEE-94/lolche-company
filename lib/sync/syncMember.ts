@@ -5,6 +5,9 @@ const MAX_RETRY = Number(process.env.RIOT_MAX_RETRY ?? '5')
 const BASE_BACKOFF_MS = Number(process.env.RIOT_BACKOFF_BASE_MS ?? '1000')
 const MAX_BACKOFF_MS = Number(process.env.RIOT_BACKOFF_MAX_MS ?? '16000')
 const RIOT_429_FALLBACK_MS = Number(process.env.RIOT_429_DELAY_MS ?? '30000')
+// running 이 이 시간 이상 지속되면 죽은 실행(함수 타임아웃 등)으로 보고 다시 claim 을 허용한다.
+// sync-all 의 stuck 선정 기준과 반드시 같은 값을 쓴다.
+export const STUCK_RUNNING_MINUTES = 30
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
@@ -39,10 +42,12 @@ export class SyncError extends Error {
   }
 }
 
-type SyncResult = {
+export type SyncResult = {
   ok: boolean
   status: number
   error?: string | null
+  /** 다른 실행이 이미 running 이라 이번 호출은 아무것도 하지 않았다. 실패가 아니다. */
+  skipped?: 'in_progress'
 }
 
 export async function syncOneMember(
@@ -51,8 +56,12 @@ export async function syncOneMember(
 ): Promise<SyncResult> {
   const startedAt = new Date().toISOString()
 
-  // running 마킹 + attempts 현재값 읽기를 1회 DB 호출로 합침
-  const { data: m0 } = await supabaseAdmin
+  const stuckSince = new Date(Date.now() - STUCK_RUNNING_MINUTES * 60 * 1000).toISOString()
+
+  // ★ 조건부 claim: running 이 아니거나(혹은 stuck) 일 때만 running 으로 전이한다.
+  //   무조건 마킹하면 수동 버튼 연타·크론과 수동의 겹침이 같은 멤버를 동시에 동기화해
+  //   Riot 호출이 배로 들고 prev 기록이 꼬인다. 단일 UPDATE 의 WHERE 라 경합에도 1건만 이긴다.
+  const { data: m0, error: claimError } = await supabaseAdmin
     .from('members')
     .update({
       sync_status: 'running',
@@ -60,12 +69,18 @@ export async function syncOneMember(
       last_sync_error: null,
     })
     .eq('id', memberId)
+    .or(
+      `sync_status.is.null,sync_status.neq.running,last_sync_started_at.is.null,last_sync_started_at.lt.${stuckSince}`,
+    )
     .select('sync_attempts')
-    .single()
+    .maybeSingle()
+
+  if (claimError) return { ok: false, status: 500, error: claimError.message }
+  if (!m0) return { ok: false, status: 409, error: null, skipped: 'in_progress' }
 
   await supabaseAdmin
     .from('members')
-    .update({ sync_attempts: (m0?.sync_attempts ?? 0) + 1 })
+    .update({ sync_attempts: (m0.sync_attempts ?? 0) + 1 })
     .eq('id', memberId)
 
   let lastStatus = 0

@@ -149,7 +149,9 @@ export default function AdminMemberSyncPage() {
       const res  = await fetch(`/api/members/${id}/sync`, { method: 'POST' })
       const body = await res.json()
       if (!res.ok || body?.ok === false) throw new Error(body?.error)
-      if (body?.skipped) {
+      if (body?.skipped && body?.reason === 'in_progress') {
+        showMsg('warn', '동기화 진행 중입니다. 잠시 후 새로고침하세요.')
+      } else if (body?.skipped) {
         const remain = body.nextAllowedInSec ? `${body.nextAllowedInSec}초 후 가능` : '잠시 후 다시 시도하세요'
         showMsg('warn', `이미 최신 상태입니다. (${remain})`)
       } else {

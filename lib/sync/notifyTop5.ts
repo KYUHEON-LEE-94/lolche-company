@@ -27,8 +27,15 @@ function label(tier: string | null, rank: string | null, lp: number | null): str
  * - 직전 top5 에 이미 있던 멤버는 재알림하지 않는다(prev 로 자연 dedup).
  * - 초기 채우기 스팸 방지: 랭크 보유자가 5명 미만이면 아무것도 하지 않는다.
  * - 실패해도 동기화 자체를 막지 않도록 호출부에서 감싸 쓴다.
+ *
+ * ★ 반복 발송 방지: prev 는 그 멤버가 **재동기화될 때만** 갱신되므로, 위 비교만으로는
+ *   같은 진입자가 매 크론마다 다시 잡힌다. 그래서 진입자를 두 조건으로 더 좁힌다.
+ *   (1) 이번 라운드에 실제로 동기화된 멤버(`syncedIds`)만 — 이번 갱신이 만든 진입만 알린다.
+ *   (2) 본인의 직전 랭크가 현재 5위보다 낮았던 경우만 — prev == 현재(변화 없음)면 절대 알리지 않는다.
+ *   "남이 떨어져서 5위가 된" 경우는 의도적으로 알리지 않는다.
  */
-export async function notifyTop5EntriesIfAny(): Promise<void> {
+export async function notifyTop5EntriesIfAny(syncedIds: ReadonlySet<string>): Promise<void> {
+  if (syncedIds.size === 0) return
   const { data, error } = await supabaseAdmin
     .from('members')
     .select('id,member_name,tft_tier,tft_rank,tft_league_points,tft_tier_prev,tft_rank_prev,tft_lp_prev')
@@ -55,9 +62,19 @@ export async function notifyTop5EntriesIfAny(): Promise<void> {
       .map((r) => r.id),
   )
 
+  const fifth = currentTop5[currentTop5.length - 1]
   const entrants = currentTop5
     .map((r, i) => ({ r, pos: i + 1 }))
     .filter(({ r }) => !prevTop5Ids.has(r.id))
+    .filter(({ r }) => syncedIds.has(r.id))
+    .filter(({ r }) =>
+      // compareRank(a, b) > 0 ⇔ a 가 b 보다 낮다. prev 가 없으면(첫 랭크) 통과.
+      !r.tft_tier_prev ||
+      compareRank(
+        { tier: r.tft_tier_prev, rank: r.tft_rank_prev, lp: r.tft_lp_prev },
+        { tier: fifth.tft_tier, rank: fifth.tft_rank, lp: fifth.tft_league_points },
+      ) > 0,
+    )
   if (entrants.length === 0) return
 
   await notifyTop5Entry(entrants.map(({ r, pos }) => ({

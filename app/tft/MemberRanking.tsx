@@ -478,6 +478,10 @@ export default function MemberRanking({
         setSyncMsgById((prev) => ({ ...prev, [id]: msg }))
         return
       }
+      if (body?.skipped && body?.reason === 'in_progress') {
+        setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 진행 중' }))
+        return
+      }
       if (body?.skipped) {
         const s = body?.nextAllowedInSec ?? 0
         setSyncMsgById((prev) => ({ ...prev, [id]: `이미 최신 · ${formatRemain(s)}` }))

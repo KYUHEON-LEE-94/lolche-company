@@ -2,7 +2,7 @@
 import { NextResponse, after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { syncOneMember } from '@/lib/sync/syncMember'
+import { syncOneMember, STUCK_RUNNING_MINUTES } from '@/lib/sync/syncMember'
 import { doSyncMember } from '@/lib/sync/doSyncMember'
 import { writeSyncLog } from '@/lib/sync/writeSyncLog'
 import { notifyTop5EntriesIfAny } from '@/lib/sync/notifyTop5'
@@ -14,7 +14,6 @@ export const maxDuration = 300
 const DEFAULT_BATCH = Number(process.env.SYNC_ALL_BATCH ?? '10')
 const MEMBER_DELAY_MS = Number(process.env.RIOT_MEMBER_DELAY_MS ?? '800')
 const STALE_HOURS = Number(process.env.SYNC_STALE_HOURS ?? '1')
-const STUCK_RUNNING_MINUTES = 30
 // 실패 멤버 재시도 간격. 잘못된 Riot ID 는 매번 실패하므로 매 배치 슬롯을 차지하지 않게 한다.
 const FAILED_BACKOFF_HOURS = Number(process.env.SYNC_FAILED_BACKOFF_HOURS ?? '3')
 
@@ -144,15 +143,19 @@ async function runSyncAll(params: {
 
     try {
       const r = await syncOneMember(m.id, doSyncMember)
+      // 다른 실행(수동 버튼·겹친 크론)이 이미 running 이면 claim 에 져서 아무것도 하지 않았다.
+      const skipped = r.skipped === 'in_progress'
 
-      const status: 'success' | 'error' = r.ok ? 'success' : 'error'
+      const status: 'success' | 'error' | 'skipped' = skipped ? 'skipped' : r.ok ? 'success' : 'error'
 
       // ✅ 멤버별 DB 로그
       await writeSyncLog({
         type: params.trigger === 'cron' ? 'cron' : 'manual',
         memberId: m.id,
         status,
-        message: r.error
+        message: skipped
+            ? 'in_progress'
+            : r.error
             ? r.error
             : r.status != null
                 ? String(r.status)
@@ -174,7 +177,7 @@ async function runSyncAll(params: {
         memberId: m.id,
         memberName: m.member_name,
         ok: r.ok,
-        status: r.status,
+        status: skipped ? 'skipped' : r.status,
         error: r.error ?? null,
         durationMs: Date.now() - t0,
       })
@@ -214,9 +217,12 @@ async function runSyncAll(params: {
     revalidatePath('/lol')
   }
 
-  // 동기화 라운드 완료 시 TOP5 신규 진입 알림(실패해도 동기화엔 영향 없음).
-  if (done) {
-    try { await notifyTop5EntriesIfAny() } catch (e) { console.warn('[sync-all] TOP5 알림 실패', e instanceof Error ? e.message : '오류') }
+  // TOP5 신규 진입 알림(실패해도 동기화엔 영향 없음).
+  // ★ `done` 으로 거르지 않는다 — 배치가 limit 미만이면 거의 매 호출 true 라 같은 진입자가 반복 발송됐다.
+  //   대신 이번 배치에서 실제로 성공한 멤버만 후보로 넘긴다(skipped·실패 제외).
+  const syncedIds = new Set(results.filter((r) => r.ok).map((r) => r.memberId))
+  if (syncedIds.size > 0) {
+    try { await notifyTop5EntriesIfAny(syncedIds) } catch (e) { console.warn('[sync-all] TOP5 알림 실패', e instanceof Error ? e.message : '오류') }
   }
 
   console.log('[sync-all] end', {

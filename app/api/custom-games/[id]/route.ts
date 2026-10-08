@@ -352,6 +352,28 @@ export async function PATCH(req: Request, ctx: Ctx) {
     await supabaseAdmin.from('custom_game_teams').delete().eq('custom_game_id', id)
   }
 
+  // 일정이 실제로 바뀌면 리마인더(30분 디스코드 / 60분 웹 푸시)를 재무장한다.
+  // 이미 발송된 내전을 미루면 claim 컬럼이 남아 새 시각에 대한 알림이 영영 오지 않는다.
+  // ★ 메인 patch 에 넣지 않고 컬럼별로 따로 update 한다 — 마이그레이션 미적용 환경에서
+  //   컬럼 하나가 없으면(PGRST204) 일정 변경 자체가 실패하고, 한쪽 부재가 다른 쪽 리셋을 막는다.
+  if (patch.scheduled_at !== undefined) {
+    const prevMs = game.scheduled_at ? new Date(game.scheduled_at).getTime() : NaN
+    if (new Date(patch.scheduled_at).getTime() !== prevMs) {
+      const [discordReset, pushReset] = await Promise.all([
+        supabaseAdmin.from('custom_games').update({ reminder_sent_at: null }).eq('id', id),
+        supabaseAdmin.from('custom_games').update({ push_reminder_sent_at: null }).eq('id', id),
+      ])
+      for (const [column, result] of [
+        ['reminder_sent_at', discordReset],
+        ['push_reminder_sent_at', pushReset],
+      ] as const) {
+        if (result.error && !isMissingColumnError(result.error)) {
+          console.warn('[custom-games] 리마인더 재무장 실패', { gameId: id, column, message: result.error.message })
+        }
+      }
+    }
+  }
+
   return NextResponse.json({ ok: true })
 }
 

@@ -352,6 +352,21 @@ RLS가 없으면 누구나 anon 키로 테이블을 직접 읽고 쓸 수 있다
   옛 값을 members에 되살린다). **LoL 컬럼은 별도 시즌이라 건드리지 않는다.**
 - API 실패(403/네트워크)는 상위에서 throw되어 이미 기존값을 보존한다 — 이 가드는 "성공+빈 응답" 대비다.
 
+### ★ 동기화 재실행·중복 실행 가드
+
+- **`mirrorPrimaryToMember(recordPrev)` 이후에는 throw 하지 않는다.** 매치 수집 단계(`doSyncMember` 후반)의
+  Riot 오류(429/5xx)는 그 블록에서 삼키고 `console.warn` 만 남긴다. throw 하면 `syncOneMember` 재시도가
+  doSync 전체를 다시 돌려 2회차의 이전값·`tft_*_prev`가 이미 새 값이 되고 승급/TOP5 알림이 무력화된다.
+  못 받은 매치는 다음 동기화의 증분(lookback)으로 회수된다.
+- **`syncOneMember`는 조건부 claim** 이다: `sync_status`가 running 이 아니거나 `last_sync_started_at`이
+  `STUCK_RUNNING_MINUTES`(30, `lib/sync/syncMember.ts` export — sync-all 과 공유) 이전일 때만 running 으로 전이.
+  지면 `{ ok:false, status:409, skipped:'in_progress' }` — **실패가 아니다**(sync_logs 'skipped', approve 경고 없음,
+  수동 API 는 `200 { skipped:true, reason:'in_progress' }`).
+- 수동 동기화 쿨다운 기준은 `max(last_synced_at, last_sync_started_at)` — 실패하는 멤버도 5분 1회로 묶인다.
+- **TOP5 진입 알림** `notifyTop5EntriesIfAny(syncedIds)`: 이번에 실제 성공한 멤버만 후보이고, 본인 prev 가
+  현재 5위보다 낮았던 경우만 발송한다(prev == 현재면 절대 미발송). sync-all 은 배치 성공자, 수동 동기화는
+  본인 1명으로 `after()`에서 호출한다. "남이 떨어져서 5위가 된" 경우는 의도적으로 미알림.
+
 ```
 [프론트 동기화 버튼]
   → POST /api/members/[id]/sync
@@ -676,6 +691,14 @@ UI에서 섹션을 숨기는 것은 UX일 뿐 통제 수단이 아니다.
   `null === null`로 통과하지 않도록 양쪽 null을 명시적으로 거부한다.
 - `authorizeGameManage(gameId)` — 401/404/503/403 판정 후 `{ viewer, game }` 반환.
 
+### 목록 상한 · 리마인더 재무장
+
+- `GET /api/custom-games`는 활성(`ACTIVE_STATUSES`) 최신 100 + 종료·취소 최신 30만 반환한다(`fetchListRows`).
+  31번째 이후 종료 내전은 목록에 없지만 상세 링크로는 접근된다. 4단계 컬럼 fallback 은 그대로다.
+- PATCH 로 `scheduled_at`이 **실제로 바뀌면** `reminder_sent_at`/`push_reminder_sent_at`을 null 로 재무장한다.
+  메인 patch 와 합치지 않고 컬럼별 별도 update + `isMissingColumnError` 무시 — 미적용 환경에서 일정 변경이 깨지지 않게.
+- 30분 디스코드 임박 알림도 웹 푸시와 같이 `ACTIVE_STATUSES`(모집 중 + 진행 중)를 대상으로 한다.
+
 ### 대기열은 저장하지 않고 순번에서 파생한다 ★
 
 `custom_game_participants`에 `status('confirmed'|'waitlisted')` 컬럼을 **만들지 않는다.**
@@ -911,3 +934,4 @@ ddragon에 없는 세트 유닛(세트18 `DA_*` 등)의 한글명·이미지는 
 | 2026-07-23 | 지금 접속 중 | `SteamPresence`, `lib/steam/presence.ts`, `app/api/steam-presence/` | 스팀 실시간 상태. ISR 페이지 불변 + 외부 호출 경계 분리 |
 | 2026-09-09 | 웹 푸시 + PWA | `lib/push/`, `app/manifest.ts`, `public/sw.js`, `notify-reminders` | 내전 시작 1시간 전 개인 기기 알림. 기존 30분 디스코드 알림은 무변경 |
 | 2026-09-09 | 주간 랭크 리포트 | `lib/discord/weeklyReport.ts`, `/api/cron/weekly-rank-report`, `/api/admin/weekly-rank-report` | 매주 월요일 지난 주 랭크 요약 디스코드 자동 발송(단일행 CAS 멱등) |
+| 2026-10-08 | 동기화·내전 백엔드 정비 | `lib/sync/*`, `sync-all`, `members/[id]/sync`, `custom-games`, `notify-reminders` | TOP5 반복 발송·재시도 prev 오염·동시 실행·리마인더 재무장·목록 무제한 조회 |
