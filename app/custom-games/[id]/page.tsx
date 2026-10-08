@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Spinner } from '@/app/components/Spinner'
@@ -333,6 +333,8 @@ export default function CustomGameDetailPage() {
   const [canManage, setCanManage] = useState(false)
   const [myParticipation, setMyParticipation] = useState<MyParticipation>(null)
   const [loading, setLoading] = useState(true)
+  // 이미 상세가 떠 있는 상태의 재조회. 콘텐츠를 언마운트하지 않아 스크롤·입력 상태가 유지된다.
+  const [refreshing, setRefreshing] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [addingRound, setAddingRound] = useState(false)
@@ -382,19 +384,50 @@ export default function CustomGameDetailPage() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set())
   const [addingMembers, setAddingMembers] = useState(false)
 
+  // 이전 타이머를 지우지 않으면 앞선 메시지의 타이머가 새 메시지를 일찍 지운다.
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (msgTimerRef.current) clearTimeout(msgTimerRef.current)
+  }, [])
+
   const showMsg = useCallback((type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
     else { setSuccessMsg(msg); setError(null) }
-    setTimeout(() => { setError(null); setSuccessMsg(null) }, 5000)
+    if (msgTimerRef.current) clearTimeout(msgTimerRef.current)
+    msgTimerRef.current = setTimeout(() => {
+      msgTimerRef.current = null
+      setError(null)
+      setSuccessMsg(null)
+    }, 5000)
   }, [])
 
+  const hasGameRef = useRef(false)
+  const reqSeqRef = useRef(0)
+
   const loadDetail = useCallback(async () => {
-    setLoading(true)
+    const seq = ++reqSeqRef.current
+    const isRefresh = hasGameRef.current
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
     try {
       // 세션 의존(can_manage 등) 데이터라 브라우저 캐시가 stale 권한을 재사용하지 않도록 no-store.
       const res = await fetch(`/api/custom-games/${gameId}`, { cache: 'no-store' })
-      const body = await res.json()
-      if (!res.ok) { setLoadError(body.error ?? '로드 실패'); setGame(null); return }
+      const body = await res.json().catch(() => ({}))
+      // 연속 조작으로 겹친 요청은 마지막 것만 반영한다(늦게 도착한 옛 응답이 덮어쓰지 않도록).
+      if (seq !== reqSeqRef.current) return
+      if (!res.ok) {
+        const message = body.error ?? '로드 실패'
+        // 재조회 중 일시 오류(5xx 등)는 보고 있던 화면을 지우지 않는다. 삭제·권한 상실만 화면을 내린다.
+        if (isRefresh && res.status !== 404 && res.status !== 403) {
+          showMsg('error', message)
+          return
+        }
+        hasGameRef.current = false
+        setLoadError(message)
+        setGame(null)
+        return
+      }
+      hasGameRef.current = true
       setLoadError(null)
       setGame(body.game)
       setConfirmedList(body.confirmed ?? [])
@@ -406,11 +439,23 @@ export default function CustomGameDetailPage() {
       setCanManage(Boolean(body.can_manage))
       setMyParticipation(body.my_participation ?? null)
       setMigrationRequired(Boolean(body.migration_required))
-    } catch { setLoadError('알 수 없는 오류가 발생했습니다') }
-    finally { setLoading(false) }
-  }, [gameId])
+    } catch {
+      if (seq !== reqSeqRef.current) return
+      if (isRefresh) showMsg('error', '새로고침 중 오류가 발생했습니다')
+      else setLoadError('알 수 없는 오류가 발생했습니다')
+    } finally {
+      if (seq === reqSeqRef.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }, [gameId, showMsg])
 
-  useEffect(() => { loadDetail() }, [loadDetail])
+  // loadDetail 은 gameId 가 바뀔 때만 새로 만들어진다 — 다른 내전으로 이동하면 첫 로드로 취급한다.
+  useEffect(() => {
+    hasGameRef.current = false
+    void loadDetail()
+  }, [loadDetail])
 
   const isTft = game?.game_kind === 'tft'
   const isTeam = isTft && game?.game_type === 'team'
@@ -978,103 +1023,11 @@ export default function CustomGameDetailPage() {
               </>
             )}
           </div>
-
-          {/* 삭제는 종료된 내전에도 노출한다 — 나머지 버튼은 각자 !isClosed 로 기존 동작을 유지한다. */}
-          {game && (!isClosed || canManage) && (
-            <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
-              {!isClosed && isRecruiting && !myParticipation && (
-                <button
-                  type="button"
-                  onClick={handleJoin}
-                  disabled={joining}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-emerald-500/10 border border-emerald-500/30 text-ok-ink
-                    hover:bg-emerald-500/20 hover:text-ok-ink
-                    disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {joining ? <Spinner size={4} /> : null}
-                  {seatsTaken >= game.capacity ? '대기 신청' : '참가 신청'}
-                </button>
-              )}
-              {/* 주최자는 서버가 취소를 400으로 막는다 — 버튼 자체를 숨긴다(관리자는 is_host=false라 노출). */}
-              {!isClosed && isRecruiting && myParticipation && !myParticipation.is_host && (
-                <button
-                  type="button"
-                  onClick={handleLeave}
-                  disabled={joining}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-surface-2 border border-line text-muted
-                    hover:text-fg hover:bg-surface-2
-                    disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {joining ? <Spinner size={4} /> : null}
-                  참가 취소
-                </button>
-              )}
-              {canManage && !isClosed && (
-                <button
-                  type="button"
-                  onClick={handleOpenEdit}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-surface-2 border border-line text-muted
-                    hover:text-fg hover:bg-surface-2"
-                >
-                  수정
-                </button>
-              )}
-              {canManage && isTft && !isClosed && (
-                <button
-                  type="button"
-                  onClick={handleAddRound}
-                  disabled={addingRound || ending || !canAddRound}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-indigo-500/10 border border-indigo-500/30 text-brand-ink
-                    hover:bg-indigo-500/20 hover:text-brand-ink
-                    disabled:opacity-40 disabled:cursor-not-allowed"
-                  title={isTeam && !teamsAssigned ? '팀 배정을 먼저 저장하세요' : undefined}
-                >
-                  {addingRound ? <><Spinner size={4} /> 탐색 중...</> : (isTeam && !teamsAssigned ? '팀 배정 필요' : '라운드 추가')}
-                </button>
-              )}
-              {canManage && !isClosed && (
-                <button
-                  type="button"
-                  onClick={handleEnd}
-                  disabled={addingRound || ending || deleting}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-red-500/10 border border-red-500/20 text-danger-ink
-                    hover:bg-red-500/20 hover:text-danger-ink
-                    disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {ending ? <><Spinner size={4} /> 종료 중...</> : '내전 종료'}
-                </button>
-              )}
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting || addingRound || ending}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                    text-sm font-bold transition-all duration-200
-                    bg-red-500/20 border border-red-500/40 text-danger-ink
-                    hover:bg-red-500/30 hover:text-danger-ink
-                    disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {deleting ? <><Spinner size={4} /> 삭제 중...</> : '삭제'}
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </header>
 
       <main className={`relative z-10 flex-1 w-full px-4 py-8 ${CONTAINER}`}>
-        <div className={PANEL}>
+        <div className={PANEL} aria-busy={loading || refreshing}>
           {loading && (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-subtle">
               <Spinner size={6} />
@@ -1105,6 +1058,11 @@ export default function CustomGameDetailPage() {
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h1 className="text-2xl font-black text-fg tracking-tight">{game.title}</h1>
+                  {refreshing && (
+                    <span role="status" aria-label="새로고침 중" className="text-subtle">
+                      <Spinner size={4} />
+                    </span>
+                  )}
                   <Badge className={gameKindBadgeClass(game.game_kind)}>
                     {gameKindLabel(game.game_kind, game.game_kind_label)}
                   </Badge>
@@ -1138,6 +1096,97 @@ export default function CustomGameDetailPage() {
                   {waitlist.length > 0 && ` · 대기 ${waitlist.length}명`}
                   {isTft && ` · 최대 ${game.max_rounds}판 · ${rounds.length}판 완료`}
                 </p>
+                {/* 삭제는 종료된 내전에도 노출한다 — 나머지 버튼은 각자 !isClosed 로 기존 동작을 유지한다. */}
+                {(!isClosed || canManage) && (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {!isClosed && isRecruiting && !myParticipation && (
+                      <button
+                        type="button"
+                        onClick={handleJoin}
+                        disabled={joining}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-emerald-500/10 border border-emerald-500/30 text-ok-ink
+                          hover:bg-emerald-500/20 hover:text-ok-ink
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {joining ? <Spinner size={4} /> : null}
+                        {seatsTaken >= game.capacity ? '대기 신청' : '참가 신청'}
+                      </button>
+                    )}
+                    {/* 주최자는 서버가 취소를 400으로 막는다 — 버튼 자체를 숨긴다(관리자는 is_host=false라 노출). */}
+                    {!isClosed && isRecruiting && myParticipation && !myParticipation.is_host && (
+                      <button
+                        type="button"
+                        onClick={handleLeave}
+                        disabled={joining}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-surface-2 border border-line text-muted
+                          hover:text-fg hover:bg-surface-2
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {joining ? <Spinner size={4} /> : null}
+                        참가 취소
+                      </button>
+                    )}
+                    {canManage && !isClosed && (
+                      <button
+                        type="button"
+                        onClick={handleOpenEdit}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-surface-2 border border-line text-muted
+                          hover:text-fg hover:bg-surface-2"
+                      >
+                        수정
+                      </button>
+                    )}
+                    {canManage && isTft && !isClosed && (
+                      <button
+                        type="button"
+                        onClick={handleAddRound}
+                        disabled={addingRound || ending || !canAddRound}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-indigo-500/10 border border-indigo-500/30 text-brand-ink
+                          hover:bg-indigo-500/20 hover:text-brand-ink
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={isTeam && !teamsAssigned ? '팀 배정을 먼저 저장하세요' : undefined}
+                      >
+                        {addingRound ? <><Spinner size={4} /> 탐색 중...</> : (isTeam && !teamsAssigned ? '팀 배정 필요' : '라운드 추가')}
+                      </button>
+                    )}
+                    {canManage && !isClosed && (
+                      <button
+                        type="button"
+                        onClick={handleEnd}
+                        disabled={addingRound || ending || deleting}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-red-500/10 border border-red-500/20 text-danger-ink
+                          hover:bg-red-500/20 hover:text-danger-ink
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {ending ? <><Spinner size={4} /> 종료 중...</> : '내전 종료'}
+                      </button>
+                    )}
+                    {canManage && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting || addingRound || ending}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                          text-sm font-bold transition-all duration-200
+                          bg-red-500/20 border border-red-500/40 text-danger-ink
+                          hover:bg-red-500/30 hover:text-danger-ink
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {deleting ? <><Spinner size={4} /> 삭제 중...</> : '삭제'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {!isClosed && <PushNotifyToggle />}

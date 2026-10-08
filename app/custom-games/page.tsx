@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import SteamThumb from '@/app/steam/SteamThumb'
 import { Spinner } from '@/app/components/Spinner'
 import SteamGamePicker, { type SteamGameSelection } from '@/app/custom-games/_components/SteamGamePicker'
@@ -88,10 +89,21 @@ export default function CustomGamesPage() {
 
   const [busyId, setBusyId] = useState<string | null>(null)
 
+  // 이전 타이머를 지우지 않으면 앞선 메시지의 타이머가 새 메시지를 일찍 지운다.
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (msgTimerRef.current) clearTimeout(msgTimerRef.current)
+  }, [])
+
   const showMsg = useCallback((type: 'error' | 'success', msg: string) => {
     if (type === 'error') { setError(msg); setSuccessMsg(null) }
     else { setSuccessMsg(msg); setError(null) }
-    setTimeout(() => { setError(null); setSuccessMsg(null) }, 4000)
+    if (msgTimerRef.current) clearTimeout(msgTimerRef.current)
+    msgTimerRef.current = setTimeout(() => {
+      msgTimerRef.current = null
+      setError(null)
+      setSuccessMsg(null)
+    }, 4000)
   }, [])
 
   const loadGames = useCallback(async () => {
@@ -273,23 +285,31 @@ export default function CustomGamesPage() {
                 const busy = busyId === g.id
 
                 return (
+                  // 카드 전체 클릭은 제목 링크의 ::after 를 카드 크기로 늘려 처리한다(stretched link).
+                  // <a> 안에 <button> 을 넣지 않기 위해서이며, 버튼 행만 z-10 으로 링크 위에 올린다.
                   <div
                     key={g.id}
-                    onClick={() => router.push(`/custom-games/${g.id}`)}
-                    className={`${CARD_HOVER} p-5 flex flex-col gap-3 cursor-pointer`}
+                    className={`${CARD_HOVER} relative p-5 flex flex-col gap-3`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-base font-black text-fg leading-snug break-all">{g.title}</h2>
+                      <h2 className="text-base font-black text-fg leading-snug break-all">
+                        <Link
+                          href={`/custom-games/${g.id}`}
+                          className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-brand"
+                        >
+                          {g.title}
+                        </Link>
+                      </h2>
                       <Badge className={effectiveStatusBadgeClass(g.status, g.scheduled_at)}>{effectiveStatusLabel(g.status, g.scheduled_at)}</Badge>
                     </div>
 
                     {g.game_kind === 'steam' && g.steam_app_id != null && (
-                      <div className="relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
+                      <div className="pointer-events-none relative h-[42px] w-[110px] overflow-hidden rounded-lg border border-line bg-surface-2">
                         <SteamThumb appid={g.steam_app_id} name={gameKindLabel(g.game_kind, g.game_kind_label)} />
                       </div>
                     )}
                     {(g.game_kind === 'tft' || g.game_kind === 'lol') && (
-                      <div className="relative h-[42px] w-[42px] shrink-0 overflow-hidden rounded-lg border border-line bg-surface-2">
+                      <div className="pointer-events-none relative h-[42px] w-[42px] shrink-0 overflow-hidden rounded-lg border border-line bg-surface-2">
                         <Image src={`/custom-games/${g.game_kind}.png`} alt="" fill sizes="42px" className="object-cover" />
                       </div>
                     )}
@@ -332,7 +352,7 @@ export default function CustomGamesPage() {
                       <span>주최: {g.host_member_name ?? '알 수 없음'}</span>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="pointer-events-none relative z-10 flex items-center gap-2 mt-1 [&>*]:pointer-events-auto">
                       {joinable && !mine && (
                         <button
                           type="button"

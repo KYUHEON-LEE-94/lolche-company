@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { notifySteamLinkChanged } from '@/lib/client/steamLinkEvents'
 
 type SteamPayload = {
   steam_id64: string
@@ -81,6 +82,7 @@ export default function SteamLinkForm() {
           : (body.message ?? '스팀 계정을 연결했습니다.'),
       )
       router.refresh()
+      notifySteamLinkChanged()
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류가 발생했습니다.')
     } finally {
@@ -99,6 +101,7 @@ export default function SteamLinkForm() {
       setSteam(null)
       setMessage(body.message ?? '스팀 연결을 해제했습니다.')
       router.refresh()
+      notifySteamLinkChanged()
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류가 발생했습니다.')
     } finally {

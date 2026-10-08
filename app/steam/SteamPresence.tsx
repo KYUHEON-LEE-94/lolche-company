@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { STEAM_LINK_CHANGED_EVENT } from '@/lib/client/steamLinkEvents'
 import Image from 'next/image'
 import { resolveAvatarUrl } from '@/lib/members/avatar'
 import SectionHeader from '@/app/components/ui/SectionHeader'
@@ -96,10 +97,17 @@ export default function SteamPresence() {
     }
     document.addEventListener('visibilitychange', onVisibility)
 
+    // 연결/해제 직후 재조회. 서버 presence 캐시(TTL) 안이면 같은 결과가 올 수 있다.
+    const onLinkChanged = () => {
+      if (!cancelled) void load()
+    }
+    window.addEventListener(STEAM_LINK_CHANGED_EVENT, onLinkChanged)
+
     return () => {
       cancelled = true
       stop()
       document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener(STEAM_LINK_CHANGED_EVENT, onLinkChanged)
     }
   }, [load])
 

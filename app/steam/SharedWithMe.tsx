@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { STEAM_LINK_CHANGED_EVENT } from '@/lib/client/steamLinkEvents'
 import Image from 'next/image'
 import Link from 'next/link'
 import SteamThumb from '@/app/steam/SteamThumb'
@@ -61,7 +62,11 @@ export default function SharedWithMe() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [details, setDetails] = useState<Record<string, SharedGame[] | 'loading' | 'error'>>({})
 
+  // 토글·연결 변경 이벤트로 요청이 겹치면 마지막 요청의 응답만 반영한다.
+  const reqSeqRef = useRef(0)
+
   const load = useCallback(async () => {
+    const seq = ++reqSeqRef.current
     setState({ kind: 'loading' })
     setDetails({})
     setOpenId(null)
@@ -70,11 +75,13 @@ export default function SharedWithMe() {
         `/api/steam/shared-with-me?multiplayer_only=${multiplayerOnly ? '1' : '0'}`,
         { cache: 'no-store' },
       )
+      if (seq !== reqSeqRef.current) return
       if (res.status === 401) {
         setState({ kind: 'anonymous' })
         return
       }
       const body = await res.json().catch(() => ({}))
+      if (seq !== reqSeqRef.current) return
       if (res.status === 403) {
         setState({ kind: 'forbidden', message: body.message ?? '승인된 멤버만 이용할 수 있습니다.' })
         return
@@ -88,12 +95,19 @@ export default function SharedWithMe() {
         migrationRequired: Boolean(body.migration_required),
       })
     } catch (e) {
+      if (seq !== reqSeqRef.current) return
       setState({ kind: 'error', message: e instanceof Error ? e.message : '오류가 발생했습니다.' })
     }
   }, [multiplayerOnly])
 
   useEffect(() => {
     void load()
+  }, [load])
+
+  useEffect(() => {
+    const onLinkChanged = () => { void load() }
+    window.addEventListener(STEAM_LINK_CHANGED_EVENT, onLinkChanged)
+    return () => window.removeEventListener(STEAM_LINK_CHANGED_EVENT, onLinkChanged)
   }, [load])
 
   const toggle = async (memberId: string) => {

@@ -13,18 +13,18 @@
 | 4 | B | 내전 대기 순번 오표시(목록·토스트) | ✅ 완료 | `deaf0cc` |
 | 5 | B | 내전 생성/수정 모달 에러가 오버레이 뒤에 숨음 | ✅ 완료 | `deaf0cc` |
 | 6 | B | 주최자에게 실패하는 '참가 취소' 노출 + 상세 페이지 삭제 버튼 없음 | ✅ 완료 | `deaf0cc` |
-| 7 | C | TOP5 진입 알림 반복 발송 | ✅ 완료 | 배치 C 커밋 |
-| 8 | C | 내전 일정 변경 시 리마인더 재무장 안 됨 | ✅ 완료 | 배치 C 커밋 |
-| 9 | C | 동기화 재시도 시 `tft_*_prev` 덮어써 승급 알림 유실 | ✅ 완료 | 배치 C 커밋 |
-| 10 | C | 수동 동기화 쿨다운이 성공 기준 + 동시 실행 가드 없음 | ✅ 완료 | 배치 C 커밋 |
-| 11 | D | `/tft` 동기화 성공 후 카드 미갱신 | ⏳ 대기 | |
-| 12 | D | 푸시 토글: 서버 등록 실패해도 "켜짐" | ⏳ 대기 | |
-| 13 | D | 내전 상세 모바일 헤더 넘침 + 매 조작마다 전체 스피너 | ⏳ 대기 | |
-| 14 | D | 스팀 연결/해제 후 개인화 섹션 미갱신 | ⏳ 대기 | |
-| 15 | D | 랭킹 행·내전 카드 키보드 접근 불가 | ⏳ 대기 | |
-| 16 | D | sw.js 알림 클릭 시 새 창 + 로그아웃 시 구독 미해제 | ⏳ 대기 | |
-| 17 | C | 디스코드 30분 알림이 `in_progress` 내전 제외(푸시와 불일치) | ✅ 완료 | 배치 C 커밋 |
-| 18 | C | 내전 목록 GET 무제한 조회(1000행 절단 위험) | ✅ 완료 | 배치 C 커밋 |
+| 7 | C | TOP5 진입 알림 반복 발송 | ✅ 완료 | `a42f833` |
+| 8 | C | 내전 일정 변경 시 리마인더 재무장 안 됨 | ✅ 완료 | `a42f833` |
+| 9 | C | 동기화 재시도 시 `tft_*_prev` 덮어써 승급 알림 유실 | ✅ 완료 | `a42f833` |
+| 10 | C | 수동 동기화 쿨다운이 성공 기준 + 동시 실행 가드 없음 | ✅ 완료 | `a42f833` |
+| 11 | D | `/tft` 동기화 성공 후 카드 미갱신 | ✅ 완료 | 배치 D 커밋 |
+| 12 | D | 푸시 토글: 서버 등록 실패해도 "켜짐" | ✅ 완료 | 배치 D 커밋 |
+| 13 | D | 내전 상세 모바일 헤더 넘침 + 매 조작마다 전체 스피너 | ✅ 완료 | 배치 D 커밋 |
+| 14 | D | 스팀 연결/해제 후 개인화 섹션 미갱신 | ✅ 완료 | 배치 D 커밋 |
+| 15 | D | 랭킹 행·내전 카드 키보드 접근 불가 | ✅ 완료 | 배치 D 커밋 |
+| 16 | D | sw.js 알림 클릭 시 새 창 + 로그아웃 시 구독 미해제 | ✅ 완료 | 배치 D 커밋 |
+| 17 | C | 디스코드 30분 알림이 `in_progress` 내전 제외(푸시와 불일치) | ✅ 완료 | `a42f833` |
+| 18 | C | 내전 목록 GET 무제한 조회(1000행 절단 위험) | ✅ 완료 | `a42f833` |
 
 ## 사전 정리
 
@@ -167,3 +167,75 @@
 - 실DB 읽기 전용 ✅ claim `.or` 필터(ISO stuckSince 포함) select 200·19/19행 / running∩stuck 필터 200 / 목록 활성 `.in`·종료 `.not in` 200(0+3=전체 3) / notify-reminders 신규 쿼리 200 / 두 리마인더 컬럼 존재
 - 런타임(`next start`, 비인증) ✅ `POST /api/members/[id]/sync` 401 / `GET /api/cron/notify-reminders` 401 / `GET /api/admin/sync-all` 401 / `PATCH /api/custom-games/[id]` 401 / 목록 GET 200 `{games}` 3건 created_at desc
 - 미실행: 실제 동기화·TOP5 발송·일정 PATCH·알림 발송(운영 DB 쓰기 금지)
+
+### 배치 D — 프론트 UX·접근성·PWA (#11~#16)
+
+커밋: `fix: 동기화 후 랭킹 즉시 갱신·푸시 구독 롤백·내전 상세 헤더 재배치·키보드 접근성·로그아웃 구독 해제 — 동기화가 끝나도 카드가 옛 티어를 보여줬다`
+
+**문제**
+- #11 `/tft` 동기화 성공 시 로컬 상태(동기화 시각·메시지)만 바뀌고 서버 트리를 다시 받지 않아 티어/LP 가 새로고침 전까지 옛 값. 열린 상세 패널도 클릭 시점 스냅샷이었고, `onClose` 인라인 화살표가 렌더마다 새 함수라 패널 포커스 effect(`[onClose]`)가 부모 재렌더마다 다시 돌았다.
+- #12 푸시 켜기에서 브라우저 구독 생성 후 서버 POST 가 실패해도 로컬 구독이 남아 토글은 "켜짐", 알림은 안 옴. 마운트 재동기화는 응답을 무시해 세션 만료·멤버 미등록을 알리지 못했다.
+- #13 내전 상세 헤더(h-14)에 액션 버튼 최대 5개 → 375px 에서 넘침. 모든 조작 후 `loadDetail` 이 `loading=true` 로 콘텐츠를 언마운트해 스크롤·입력이 초기화되고 일시 오류에도 화면이 "로드 실패"로 바뀌었다. `showMsg` 타이머가 누적돼 두 번째 메시지가 일찍 사라졌다(목록 페이지 동일).
+- #14 스팀 연결/해제 후 `router.refresh()` 만 호출 — Client Component(`SharedWithMe`·`SteamPresence`)의 자체 fetch 는 다시 돌지 않아 개인화 섹션이 옛 상태로 남았다.
+- #15 랭킹 행(div onClick)·내전 카드(div onClick + router.push)가 키보드로 열 수 없었다.
+- #16 sw.js 알림 클릭이 `url.includes()` 부분 일치라 `/custom-games` 가 `/custom-games/<id>` 탭을 잡거나, 일치 탭이 없으면 무조건 새 창. 로그아웃해도 이 기기의 푸시 구독이 남아 공용 기기에서 이전 사용자의 내전 알림이 계속 왔다.
+
+**변경 파일**
+| 파일 | 내용 |
+|---|---|
+| `app/tft/MemberRanking.tsx` | #11 성공 분기에서만 `startTransition(() => router.refresh())`, `closePanel` useCallback, `activeMember`(최신 members 행 ?? 스냅샷) 전달 / #15 행 `role="button" tabIndex=0 aria-haspopup="dialog"` + `onKeyDown`(`e.target !== e.currentTarget` 가드, Enter/Space) + focus-visible 링 |
+| `app/components/PushNotifyToggle.tsx` | #12 `created` 일 때만 롤백 `unsubscribe`, `classifyFailure`(401 login-required / 400 no-member / 503 unavailable→숨김 / 그 외 unknown), 안내 링크(/login, /profile), 켜기만 비활성 |
+| `app/custom-games/[id]/page.tsx` | #13 액션 버튼을 헤더→타이틀 메타 아래 `mt-4 flex flex-wrap` 로 이동(노출 조건·핸들러·문구 동일), `refreshing`(콘텐츠 유지 + 제목 옆 Spinner, PANEL `aria-busy`), `reqSeqRef` 늦은 응답 무시, 재조회 중 404/403 만 화면 내림, `msgTimerRef` |
+| `app/custom-games/page.tsx` | #13 `msgTimerRef` / #15 제목 `<Link>` stretched link(`after:absolute after:inset-0`), 썸네일 `pointer-events-none`, 버튼 행 `pointer-events-none relative z-10 [&>*]:pointer-events-auto` |
+| `lib/client/steamLinkEvents.ts` (신규) | #14 `STEAM_LINK_CHANGED_EVENT` + `notifySteamLinkChanged()` (import 0개) |
+| `app/steam/SteamLinkForm.tsx`, `SharedWithMe.tsx`, `SteamPresence.tsx` | #14 연결/해제 성공 시 dispatch, 두 섹션이 window 리스너(add/remove 짝)로 `load()`. SharedWithMe 는 `reqSeqRef` |
+| `public/sw.js` | #16 절대 URL 정확 일치 focus → 같은 출처 탭 focus 후 navigate(실패 시) → openWindow. `event.waitUntil` 유지 |
+| `lib/push/clientUnsubscribe.ts` (신규) | #16 `cleanupPushSubscription()` — `getRegistration()`(ready 금지) → DELETE `{endpoint}` keepalive → `unsubscribe()`, 3초 race, throw 없음 (import 0개) |
+| `app/components/AuthButtons.tsx` | #16 `signOut` **전** cleanup, try/finally 로 loading 해제·refresh 보장 |
+| `CLAUDE.md` | 웹푸시 절(롤백·마운트 상태 매핑·로그아웃 해제), `lib/push` 트리, 스팀 절 `steam-link-changed` 이벤트 |
+
+**주요 결정**
+- **이벤트 모듈은 `lib/client/`:** CLAUDE.md 가 `lib/steam/*` 전부 `import 'server-only'` 를 불변식으로 두므로 계획의 `lib/steam/linkEvents.ts` 대신 기존 `lib/client/requestCache.ts` 옆에 뒀다. `app/steam/page.tsx` 무수정(ISR × 개인화 분리 유지).
+- **#12 끄기는 허용:** 401/400 에서 막는 것은 "켜기"뿐. 서버에 등록 못 한 로컬 구독을 사용자가 끌 수 있어야 하므로 `disabled = busy || (!subscribed && (denied || enableBlocked))`. 마운트 시 로컬 구독은 지우지 않는다(일시 장애로 구독을 잃지 않도록). 500·네트워크는 기존 동작 유지. 서버 GET 은 여전히 없음.
+- **#13 draft 결론:** 하위 draft(`teamDraft`/`lolDraft`/`lolPoolGuests`)는 이미 `[teams, …]` effect 로 서버값에 동기화되고 `setTeams(body.teams ?? [])` 가 매번 새 참조라 재마운트 없이도 동일하게 리셋된다 → 추가 조치 불필요. `guestInput` 입력 중 텍스트가 재조회에도 유지되는 것은 의도된 개선.
+- **#15 stretched link:** `<a>` 안에 `<button>` 을 넣지 않기 위해 제목 링크의 `::after` 로 카드 전체를 덮고, 버튼만 `pointer-events-auto` 로 위에 올린다. 버튼 클릭은 링크로 새지 않는다.
+- **#16 로그아웃 순서:** 서버 DELETE 가 세션 `member_id` 조건이라 signOut 이후엔 지울 수 없다. 최악 ~3초 지연을 감수.
+
+**알려진 한계**
+- `/tft` 랭킹 행 `role="button"` 안에 동기화 `<button>` 이 중첩 → ARIA nested-interactive 경고 대상(eslint 미검출). 해소는 후속 과제.
+- #14 `SteamPresence` 는 서버 presence 캐시(TTL 60초) 안이면 연결 직후에도 같은 결과가 올 수 있다(API 무수정 범위).
+- #13 데스크톱에서 액션 버튼이 sticky 헤더를 따라오지 않는다(UX 변화).
+- 브라우저 실기 미검증: 375px 레이아웃, 키보드 시나리오(Tab→Enter/Space, Esc 후 포커스 복귀), 실제 푸시 켜기/끄기·롤백, 로그아웃 DELETE 순서, 실 브라우저 SW 클릭 3종, `/tft` 동기화 후 즉시 반영 — 전부 로그인 세션 필요.
+
+**검증 결과**
+- `npx tsc --noEmit` ✅ 에러 0 / `npm run lint` ✅ 0 errors(기존 무관 warning 1건) / `npm run build` ✅ / `node --check public/sw.js` ✅
+- 클라 모듈 경계 ✅ `lib/client/steamLinkEvents.ts`·`lib/push/clientUnsubscribe.ts` import 0개(server-only 유입 불가), AuthButtons·clientUnsubscribe 에 `serviceWorker.ready` 없음
+- `git diff app/steam/page.tsx` ✅ 무수정
+- 코드 리뷰 ✅ 검증 포인트 1~9 — refresh 성공 분기 한정, `created` 롤백, 마운트 unsubscribe 없음, 액션 버튼 조건(배치 B `!isClosed || canManage`·삭제만 종료 후 노출) 이동 후 동일, reqSeq 가드 3곳(try/catch/finally), 타이머 clear+언마운트 정리, 리스너 add/remove 짝, onKeyDown 가드, a 안 button 없음, DELETE→signOut 순서·try/finally
+- sw.js 단위 검증(node, clients 목) ✅ 정확 일치 → focus만 / `/custom-games` 가 `/custom-games/abc` 탭을 잡지 않고 focus+navigate / 타 출처 탭 무시 → openWindow / navigate 실패 → openWindow
+- 런타임(`next start`, 비인증) ✅ `/login` 200(Application error 없음) / `/sw.js`·`/manifest.webmanifest` 200 / `/tft`·`/custom-games`·상세·`/steam` → 307 `/login?next=...` / `POST|DELETE /api/me/push-subscription` 401 `로그인이 필요합니다.`(→ `login-required` 매핑 대상)
+- 미실행: 로그인 상태 UI 조작 전부(운영 DB 쓰기 금지)
+
+## 최종 요약
+
+| 배치 | 범위 | 커밋 |
+|---|---|---|
+| A | 동기화/크론 안정성 (#1~#3) | `1a20fd2` |
+| 정리 | 추적 중이던 하네스 백업 제거 | `c2094a5` |
+| B | 내전 화면 (#4~#6) | `deaf0cc` |
+| C | 백엔드 알림·동기화 가드·목록 상한 (#7~#10, #17, #18) | `a42f833` |
+| D | 프론트 UX·접근성·PWA (#11~#16) | 이 문서가 포함된 커밋 |
+
+**신규 환경변수 (3종, 전부 기본값 있음 → Vercel 등록은 선택)**
+- `SYNC_FAILED_BACKOFF_HOURS` — 실패 멤버를 sync-all 이 다시 고르기까지의 간격 (기본 3시간)
+- `RIOT_MATCH_ID_LOOKBACK` — 매치 ID 조회 lookback (기본 20)
+- `RIOT_MAX_NEW_MATCH_DETAILS` — 1회 동기화 신규 매치 상세 상한 (기본 5)
+
+**마이그레이션:** 없음 (전 배치 SQL 변경 0).
+
+**후속 과제**
+- TOP5 진입 알림: 상태 테이블 + CAS RPC 로 "마지막 발송 top5" 저장(현재는 동기화 시점 기반 dedup)
+- 부계정 동기화 실패를 `sync_logs` 에 남겨 관리자 화면에서 가시화(현재 `console.warn` 만)
+- `/tft` 랭킹 행 nested-interactive(role=button 안 button) 해소
+- 로그인 상태 브라우저 실기 확인: 375px 내전 상세, 키보드 시나리오, 푸시 켜기/끄기·롤백, 로그아웃 시 구독 DELETE, SW 알림 클릭 3종, `/tft` 동기화 후 즉시 반영, 스팀 연결 후 개인화 섹션 갱신
+- `GET /api/custom-games/not-a-uuid` 가 Postgres `22P02` 로 500 → UUID 형식 검증 후 404/400

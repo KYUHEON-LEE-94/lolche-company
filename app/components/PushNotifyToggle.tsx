@@ -1,12 +1,33 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { urlBase64ToUint8Array } from '@/lib/push/clientKey'
 
 /** 빌드타임 인라인. 비어 있으면 컴포넌트를 렌더하지 않는다. */
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
 
 type Support = 'checking' | 'ok' | 'unsupported' | 'ios-needs-install'
+/**
+ * 서버 측 등록 가능 여부. 'login-required'/'no-member' 면 켜기만 막고 끄기(로컬 해제)는 허용한다.
+ * 'unavailable'(503, 테이블 없음)이면 컴포넌트 자체를 숨긴다.
+ */
+type ServerState = 'unknown' | 'ok' | 'login-required' | 'no-member' | 'unavailable'
+
+type ServerFailure = { state: ServerState; message: string | null }
+
+const LOGIN_EXPIRED_MESSAGE = '로그인이 만료되었습니다. 다시 로그인한 뒤 알림을 켤 수 있어요.'
+
+/** POST 실패 응답 → 서버 상태. 500·기타는 일시 장애로 보고 상태를 바꾸지 않는다('unknown'). */
+async function classifyFailure(res: Response): Promise<ServerFailure> {
+  const body = (await res.json().catch(() => null)) as { message?: string } | null
+  if (res.status === 401) return { state: 'login-required', message: LOGIN_EXPIRED_MESSAGE }
+  if (res.status === 400) {
+    return { state: 'no-member', message: body?.message ?? '먼저 프로필에서 멤버 등록을 완료해주세요.' }
+  }
+  if (res.status === 503) return { state: 'unavailable', message: null }
+  return { state: 'unknown', message: body?.message ?? '알림 등록에 실패했습니다.' }
+}
 
 function detectSupport(): Support {
   if (typeof window === 'undefined') return 'checking'
@@ -46,6 +67,7 @@ export default function PushNotifyToggle() {
   const [denied, setDenied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [serverState, setServerState] = useState<ServerState>('unknown')
 
   useEffect(() => {
     const detected = detectSupport()
@@ -61,8 +83,20 @@ export default function PushNotifyToggle() {
         const existing = await registration.pushManager.getSubscription()
         if (cancelled) return
         setSubscribed(Boolean(existing))
-        // 재로그인·멤버 변경 대비 멱등 재동기화. 실패해도 UI 는 건드리지 않는다.
-        if (existing) await postSubscription(existing).catch(() => undefined)
+        if (!existing) return
+        // 재로그인·멤버 변경 대비 멱등 재동기화. 401/400 이면 서버에 등록되지 않은 상태라 안내하고,
+        // 로컬 구독은 지우지 않는다(사용자가 끄기를 누를 수 있게 남겨 둔다).
+        const res = await postSubscription(existing).catch(() => null)
+        if (cancelled || !res) return
+        if (res.ok) {
+          setServerState('ok')
+          return
+        }
+        const failure = await classifyFailure(res)
+        if (cancelled) return
+        if (failure.state === 'unknown') return
+        setServerState(failure.state)
+        setMessage(failure.message)
       } catch {
         // 서비스 워커 미준비 등 — 토글은 그대로 두고 사용자가 누를 때 다시 시도한다.
       }
@@ -85,19 +119,38 @@ export default function PushNotifyToggle() {
       if (permission !== 'granted') return
 
       const registration = await navigator.serviceWorker.ready
+      const existing = await registration.pushManager.getSubscription()
+      // 이번 호출이 새로 만든 구독만 롤백한다 — 기존 구독은 다른 경로에서 서버에 등록돼 있을 수 있다.
+      const created = !existing
       const subscription =
-        (await registration.pushManager.getSubscription()) ??
+        existing ??
         (await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
         }))
 
-      const res = await postSubscription(subscription)
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { message?: string } | null
-        setMessage(body?.message ?? '알림 등록에 실패했습니다.')
+      const rollback = async () => {
+        if (created) await subscription.unsubscribe().catch(() => undefined)
+        setSubscribed(false)
+      }
+
+      let res: Response
+      try {
+        res = await postSubscription(subscription)
+      } catch (e) {
+        // 서버에 등록되지 않은 구독을 남기면 토글은 켜져 보이는데 알림은 오지 않는다.
+        await rollback()
+        setMessage(e instanceof Error ? e.message : '알림 등록에 실패했습니다.')
         return
       }
+      if (!res.ok) {
+        await rollback()
+        const failure = await classifyFailure(res)
+        if (failure.state !== 'unknown') setServerState(failure.state)
+        setMessage(failure.message)
+        return
+      }
+      setServerState('ok')
       setSubscribed(true)
       setMessage('이 기기에서 알림을 받습니다.')
     } catch (e) {
@@ -133,6 +186,9 @@ export default function PushNotifyToggle() {
 
   if (!VAPID_PUBLIC_KEY) return null
   if (support === 'checking' || support === 'unsupported') return null
+  if (serverState === 'unavailable') return null
+
+  const enableBlocked = serverState === 'login-required' || serverState === 'no-member'
 
   if (support === 'ios-needs-install') {
     return (
@@ -155,11 +211,21 @@ export default function PushNotifyToggle() {
             : '이 기기에서 내가 참가한 내전의 시작 1시간 전 알림을 받습니다.'}
         </p>
         {message && <p className="text-xs text-subtle mt-1">{message}</p>}
+        {serverState === 'login-required' && (
+          <Link href="/login" className="mt-1 inline-block text-xs font-bold text-brand-ink underline">
+            다시 로그인
+          </Link>
+        )}
+        {serverState === 'no-member' && (
+          <Link href="/profile" className="mt-1 inline-block text-xs font-bold text-brand-ink underline">
+            프로필에서 멤버 등록
+          </Link>
+        )}
       </div>
       <button
         type="button"
         onClick={subscribed ? disable : enable}
-        disabled={busy || denied}
+        disabled={busy || (!subscribed && (denied || enableBlocked))}
         className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200
           disabled:opacity-40 disabled:cursor-not-allowed ${
             subscribed

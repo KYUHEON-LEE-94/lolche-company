@@ -7,6 +7,7 @@ import { supabaseClient } from '@/lib/supabase'
 import { getDiscordAvatarUrl, getDiscordDisplayName } from '@/lib/auth/discord'
 import type { User } from '@supabase/supabase-js'
 import { BTN_NEUTRAL } from '@/lib/ui/styles'
+import { cleanupPushSubscription } from '@/lib/push/clientUnsubscribe'
 
 export default function AuthButtons() {
   const router = useRouter()
@@ -98,9 +99,13 @@ export default function AuthButtons() {
   const handleLogout = async () => {
     setMenuOpen(false)
     setLoading(true)
-    await supabaseClient.auth.signOut()
-    setLoading(false)
-    router.refresh()
+    try {
+      await cleanupPushSubscription()
+      await supabaseClient.auth.signOut()
+    } finally {
+      setLoading(false)
+      router.refresh()
+    }
   }
 
   const go = (path: string) => {

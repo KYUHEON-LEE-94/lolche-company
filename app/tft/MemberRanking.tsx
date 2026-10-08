@@ -1,6 +1,7 @@
 'use client'
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
 import { supabaseClient } from '@/lib/supabase'
 import type { Member } from '@/types/supabase'
@@ -335,13 +336,26 @@ const MemberRow = memo(function MemberRow({
 
   return (
       <div
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-label={`${member.member_name} 상세 보기`}
           onClick={() => onDetailOpen(member)}
+          onKeyDown={(e) => {
+            // 내부 동기화 버튼의 Enter/Space 가 버블되어 패널까지 여는 것을 막는다.
+            if (e.target !== e.currentTarget) return
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onDetailOpen(member)
+            }
+          }}
           onPointerEnter={startPrefetch}
           onPointerLeave={cancelPrefetch}
           className={`
         group relative isolate flex items-center gap-2 sm:gap-3
         min-h-[76px] pl-3 pr-2 sm:pr-3 py-3.5 cursor-pointer
         transition-colors hover:bg-surface-2
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand
         overflow-hidden ${rankRingClass(idx)} ${rankEffectClass(member.ranking_card_effect_key)}
       `}
       >
@@ -457,6 +471,10 @@ export default function MemberRanking({
 }) {
   const [viewType, setViewType] = useState<ViewType>('solo')
   const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null)
+  const router = useRouter()
+  const [, startRefresh] = useTransition()
+  // 인라인 화살표면 router.refresh 재렌더마다 새 함수가 되어 패널 포커스 effect([onClose])가 다시 돈다.
+  const closePanel = useCallback(() => setSelectedMember(null), [])
 
   // sync
   const [syncingId, setSyncingId] = useState<string | null>(null)
@@ -491,13 +509,15 @@ export default function MemberRanking({
       invalidateMemberDetailCache(id)
       setLocalLastSynced((prev) => ({ ...prev, [id]: iso }))
       setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 완료!' }))
+      // sync 라우트가 revalidatePath 하므로 서버 트리를 다시 받아 티어/LP 를 즉시 반영한다.
+      startRefresh(() => router.refresh())
     } catch (e) {
       console.error(e)
       setSyncMsgById((prev) => ({ ...prev, [id]: '동기화 중 오류가 발생했습니다.' }))
     } finally {
       setSyncingId(null)
     }
-  }, [syncingId])
+  }, [syncingId, router])
 
   // 정렬
   const sorted = useMemo(() => {
@@ -517,6 +537,11 @@ export default function MemberRanking({
         .filter((m) => getQueueTierAndLp(m, viewType).tier === null && placementCountOf(m, viewType) >= 1 && placementCountOf(m, viewType) < 5)
         .sort((a, b) => placementCountOf(b, viewType) - placementCountOf(a, viewType) || a.member_name.localeCompare(b.member_name, 'ko'))
   }, [members, viewType])
+
+  // selectedMember 는 클릭 시점 스냅샷이라 refresh 후 최신 members 행으로 바꿔 끼운다.
+  const activeMember = selectedMember
+    ? (members.find((m) => m.id === selectedMember.id) ?? selectedMember)
+    : null
 
   const changeView = (view: ViewType) => {
     setViewType(view)
@@ -665,11 +690,11 @@ export default function MemberRanking({
 
       {/* 멤버 디테일 패널 */}
       <AnimatePresence>
-        {selectedMember && viewType !== 'patch-notes' && (
+        {activeMember && viewType !== 'patch-notes' && (
           <MemberDetailPanel
-            member={selectedMember}
+            member={activeMember}
             queue={viewType}
-            onClose={() => setSelectedMember(null)}
+            onClose={closePanel}
           />
         )}
       </AnimatePresence>

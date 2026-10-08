@@ -123,6 +123,7 @@ lib/
     webPush.ts                  # ⚠ `import 'server-only'` — VAPID 개인키 경계. 발송 + 410/404 만료 판별
     sendGameReminders.ts        # 60분 창 내전 푸시 (독립 select + push_reminder_sent_at claim)
     clientKey.ts                # urlBase64ToUint8Array — 브라우저 전용 순수 함수('server-only' 금지)
+    clientUnsubscribe.ts        # 로그아웃 직전 이 기기 구독 해제(best-effort, 3초 타임아웃). 브라우저 전용
   sync/
     syncMember.ts               # 재시도 + 지수 백오프 래퍼
     doSyncMember.ts             # Riot API 실제 호출 + DB 업데이트
@@ -256,6 +257,14 @@ Safari 탭에는 `window.PushManager` 자체가 없다. `PushNotifyToggle` 이 `
 
 **구독 상태의 진실은 브라우저의 `pushManager.getSubscription()`** 이다. 서버 GET 을 따로 두면
 기기별 진실과 어긋나므로 만들지 않고, 마운트 시 멱등 POST 로만 재동기화한다.
+마운트 POST 가 401(세션 만료)/400(멤버 없음)이면 안내 + 켜기만 비활성(끄기는 허용), 503 이면 토글을 숨긴다.
+마운트 시 로컬 구독을 지우지 않는다.
+
+- **켜기 POST 실패 시 이번 호출이 새로 만든 구독만 롤백(`unsubscribe`)한다** — 서버에 없는 로컬 구독이
+  남으면 토글은 켜져 보이는데 알림은 오지 않는다.
+- **로그아웃 시 구독 해제:** `AuthButtons` 가 `signOut` **전에** `cleanupPushSubscription()` 을 호출한다
+  (서버 DELETE 가 세션의 `member_id` 조건이라 signOut 뒤에는 지울 수 없다). `serviceWorker.ready` 는
+  등록 실패 시 영원히 pending 이므로 `getRegistration()` 만 쓴다. 실패·타임아웃이어도 로그아웃은 진행한다.
 
 ### Discord 길드 로그인 게이트 — `NEXT_PUBLIC_DISCORD_GUILD_ID`
 
@@ -641,6 +650,8 @@ presence 는 **실시간이자 세션 인증이 필요**하므로 `revalidate=30
 - 페이지 전체를 `force-dynamic`으로 바꾸지 않는다. 공통 섹션(함께 할 수 있는 게임 / 최근 2주)은
   전원 동일한 데이터라 캐시가 정당하고, 매 요청마다 최대 20페이지 × 1000행을 재조회하게 된다
 - 개인화 섹션이 실패해도 나머지 섹션은 정상 동작해야 한다 (Client Component라 구조적으로 격리됨)
+- 스팀 연결/해제 직후 `SteamLinkForm` 이 `steam-link-changed` 윈도 이벤트(`lib/client/steamLinkEvents.ts`)를
+  보내고 `SharedWithMe`·`SteamPresence` 가 재조회한다. `router.refresh()` 는 Client Component 의 자체 fetch 를 다시 돌리지 않는다
 
 ### 개인화 섹션 상태별 표시 (`lib/members/steamViewer.ts`)
 
